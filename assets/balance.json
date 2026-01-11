@@ -1,0 +1,91 @@
+{
+    "breeding": {
+        "generation_power_creep": 0.01,
+        "stat_variance_min": 0.95,
+        "stat_variance_max": 1.05,
+        "visible_trait_inheritance_chance": 0.45,
+        "hidden_trait_inheritance_chance": 0.25,
+        "mutation_chance": 0.10,
+        "stat_floors": {
+            "hp": 50,
+            "attack": 10,
+            "defense": 5,
+            "speed": 5
+        },
+        "stat_base_caps": {
+            "hp": 500,
+            "attack": 100,
+            "defense": 100,
+            "speed": 100
+        },
+        "stat_hard_caps": {
+            "hp": 2000,
+            "attack": 400,
+            "defense": 400,
+            "speed": 400
+        },
+        "soft_cap_multiplier_per_generation": 0.02
+    },
+    "combat": {
+        "base_damage_formula": {
+            "attack_coefficient": 1.0,
+            "defense_coefficient": 0.5,
+            "minimum_damage": 5
+        },
+        "damage_variance_min": 0.95,
+        "damage_variance_max": 1.05,
+        "environment_multipliers": {
+            "storm": {
+                "electric": 1.20,
+                "water": 1.15
+            },
+            "volcanic": {
+                "fire": 1.25,
+                "ice": 0.85
+            },
+            "aquatic": {
+                "water": 1.20,
+                "electric": 0.90
+            },
+            "arctic": {
+                "ice": 1.20,
+                "fire": 0.85
+            },
+            "forest": {
+                "nature": 1.15
+            },
+            "desert": {
+                "fire": 1.10
+            },
+            "urban": {
+                "tech": 1.15
+            },
+            "cosmic": {
+                "psychic": 1.20
+            }
+        },
+        "max_battle_turns": 100
+    },
+    "tournaments": {
+        "xp_rewards": {
+            "win": 100,
+            "loss": 30,
+            "upset_bonus": 50
+        },
+        "ranking_elo": {
+            "k_factor": 32,
+            "starting_rating": 1500
+        }
+    },
+    "research": {
+        "facility_levels": 5,
+        "decoding_costs": [
+            100,
+            250,
+            500,
+            1000,
+            2000
+        ],
+        "battles_required_for_layer_2": 10
+    }
+}

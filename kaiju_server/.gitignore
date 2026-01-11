@@ -1,0 +1,25 @@
+# Rust
+/target/
+Cargo.lock
+
+# Environment
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Keys (IMPORTANT: Never commit secret keys!)
+keys_backup.txt
+*.pem
+*.key

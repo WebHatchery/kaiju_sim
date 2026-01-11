@@ -1,0 +1,104 @@
+{
+  "traits": [
+    {
+      "id": "electric_breath",
+      "name": "Electric Breath",
+      "category": "Element",
+      "power": 12,
+      "inheritance": "Dominant",
+      "condition": { "Environment": "storm" },
+      "is_hidden": false,
+      "description": "Releases powerful electric discharge. Boosted in storm environments."
+    },
+    {
+      "id": "aqua_hide",
+      "name": "Aqua Hide",
+      "category": "Element",
+      "power": 10,
+      "inheritance": "Dominant",
+      "condition": { "Environment": "aquatic" },
+      "is_hidden": false,
+      "description": "Water-resistant scales. Enhanced in aquatic environments."
+    },
+    {
+      "id": "fire_core",
+      "name": "Fire Core",
+      "category": "Element",
+      "power": 15,
+      "inheritance": "Dominant",
+      "condition": { "Environment": "volcanic" },
+      "is_hidden": false,
+      "description": "Internal flame. Devastating in volcanic environments."
+    },
+    {
+      "id": "berserker",
+      "name": "Berserker",
+      "category": "Modifier",
+      "power": 20,
+      "inheritance": "Recessive",
+      "condition": { "LowHealth": 30 },
+      "is_hidden": true,
+      "description": "Unleashes fury when HP drops below 30%."
+    },
+    {
+      "id": "thick_armor",
+      "name": "Thick Armor",
+      "category": "Modifier",
+      "power": 8,
+      "inheritance": "Dominant",
+      "condition": "Always",
+      "is_hidden": false,
+      "description": "Reinforced natural plating. Always active."
+    },
+    {
+      "id": "swift_reflexes",
+      "name": "Swift Reflexes",
+      "category": "Modifier",
+      "power": 10,
+      "inheritance": "Dominant",
+      "condition": "Always",
+      "is_hidden": false,
+      "description": "Enhanced reaction time. Permanent speed bonus."
+    },
+    {
+      "id": "unstable_mutation",
+      "name": "Unstable Mutation",
+      "category": "Mutation",
+      "power": 5,
+      "inheritance": "Recessive",
+      "condition": "Always",
+      "is_hidden": true,
+      "description": "Random genetic anomaly. Effects unpredictable."
+    },
+    {
+      "id": "storm_dragon",
+      "name": "Storm Dragon",
+      "category": "Synergy",
+      "power": 25,
+      "inheritance": "Conditional",
+      "condition": { "RequiresTrait": "electric_breath" },
+      "is_hidden": true,
+      "description": "Awakens when electric and flight traits combine."
+    },
+    {
+      "id": "volcanic_titan",
+      "name": "Volcanic Titan",
+      "category": "Synergy",
+      "power": 25,
+      "inheritance": "Conditional",
+      "condition": { "RequiresTrait": "fire_core" },
+      "is_hidden": true,
+      "description": "Emerges from fire and earth trait synergy."
+    },
+    {
+      "id": "regeneration",
+      "name": "Regeneration",
+      "category": "Modifier",
+      "power": 12,
+      "inheritance": "Recessive",
+      "condition": { "HighHealth": 50 },
+      "is_hidden": true,
+      "description": "Slow HP recovery when above 50% health."
+    }
+  ]
+}
