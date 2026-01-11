@@ -1,4 +1,5 @@
 -- Breeding rights (tradeable, refundable on parent death)
+DROP TABLE IF EXISTS breeding_rights;
 CREATE TABLE breeding_rights (
     id CHAR(36) PRIMARY KEY DEFAULT (UUID()),
 
@@ -8,7 +9,7 @@ CREATE TABLE breeding_rights (
     issuer_user_id CHAR(36) NOT NULL,
 
     uses_total INT NOT NULL DEFAULT 1 CHECK (uses_total > 0),
-    uses_remaining INT NOT NULL CHECK (uses_remaining >= 0 AND uses_remaining <= uses_total),
+    uses_remaining INT NOT NULL CHECK (uses_remaining >= 0),
 
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     expires_at TIMESTAMP NULL,
@@ -25,6 +26,9 @@ CREATE TABLE breeding_rights (
     CONSTRAINT uses_consistency CHECK (
         (uses_remaining = 0 AND used_at IS NOT NULL) OR
         (uses_remaining > 0)
+    ),
+    CONSTRAINT uses_limit_consistency CHECK (
+        uses_remaining <= uses_total
     ),
 
     FOREIGN KEY (kaiju_id) REFERENCES kaiju(id),

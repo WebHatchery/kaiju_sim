@@ -32,6 +32,7 @@ impl Default for BreedingState {
 pub fn draw_breeding_screen(
     game_state: &GameState, 
     breeding_state: &mut BreedingState,
+    locked_kaiju_ids: &std::collections::HashSet<uuid::Uuid>,
     assets: &AssetManager
 ) -> Option<UiAction> {
     let sw = screen_width();
@@ -94,6 +95,7 @@ pub fn draw_breeding_screen(
     
     let available: Vec<_> = game_state.roster.iter()
         .filter(|k| k.alive)
+        .filter(|k| !locked_kaiju_ids.contains(&k.id)) // Filter out breeding Kaiju
         .filter(|k| Some(k.id) != breeding_state.parent_a && Some(k.id) != breeding_state.parent_b)
         .collect();
     

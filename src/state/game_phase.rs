@@ -28,6 +28,10 @@ pub enum GamePhase {
     LineageViewer(Uuid),
     /// Kaiju detail view (modal)
     KaijuDetail(Uuid),
+    /// Starter Selection (New Game)
+    StarterSelection,
+    /// Marketplace
+    Marketplace,
 }
 
 impl Default for GamePhase {
@@ -61,6 +65,8 @@ impl GamePhase {
             Self::Leaderboard => "Leaderboard",
             Self::LineageViewer(_) => "Lineage Tree",
             Self::KaijuDetail(_) => "Kaiju Detail",
+            Self::StarterSelection => "Choose Starter",
+            Self::Marketplace => "Marketplace",
         }
     }
 }

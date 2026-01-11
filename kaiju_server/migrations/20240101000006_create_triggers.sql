@@ -1,6 +1,5 @@
 -- Automatically log ownership changes
-DELIMITER //
-
+DROP TRIGGER IF EXISTS track_ownership_changes;
 CREATE TRIGGER track_ownership_changes
 AFTER UPDATE ON kaiju
 FOR EACH ROW
@@ -24,18 +23,13 @@ BEGIN
             0
         );
     END IF;
-END//
-
-DELIMITER ;
+END;
 
 -- Prevent state_hash tampering
-DELIMITER //
-
+DROP TRIGGER IF EXISTS enforce_state_hash;
 CREATE TRIGGER enforce_state_hash
 BEFORE UPDATE ON kaiju
 FOR EACH ROW
 BEGIN
     SET NEW.state_version = OLD.state_version + 1;
-END//
-
-DELIMITER ;
+END;

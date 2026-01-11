@@ -8,6 +8,8 @@ use rand_chacha::ChaCha8Rng;
 use rand::SeedableRng;
 use uuid::Uuid;
 use chrono::Utc;
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
 
 use crate::data::{Kaiju, KaijuStats, Trait, TraitInheritance};
 use crate::data::genome::{Genome, GenomeStats, TraitSlot, HiddenTraitData};
@@ -173,6 +175,17 @@ pub fn breed_kaiju(
     // Generate visual seed
     let visual_seed = generate_visual_seed(parent_a, parent_b, &stats, breeding_seed);
 
+    // Generate deterministic genome hash (Simulating SHA-256/On-chain identity)
+    let mut hasher = DefaultHasher::new();
+    stats.hp.hash(&mut hasher);
+    stats.attack.hash(&mut hasher);
+    stats.defense.hash(&mut hasher);
+    stats.speed.hash(&mut hasher);
+    stats.energy.hash(&mut hasher);
+    visual_seed.hash(&mut hasher);
+    let hash_u64 = hasher.finish();
+    let genome_hash = format!("{:016x}", hash_u64);
+
     // Create offspring
     let offspring = Kaiju {
         id: Uuid::new_v4(),
@@ -183,7 +196,7 @@ pub fn breed_kaiju(
         original_breeder: parent_a.current_owner.clone(),
         parent_ids: Some((parent_a.token_id, parent_b.token_id)),
         visual_seed,
-        genome_hash: format!("{:016x}", rng.gen::<u64>()),
+        genome_hash,
         stats,
         traits: final_traits,
         hidden_traits: Vec::new(),

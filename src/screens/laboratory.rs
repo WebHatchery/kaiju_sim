@@ -56,8 +56,8 @@ pub fn draw_laboratory(state: &GameState) -> Option<UiAction> {
         result = Some(UiAction::GoToLeaderboard);
     }
     
-    if draw_hub_button(start_x + btn_size + gap, row2_y, btn_size, "SETTINGS", "Options", dark::TEXT_SECONDARY) {
-        result = Some(UiAction::GoToSettings);
+    if draw_hub_button(start_x + btn_size + gap, row2_y, btn_size, "SHOP", "Buy kaiju", dark::ACCENT) {
+        result = Some(UiAction::GoToMarketplace);
     }
     
     if draw_hub_button(start_x + (btn_size + gap) * 2.0, row2_y, btn_size, "MENU", "Main menu", dark::NEGATIVE) {

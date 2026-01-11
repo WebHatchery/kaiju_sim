@@ -59,4 +59,54 @@ impl AssetManager {
             eprintln!("Failed to read sprite directory: {}", sprite_dir);
         }
     }
+
+    /// Check cache and download if missing (Sync - Blocking)
+    pub fn download_if_missing(&self, url: &str) -> Option<String> {
+        let filename = self.get_filename_from_url(url);
+        let cache_dir = "assets/cache";
+        let path = format!("{}/{}", cache_dir, filename);
+        let path_obj = std::path::Path::new(&path);
+
+        if !path_obj.exists() {
+            // Ensure cache directory exists
+            if let Err(e) = std::fs::create_dir_all(cache_dir) {
+                eprintln!("Failed to create cache dir: {}", e);
+                return None;
+            }
+
+            println!("Downloading asset: {} -> {}", url, path);
+            match reqwest::blocking::get(url) {
+                Ok(response) => {
+                    if response.status().is_success() {
+                        match response.bytes() {
+                            Ok(bytes) => {
+                                if let Err(e) = std::fs::write(&path, bytes) {
+                                    eprintln!("Failed to write to cache: {}", e);
+                                    return None;
+                                }
+                                println!("Asset cached successfully.");
+                            }
+                            Err(e) => {
+                                eprintln!("Failed to get bytes: {}", e);
+                                return None;
+                            }
+                        }
+                    } else {
+                        eprintln!("Failed to download asset: {}", response.status());
+                        return None;
+                    }
+                }
+                Err(e) => {
+                    eprintln!("Network error downloading asset: {}", e);
+                    return None;
+                }
+            }
+        }
+
+        Some(path)
+    }
+
+    pub fn get_filename_from_url(&self, url: &str) -> String {
+        url.split('/').last().unwrap_or("unknown.png").to_string()
+    }
 }

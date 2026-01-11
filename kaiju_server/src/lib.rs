@@ -1,3 +1,5 @@
+#![allow(unused)]
+
 //! Kaiju Server - Server-custodial NFT infrastructure
 //!
 //! This library provides the core functionality for:
@@ -10,19 +12,24 @@
 
 pub mod api;
 pub mod blockchain;
+pub mod breeding_jobs;
 pub mod breeding_rights_service;
+pub mod breeding_service;
 pub mod crypto;
 pub mod currency_service;
 pub mod error;
 pub mod export_service;
 pub mod image_gen;
+pub mod kaiju_repo;
 pub mod marketplace_service;
+pub mod name_generator;
 pub mod transfer_service;
 pub mod types;
 
 pub use api::AppState;
 pub use blockchain::{DepositService, IpfsClient, MintService, NftMetadata};
 pub use breeding_rights_service::{BreedingRight, BreedingRightsService};
+pub use breeding_service::BreedingService;
 pub use crypto::{KeyPurpose, ServerKeyPair, Signer, Verifier};
 pub use currency_service::{CurrencyBalance, CurrencyService, CurrencyType};
 pub use error::{Result, TransferError};

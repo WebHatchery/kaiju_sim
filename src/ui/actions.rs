@@ -39,10 +39,15 @@ pub enum UiAction {
     
     // System
     NewGame,
+    SelectStarter(String), // Added for starter selection
     ContinueGame,
     SaveGame,
     LoadGame,
     ExitGame,
+    
+    // Marketplace
+    GoToMarketplace,
+    PurchaseKaiju(String), // item_id
 }
 
 impl UiAction {

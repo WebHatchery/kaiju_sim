@@ -14,6 +14,10 @@ use kaiju_server::{
     api::{self, AppState},
     crypto::{KeyPurpose, ServerKeyPair, Signer, Verifier},
     TransferService,
+    BreedingService,
+    breeding_jobs::BreedingJobManager,
+    ImageGenerationService,
+    kaiju_repo::KaijuRepository,
 };
 
 #[tokio::main]
@@ -51,6 +55,18 @@ async fn main() -> anyhow::Result<()> {
 
     tracing::info!("Database connection established");
 
+    // Run migrations
+    tracing::info!("Running database migrations...");
+    
+    // Cleanup corrupt/duplicate migration checksums (Fix for 007 collision)
+    let _ = sqlx::query("DELETE FROM _sqlx_migrations WHERE version >= 20240101000007").execute(&pool).await;
+
+    sqlx::migrate!("./migrations")
+        .run(&pool)
+        .await
+        .expect("Failed to run migrations");
+    tracing::info!("Migrations applied successfully");
+
     // Load or generate server key
     let key_pair = if server_secret_key.is_empty() || server_secret_key == "<hex_encoded_secret_key>" {
         tracing::warn!("SERVER_SECRET_KEY not configured, generating temporary key");
@@ -67,17 +83,29 @@ async fn main() -> anyhow::Result<()> {
     // Create services
     let signer = Signer::new(key_pair.secret_key);
     let transfer_service = Arc::new(TransferService::new(pool.clone(), signer));
+    let breeding_service = Arc::new(BreedingService::new());
+    let breeding_job_manager = Arc::new(BreedingJobManager::new());
+    let image_gen_service = Arc::new(ImageGenerationService::new("assets/kaiju/generated"));
+    let kaiju_repo = KaijuRepository::new(pool.clone());
 
     // Create app state
     let state = Arc::new(AppState {
+        db_pool: pool.clone(),
+        kaiju_repo,
         transfer_service,
+        breeding_service,
+        breeding_job_manager,
+        image_gen_service,
         verifier: Verifier::new(),
         server_public_keys: vec![public_key_hex],
     });
 
+use tower_http::services::ServeDir; // Added import
+
     // Build router
     let app = Router::new()
         .merge(api::create_router(state))
+        .nest_service("/assets", ServeDir::new("assets")) // Serve assets
         .layer(TraceLayer::new_for_http())
         .layer(
             CorsLayer::new()

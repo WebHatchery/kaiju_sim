@@ -96,6 +96,9 @@ impl ImageGenerationService {
         };
 
         // 2. ComfyUI: Queue Prompt
+        tracing::info!("Sending prompt to ComfyUI (seed={})", seed);
+        tracing::debug!("Positive prompt: {}", prompt);
+        tracing::debug!("Negative prompt: {}", negative);
         match self.client.queue_prompt(&prompt, &negative, seed).await {
             Ok(prompt_id) => {
                 let mut queue = self.queue.lock().await;
@@ -129,14 +132,27 @@ impl ImageGenerationService {
         };
 
         // Check history
+        tracing::debug!("Checking ComfyUI history for prompt: {}", prompt_id);
         match self.client.check_history(&prompt_id).await {
             Ok(Some(filename)) => {
+                tracing::info!("Image ready from ComfyUI: {}", filename);
                 // Image ready, download it
                 match self.client.download_image(&filename).await {
                     Ok(bytes) => {
+                        // Ensure output directory exists
+                        let _ = std::fs::create_dir_all(&self.output_dir);
+                        
                         // Save to disk
-                        let output_path = format!("{}/{}.png", self.output_dir, prompt_id);
-                        // In real code: tokio::fs::write(&output_path, &bytes).await...
+                        let output_path = format!("{}/{}.png", self.output_dir, request_id);
+                        match std::fs::write(&output_path, &bytes) {
+                            Ok(_) => {
+                                tracing::info!("Saved generated image to: {}", output_path);
+                            }
+                            Err(e) => {
+                                tracing::error!("Failed to write image: {}", e);
+                                return Err(format!("Failed to save image: {}", e));
+                            }
+                        }
                         
                         let mut queue = self.queue.lock().await;
                         if let Some(record) = queue.get_mut(&request_id) {
@@ -146,11 +162,20 @@ impl ImageGenerationService {
                         }
                         Ok(true)
                     }
-                    Err(e) => Err(e.to_string()),
+                    Err(e) => {
+                        tracing::error!("Failed to download image: {}", e);
+                        Err(e.to_string())
+                    }
                 }
             }
-            Ok(None) => Ok(false), // Still running
-            Err(e) => Err(e.to_string()),
+            Ok(None) => {
+                tracing::trace!("Prompt {} still running", prompt_id);
+                Ok(false)
+            }
+            Err(e) => {
+                tracing::error!("Error checking history: {}", e);
+                Err(e.to_string())
+            }
         }
     }
 
