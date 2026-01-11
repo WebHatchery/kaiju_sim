@@ -13,6 +13,9 @@ use state::GameState;
 use ui::actions::UiAction;
 use ui::assets::AssetManager;
 use ui::colors::dark;
+use state::NotificationType;
+use engine::breeding::{self, BreedingConfig};
+// use rand::Rng; // Removed for WebGL compatibility
 
 fn window_conf() -> Conf {
     Conf {
@@ -110,11 +113,11 @@ async fn main() {
                 }
             }
             GamePhase::KaijuDetail(id) => {
-                draw_placeholder(&format!("Detail View: {}", id), &state);
-                if is_key_pressed(KeyCode::Escape) {
-                    Some(UiAction::Back)
+                let action = draw_kaiju_detail(&state, *id, &assets);
+                if let Some(UiAction::Back) = action {
+                     Some(UiAction::Back)
                 } else {
-                    None
+                     action
                 }
             }
             _ => {
@@ -180,15 +183,47 @@ fn handle_ui_action(
 
         // Breeding
         UiAction::ConfirmBreeding => {
-            println!("Breeding triggered!");
-            // In a real implementation:
-            // 1. Check/Deduct gold
-            // 2. Generate offspring genetics
-            // 3. Add to roster
-            // 4. Trigger image generation
-            
-            // For now, simple mock:
-            stack.apply(PhaseTransition::Replace(GamePhase::Roster));
+            if let (Some(id_a), Some(id_b)) = (breeding_state.parent_a, breeding_state.parent_b) {
+                // Check cost
+                let cost = 100;
+                if state.player.gold < cost {
+                    state.notify("Insufficient gold!".to_string(), NotificationType::Error);
+                    return;
+                }
+
+                // Get parents (cloned to avoid borrow conflicts)
+                let parent_a = state.get_kaiju(id_a).cloned();
+                let parent_b = state.get_kaiju(id_b).cloned();
+
+                if let (Some(pa), Some(pb)) = (parent_a, parent_b) {
+                    let config = BreedingConfig::default();
+                    // Use macroquad's rand for WebGL compatibility
+                    let seed = macroquad::rand::rand() as u64;
+                    
+                    match breeding::breed_kaiju(&pa, &pb, seed, &config) {
+                        Ok(result) => {
+                            // Success
+                            if state.player.spend_gold(cost) {
+                                let name = result.offspring.name.clone();
+                                state.add_kaiju(result.offspring);
+                                state.notify(format!("Breeding successful! {} created.", name), NotificationType::Success);
+                                
+                                // Reset breeding state
+                                *breeding_state = BreedingState::default();
+                                
+                                stack.apply(PhaseTransition::Replace(GamePhase::Roster));
+                            }
+                        }
+                        Err(e) => {
+                             state.notify(format!("Breeding failed: {}", e), NotificationType::Error);
+                        }
+                    }
+                } else {
+                     state.notify("Parent not found!".to_string(), NotificationType::Error);
+                }
+            } else {
+                state.notify("Select two parents first!".to_string(), NotificationType::Warning);
+            }
         }
 
         // Catch-all

@@ -253,7 +253,7 @@ mod tests {
             parent_ids: None,
             visual_seed: seed,
             genome_hash: "test".to_string(),
-            stats: KaijuStats::new(300, 60, 40, 50),
+            stats: KaijuStats::new(300, 60, 40, 50, 100),
             traits: vec![],
             hidden_traits: vec![],
             experience: 0,

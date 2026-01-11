@@ -44,6 +44,7 @@ pub struct StatValues {
     pub attack: i32,
     pub defense: i32,
     pub speed: i32,
+    pub energy: i32,
 }
 
 impl Default for BreedingConfig {
@@ -60,18 +61,21 @@ impl Default for BreedingConfig {
                 attack: 10,
                 defense: 5,
                 speed: 5,
+                energy: 50,
             },
             stat_base_caps: StatValues {
                 hp: 500,
                 attack: 100,
                 defense: 100,
                 speed: 100,
+                energy: 200,
             },
             stat_hard_caps: StatValues {
                 hp: 2000,
                 attack: 400,
                 defense: 400,
                 speed: 400,
+                energy: 500,
             },
             soft_cap_multiplier_per_generation: 0.02,
         }
@@ -289,7 +293,18 @@ fn inherit_stats(
         rng,
     );
 
-    KaijuStats::new(hp, attack, defense, speed)
+    let energy = inherit_single_stat(
+        parent_a.stats.energy,
+        parent_b.stats.energy,
+        generation,
+        config.stat_floors.energy,
+        config.stat_base_caps.energy,
+        config.stat_hard_caps.energy,
+        config,
+        rng,
+    );
+
+    KaijuStats::new(hp, attack, defense, speed, energy)
 }
 
 /// Inherit a single stat with power creep and variance
@@ -559,7 +574,7 @@ mod tests {
             parent_ids: None,
             visual_seed: rand::random(),
             genome_hash: format!("{:016x}", rand::random::<u64>()),
-            stats: KaijuStats::new(hp, atk, 30, 25),
+            stats: KaijuStats::new(hp, atk, 30, 25, 100),
             traits: vec![],
             hidden_traits: vec![],
             experience: 0,

@@ -147,7 +147,7 @@ fn create_starter_kaiju(name: &str, seed: u64) -> Kaiju {
         parent_ids: None,
         visual_seed: seed,
         genome_hash: format!("starter_{}", seed),
-        stats: KaijuStats::new(base_hp, base_attack, 30, 25),
+        stats: KaijuStats::new(base_hp, base_attack, 30, 25, 100),
         traits: Vec::new(),
         hidden_traits: Vec::new(),
         experience: 0,

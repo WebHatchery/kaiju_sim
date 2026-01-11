@@ -221,7 +221,7 @@ mod tests {
             kaiju_id: Uuid::new_v4(),
             name: name.to_string(),
             generation: 5,
-            final_stats: KaijuStats::new(300, 60, 40, 30),
+            final_stats: KaijuStats::new(300, 60, 40, 30, 100),
             visible_traits: vec![],
             hidden_traits: vec![],
             lifetime_record: MatchRecord {

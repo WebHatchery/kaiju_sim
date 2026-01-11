@@ -11,6 +11,23 @@ use crate::ui::components::{draw_kaiju_card, CardState, CardAction};
 
 // ...
 
+// ... imports
+
+/// Breeding UI state
+pub struct BreedingState {
+    pub parent_a: Option<uuid::Uuid>,
+    pub parent_b: Option<uuid::Uuid>,
+}
+
+impl Default for BreedingState {
+    fn default() -> Self {
+        Self {
+            parent_a: None,
+            parent_b: None,
+        }
+    }
+}
+
 /// Draw breeding screen
 pub fn draw_breeding_screen(
     game_state: &GameState, 
@@ -87,7 +104,13 @@ pub fn draw_breeding_screen(
             continue;
         }
         
-        if let Some(CardAction::Select) = draw_kaiju_card(x, y, kaiju, CardState::Normal, assets) {
+        let action = draw_kaiju_card(x, y, kaiju, CardState::Normal, assets);
+        
+        let mouse = mouse_position();
+        let hovered = mouse.0 >= x && mouse.0 <= x + CARD_WIDTH && mouse.1 >= y && mouse.1 <= y + CARD_HEIGHT;
+        let clicked = hovered && is_mouse_button_pressed(MouseButton::Left);
+
+        if matches!(action, Some(CardAction::Select)) || (action.is_none() && clicked) {
             if breeding_state.parent_a.is_none() {
                 breeding_state.parent_a = Some(kaiju.id);
             } else if breeding_state.parent_b.is_none() {

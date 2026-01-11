@@ -22,28 +22,32 @@ pub struct KaijuStats {
 
     /// Speed - determines turn order and initiative
     pub speed: i32,
+
+    /// Energy - resource for special moves
+    pub energy: i32,
 }
 
 impl KaijuStats {
     /// Create new stats with validation
-    pub fn new(hp: i32, attack: i32, defense: i32, speed: i32) -> Self {
+    pub fn new(hp: i32, attack: i32, defense: i32, speed: i32, energy: i32) -> Self {
         Self {
             hp: hp.max(50),         // Minimum HP floor
             attack: attack.max(10), // Minimum attack floor
             defense: defense.max(5), // Minimum defense floor
             speed: speed.max(5),    // Minimum speed floor
+            energy: energy.max(50), // Minimum energy floor
         }
     }
 
     /// Calculate total power level (for rough comparisons)
     pub fn power_level(&self) -> i32 {
-        self.hp / 5 + self.attack + self.defense + self.speed
+        self.hp / 5 + self.attack + self.defense + self.speed + self.energy / 2
     }
 }
 
 impl Default for KaijuStats {
     fn default() -> Self {
-        Self::new(100, 20, 15, 15)
+        Self::new(100, 20, 15, 15, 100)
     }
 }
 
@@ -154,16 +158,17 @@ mod tests {
 
     #[test]
     fn test_stats_floors() {
-        let stats = KaijuStats::new(10, 5, 2, 3);
+        let stats = KaijuStats::new(10, 5, 2, 3, 10);
         assert_eq!(stats.hp, 50); // Floor applied
         assert_eq!(stats.attack, 10); // Floor applied
         assert_eq!(stats.defense, 5); // Floor applied
         assert_eq!(stats.speed, 5); // Floor applied
+        assert_eq!(stats.energy, 50); // Floor applied
     }
 
     #[test]
     fn test_stats_serialization() {
-        let stats = KaijuStats::new(200, 50, 40, 30);
+        let stats = KaijuStats::new(200, 50, 40, 30, 100);
         let json = serde_json::to_string(&stats).unwrap();
         let deserialized: KaijuStats = serde_json::from_str(&json).unwrap();
         assert_eq!(stats, deserialized);
@@ -171,7 +176,7 @@ mod tests {
 
     #[test]
     fn test_new_wild_kaiju() {
-        let stats = KaijuStats::new(200, 50, 40, 30);
+        let stats = KaijuStats::new(200, 50, 40, 30, 100);
         let kaiju = Kaiju::new_wild("TestKaiju".to_string(), stats, vec![]);
 
         assert_eq!(kaiju.generation, 0);
@@ -184,7 +189,7 @@ mod tests {
 
     #[test]
     fn test_battle_rating_calculation() {
-        let stats = KaijuStats::new(200, 50, 40, 30);
+        let stats = KaijuStats::new(200, 50, 40, 30, 100);
         let kaiju = Kaiju::new_wild("Warrior".to_string(), stats, vec![]);
 
         let rating = kaiju.battle_rating();

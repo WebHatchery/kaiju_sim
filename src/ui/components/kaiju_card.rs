@@ -1,7 +1,29 @@
+//! KaijuCard component - compact kaiju display.
+
 use macroquad::prelude::*;
 use crate::data::Kaiju;
+use crate::ui::colors::dark;
+use crate::ui::typography::*;
+use crate::ui::spacing::*;
 use crate::ui::assets::AssetManager;
 
+/// Card visual state
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CardState {
+    Normal,
+    Hovered,
+    Selected,
+    Dead,
+}
+
+/// Card interaction result
+#[derive(Debug, Clone, Copy)]
+pub enum CardAction {
+    Select,
+    ViewDetails,
+}
+
+/// Draw a kaiju card and return action if interacted
 pub fn draw_kaiju_card(
     x: f32,
     y: f32,
@@ -9,9 +31,38 @@ pub fn draw_kaiju_card(
     state: CardState,
     assets: &AssetManager,
 ) -> Option<CardAction> {
-    // ...
-
-    // Portrait placeholder
+    let mouse = mouse_position();
+    let is_hovered = mouse.0 >= x && mouse.0 <= x + CARD_WIDTH
+        && mouse.1 >= y && mouse.1 <= y + CARD_HEIGHT;
+    
+    let effective_state = if !kaiju.alive {
+        CardState::Dead
+    } else if state == CardState::Selected {
+        CardState::Selected
+    } else if is_hovered {
+        CardState::Hovered
+    } else {
+        CardState::Normal
+    };
+    
+    // Background
+    let bg_color = match effective_state {
+        CardState::Dead => Color::new(0.12, 0.12, 0.14, 1.0),
+        _ => dark::SURFACE,
+    };
+    draw_rectangle(x, y, CARD_WIDTH, CARD_HEIGHT, bg_color);
+    
+    // Border
+    let border_color = match effective_state {
+        CardState::Selected => dark::ACCENT,
+        CardState::Hovered => dark::TEXT_SECONDARY,
+        CardState::Dead => dark::DEAD,
+        CardState::Normal => dark::BORDER,
+    };
+    let border_width = if effective_state == CardState::Selected { 3.0 } else { 2.0 };
+    draw_rectangle_lines(x, y, CARD_WIDTH, CARD_HEIGHT, border_width, border_color);
+    
+    // Portrait
     let portrait_h = 90.0;
     
     let mut drawn = false;
@@ -20,7 +71,7 @@ pub fn draw_kaiju_card(
              let key = path_str.to_string_lossy();
              if let Some(tex) = assets.get_texture(&key) {
                 draw_texture_ex(
-                    *tex,
+                    tex,
                     x + 10.0,
                     y + 10.0,
                     WHITE,
