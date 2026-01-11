@@ -79,7 +79,7 @@ impl SynergyDefinition {
             category: TraitCategory::Synergy,
             power: self.power,
             inheritance: TraitInheritance::Conditional,
-            condition: TraitCondition::Always,
+            condition: TraitCondition::Simple("Always".to_string()),
             is_hidden: true,
             description: self.effect.clone(),
         }

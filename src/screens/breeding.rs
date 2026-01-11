@@ -6,25 +6,17 @@ use crate::ui::colors::dark;
 use crate::ui::typography::*;
 use crate::ui::actions::UiAction;
 use crate::ui::spacing::*;
+use crate::ui::assets::AssetManager;
 use crate::ui::components::{draw_kaiju_card, CardState, CardAction};
 
-/// Breeding UI state
-pub struct BreedingState {
-    pub parent_a: Option<uuid::Uuid>,
-    pub parent_b: Option<uuid::Uuid>,
-}
-
-impl Default for BreedingState {
-    fn default() -> Self {
-        Self {
-            parent_a: None,
-            parent_b: None,
-        }
-    }
-}
+// ...
 
 /// Draw breeding screen
-pub fn draw_breeding_screen(game_state: &GameState, breeding_state: &mut BreedingState) -> Option<UiAction> {
+pub fn draw_breeding_screen(
+    game_state: &GameState, 
+    breeding_state: &mut BreedingState,
+    assets: &AssetManager
+) -> Option<UiAction> {
     let sw = screen_width();
     let sh = screen_height();
     
@@ -95,7 +87,7 @@ pub fn draw_breeding_screen(game_state: &GameState, breeding_state: &mut Breedin
             continue;
         }
         
-        if let Some(CardAction::Select) = draw_kaiju_card(x, y, kaiju, CardState::Normal) {
+        if let Some(CardAction::Select) = draw_kaiju_card(x, y, kaiju, CardState::Normal, assets) {
             if breeding_state.parent_a.is_none() {
                 breeding_state.parent_a = Some(kaiju.id);
             } else if breeding_state.parent_b.is_none() {

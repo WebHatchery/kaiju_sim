@@ -7,6 +7,12 @@ mod state;
 mod ui;
 
 use data::GameData;
+use screens::*;
+use state::game_phase::{GamePhase, PhaseStack, PhaseTransition};
+use state::GameState;
+use ui::actions::UiAction;
+use ui::assets::AssetManager;
+use ui::colors::dark;
 
 fn window_conf() -> Conf {
     Conf {
@@ -14,63 +20,203 @@ fn window_conf() -> Conf {
         window_width: 1280,
         window_height: 720,
         window_resizable: true,
+        high_dpi: true,
         ..Default::default()
     }
 }
 
 #[macroquad::main(window_conf)]
 async fn main() {
-    // Load game data
-    let game_data = match GameData::load() {
-        Ok(data) => data,
+    // 1. Load static game data
+    let _game_data = match GameData::load() {
+        Ok(data) => {
+            println!("Loaded {} traits", data.traits.traits.len());
+            data
+        }
         Err(e) => {
             eprintln!("Failed to load game data: {}", e);
-            eprintln!(
-                "Make sure assets/ folder contains traits.json, balance.json, and tournaments.json"
-            );
+            // In a real app we'd show an error screen
             return;
         }
     };
 
-    println!("Loaded {} traits", game_data.traits.traits.len());
-    println!(
-        "Loaded {} tournaments",
-        game_data.tournaments.tournaments.len()
-    );
+    // 2. Initialize mutable game state
+    // TODO: Load from save if exists
+    let mut state = GameState::default();
+
+    // 3. Initialize asset manager
+    let mut assets = AssetManager::new();
+    println!("Loading assets...");
+    assets.load_all_assets().await;
+    println!("Assets loaded.");
+
+    // 4. Initialize phase stack
+    let mut phase_stack = PhaseStack::new(GamePhase::MainMenu);
+    
+    // 5. Initialize UI states
+    let mut breeding_state = BreedingState::default();
 
     // Main game loop
     loop {
-        clear_background(Color::from_rgba(20, 20, 25, 255));
+        // Global time update
+        state.tick();
+        
+        // Input handling for dev/debug
+        if is_key_pressed(KeyCode::F5) {
+             state = GameState::default();
+             phase_stack = PhaseStack::new(GamePhase::MainMenu);
+             println!("Debug: State Reset");
+        }
 
-        // Draw loading message
-        let text = "Phase 1 Complete - Data Models Loaded";
-        let font_size = 40.0;
-        let text_size = measure_text(text, None, font_size as u16, 1.0);
-        let x = screen_width() / 2.0 - text_size.width / 2.0;
-        let y = screen_height() / 2.0;
+        // Determine current phase and draw appropriate screen
+        let action = match phase_stack.current() {
+            GamePhase::Loading => None, 
+            GamePhase::MainMenu => draw_main_menu(),
+            GamePhase::Laboratory => draw_laboratory(&state),
+            GamePhase::Roster => draw_roster_view(&state, &assets),
+            GamePhase::Breeding => draw_breeding_screen(&state, &mut breeding_state, &assets),
+            
+            // WIP Screens
+            GamePhase::TournamentLobby => {
+                draw_placeholder("Tournament Lobby (Coming Soon)", &state);
+                if is_key_pressed(KeyCode::Escape) {
+                    Some(UiAction::GoToLaboratory)
+                } else {
+                    None
+                }
+            }
+            GamePhase::Leaderboard => {
+                draw_placeholder("Leaderboard (Coming Soon)", &state);
+                 if is_key_pressed(KeyCode::Escape) {
+                    Some(UiAction::GoToLaboratory)
+                } else {
+                    None
+                }
+            }
+            GamePhase::Battle => {
+                draw_placeholder("Battle Simulation (Coming Soon)", &state);
+                 if is_key_pressed(KeyCode::Escape) {
+                    Some(UiAction::GoToLaboratory)
+                } else {
+                    None
+                }
+            }
+            GamePhase::Results => {
+                draw_placeholder("Battle Results", &state);
+                 if is_key_pressed(KeyCode::Escape) {
+                    Some(UiAction::GoToLaboratory)
+                } else {
+                    None
+                }
+            }
+            GamePhase::KaijuDetail(id) => {
+                draw_placeholder(&format!("Detail View: {}", id), &state);
+                if is_key_pressed(KeyCode::Escape) {
+                    Some(UiAction::Back)
+                } else {
+                    None
+                }
+            }
+            _ => {
+                draw_placeholder(&format!("Unknown Phase: {:?}", phase_stack.current()), &state);
+                if is_key_pressed(KeyCode::Escape) {
+                     Some(UiAction::Back)
+                } else {
+                    None
+                }
+            }
+        };
 
-        draw_text(text, x, y, font_size, WHITE);
-
-        // Draw trait count
-        let stats_text = format!(
-            "Traits: {} | Tournaments: {}",
-            game_data.traits.traits.len(),
-            game_data.tournaments.tournaments.len()
-        );
-        let stats_size = measure_text(&stats_text, None, 20, 1.0);
-        let stats_x = screen_width() / 2.0 - stats_size.width / 2.0;
-        draw_text(&stats_text, stats_x, y + 50.0, 20.0, LIGHTGRAY);
-
-        // Draw instructions
-        let instructions = "Press ESC to exit";
-        let instr_size = measure_text(instructions, None, 16, 1.0);
-        let instr_x = screen_width() / 2.0 - instr_size.width / 2.0;
-        draw_text(instructions, instr_x, y + 100.0, 16.0, GRAY);
-
-        if is_key_pressed(KeyCode::Escape) {
-            break;
+        // Handle returned action
+        if let Some(act) = action {
+            handle_ui_action(&mut state, &mut phase_stack, &mut breeding_state, act);
         }
 
         next_frame().await;
     }
+}
+
+/// Handle UI actions and apply phase transitions
+fn handle_ui_action(
+    state: &mut GameState, 
+    stack: &mut PhaseStack, 
+    breeding_state: &mut BreedingState,
+    action: UiAction
+) {
+    match action {
+        // Navigation
+        UiAction::GoToMenu => stack.apply(PhaseTransition::to_menu()),
+        UiAction::GoToLaboratory => stack.apply(PhaseTransition::to_laboratory()),
+        UiAction::GoToRoster => stack.apply(PhaseTransition::Replace(GamePhase::Roster)),
+        UiAction::GoToBreeding => {
+            *breeding_state = BreedingState::default(); // Reset state
+            stack.apply(PhaseTransition::to_breeding());
+        },
+        UiAction::GoToTournament => stack.apply(PhaseTransition::to_tournament_lobby()),
+        UiAction::GoToLeaderboard => stack.apply(PhaseTransition::Replace(GamePhase::Leaderboard)),
+        UiAction::GoToSettings => println!("Settings clicked"),
+        UiAction::Back => stack.apply(PhaseTransition::Pop),
+        
+        // System
+        UiAction::NewGame => {
+            *state = GameState::default(); // New game
+            stack.apply(PhaseTransition::to_laboratory());
+        }
+        UiAction::ContinueGame => {
+            // Logic to load game would go here
+             stack.apply(PhaseTransition::to_laboratory());
+        }
+        UiAction::ExitGame => {
+            std::process::exit(0);
+        }
+
+        // Kaiju Interaction
+        UiAction::SelectKaiju(id) => {
+            state.selected_kaiju = Some(id);
+        }
+        UiAction::ViewKaijuDetails(id) => {
+            stack.apply(PhaseTransition::show_kaiju_detail(id));
+        }
+
+        // Breeding
+        UiAction::ConfirmBreeding => {
+            println!("Breeding triggered!");
+            // In a real implementation:
+            // 1. Check/Deduct gold
+            // 2. Generate offspring genetics
+            // 3. Add to roster
+            // 4. Trigger image generation
+            
+            // For now, simple mock:
+            stack.apply(PhaseTransition::Replace(GamePhase::Roster));
+        }
+
+        // Catch-all
+        _ => {
+            println!("Action not yet handled: {:?}", action);
+        }
+    }
+}
+
+fn draw_placeholder(title: &str, _state: &GameState) {
+    clear_background(dark::BACKGROUND);
+    let text = format!("{}", title);
+    let size = measure_text(&text, None, 40, 1.0);
+    draw_text(
+        &text,
+        screen_width() / 2.0 - size.width / 2.0,
+        screen_height() / 2.0,
+        40.0,
+        WHITE,
+    );
+    
+    let sub = "Press ESC to return";
+    let sub_size = measure_text(sub, None, 20, 1.0);
+     draw_text(
+        sub,
+        screen_width() / 2.0 - sub_size.width / 2.0,
+        screen_height() / 2.0 + 50.0,
+        20.0,
+        GRAY,
+    );
 }

@@ -40,8 +40,8 @@ pub enum TraitInheritance {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum TraitCondition {
-    /// Always active (simple string "Always")
-    Always,
+    /// Simple string conditions (e.g. "Always")
+    Simple(String),
 
     /// Complex condition with type tag
     Complex(TraitConditionVariant),
@@ -98,7 +98,7 @@ impl Trait {
     /// Check if trait is active under given conditions
     pub fn is_active(&self, current_hp: i32, max_hp: i32, environment: &str) -> bool {
         match &self.condition {
-            TraitCondition::Always => true,
+            TraitCondition::Simple(s) => s == "Always",
             TraitCondition::Complex(variant) => match variant {
                 TraitConditionVariant::Environment(env) => env == environment,
                 TraitConditionVariant::LowHealth(threshold) => {
@@ -125,7 +125,7 @@ mod tests {
             category: TraitCategory::Element,
             power: 10,
             inheritance: TraitInheritance::Dominant,
-            condition: TraitCondition::Always,
+            condition: TraitCondition::Simple("Always".to_string()),
             is_hidden: false,
             description: "Test trait".to_string(),
         };

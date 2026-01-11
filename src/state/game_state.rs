@@ -153,7 +153,11 @@ fn create_starter_kaiju(name: &str, seed: u64) -> Kaiju {
         experience: 0,
         alive: true,
         current_owner: "player".to_string(),
-        image_uri: None,
+        image_uri: if seed == 0 {
+            Some("assets/sprites/kaiju/kaiju_electric_elemental_1768091175509.png".to_string())
+        } else {
+            Some("assets/sprites/kaiju/kaiju_ice_elemental_1768091156648.png".to_string())
+        },
         metadata_uri: String::new(),
     }
 }

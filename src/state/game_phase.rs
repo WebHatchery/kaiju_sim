@@ -12,6 +12,8 @@ pub enum GamePhase {
     MainMenu,
     /// Laboratory hub
     Laboratory,
+    /// Roster view
+    Roster,
     /// Breeding interface
     Breeding,
     /// Tournament lobby
@@ -51,6 +53,7 @@ impl GamePhase {
             Self::Loading => "Loading",
             Self::MainMenu => "Main Menu",
             Self::Laboratory => "Laboratory",
+            Self::Roster => "Roster",
             Self::Breeding => "Breeding",
             Self::TournamentLobby => "Tournament Lobby",
             Self::Battle => "Battle",

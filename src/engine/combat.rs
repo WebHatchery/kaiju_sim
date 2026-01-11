@@ -419,7 +419,7 @@ mod tests {
             category: TraitCategory::Element,
             power: 8,
             inheritance: TraitInheritance::Dominant,
-            condition: TraitCondition::Always,
+            condition: TraitCondition::Simple("Always".to_string()),
             is_hidden: false,
             description: "Test trait".to_string(),
         });

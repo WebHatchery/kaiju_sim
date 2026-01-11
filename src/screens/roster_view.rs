@@ -6,10 +6,11 @@ use crate::ui::colors::dark;
 use crate::ui::typography::*;
 use crate::ui::actions::UiAction;
 use crate::ui::spacing::*;
+use crate::ui::assets::AssetManager;
 use crate::ui::components::{draw_kaiju_card, CardState, CardAction};
 
 /// Draw roster view and return action if interaction
-pub fn draw_roster_view(state: &GameState) -> Option<UiAction> {
+pub fn draw_roster_view(state: &GameState, assets: &AssetManager) -> Option<UiAction> {
     let sw = screen_width();
     let sh = screen_height();
     
@@ -51,7 +52,7 @@ pub fn draw_roster_view(state: &GameState) -> Option<UiAction> {
             CardState::Normal
         };
         
-        if let Some(action) = draw_kaiju_card(x, y, kaiju, card_state) {
+        if let Some(action) = draw_kaiju_card(x, y, kaiju, card_state, assets) {
             match action {
                 CardAction::Select => return Some(UiAction::SelectKaiju(kaiju.id)),
                 CardAction::ViewDetails => return Some(UiAction::ViewKaijuDetails(kaiju.id)),
