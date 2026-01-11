@@ -87,6 +87,10 @@ async fn main() -> anyhow::Result<()> {
     let breeding_job_manager = Arc::new(BreedingJobManager::new());
     let image_gen_service = Arc::new(ImageGenerationService::new("assets/kaiju/generated"));
     let kaiju_repo = KaijuRepository::new(pool.clone());
+    
+    // Start Tournament Scheduler
+    let tournament_manager = Arc::new(kaiju_server::tournament::manager::TournamentManager::new(pool.clone()));
+    tokio::spawn(tournament_manager.run());
 
     // Create app state
     let state = Arc::new(AppState {

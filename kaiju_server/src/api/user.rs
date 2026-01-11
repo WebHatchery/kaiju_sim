@@ -47,12 +47,15 @@ async fn handle_login(
     .await;
 
     // Fetch gold balance (should exist now)
-    let gold_balance: i64 = sqlx::query_scalar("SELECT gold FROM users WHERE id = ?")
+    let gold_balance: i64 = match sqlx::query_scalar("SELECT gold FROM users WHERE id = ?")
         .bind(user_id.to_string())
         .fetch_optional(&state.db_pool)
         .await
-        .unwrap_or(None) // DB error
-        .unwrap_or(1000); // Not found
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("DB Error: {}", e)))?
+    {
+        Some(gold) => gold,
+        None => return Err((StatusCode::INTERNAL_SERVER_ERROR, "User record creation failed (login)".to_string())),
+    };
 
     // Check if user already has Kaiju in DB
     let existing_roster = state.kaiju_repo.get_by_owner(user_id).await
@@ -83,13 +86,14 @@ async fn handle_login(
         parent_ids: None,
         visual_seed: seed, 
         genome_hash: format!("starter_{}", choice.to_lowercase()),
+        tournaments_won: 0,
         stats: KaijuStats::new(hp, atk, def, spd, 50),
         traits: vec![
             Trait { id: "element".to_string(), name: element.to_string(), description: format!("{} element", element), inheritance: TraitInheritance::Dominant, is_hidden: false, power: 10 },
             Trait { id: "body".to_string(), name: "Bipedal".to_string(), description: "Bipedal body type".to_string(), inheritance: TraitInheritance::Dominant, is_hidden: false, power: 10 },
         ],
         owner_id: user_id,
-        image_url: format!("http://localhost:3000/assets/kaiju/{}", image),
+        image_url: format!("http://localhost:3000/assets/sprites/kaiju/{}", image),
     };
 
     // Save to database

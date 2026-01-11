@@ -107,6 +107,10 @@ pub struct Kaiju {
 
     /// Full metadata URI (IPFS/Arweave)
     pub metadata_uri: String,
+
+    /// Number of tournaments won
+    #[serde(default)]
+    pub tournaments_won: i32,
 }
 
 impl Kaiju {
@@ -131,6 +135,7 @@ impl Kaiju {
             current_owner: "system".to_string(),
             image_uri: None,
             metadata_uri: String::new(),
+            tournaments_won: 0,
         }
     }
 

@@ -44,12 +44,12 @@ impl KaijuRepository {
                 id, name, generation, owner_user_id, custody_state,
                 parent_a_id, parent_b_id, genome_hash, genome_data, visual_seed,
                 base_stats, current_stats, visible_traits, hidden_traits,
-                state_hash
+                state_hash, image_url, tournaments_won
             ) VALUES (
                 ?, ?, ?, ?, 'server',
                 ?, ?, ?, '', ?,
                 ?, ?, ?, '[]',
-                ?
+                ?, ?, ?
             )
         "#)
         .bind(&id)
@@ -64,6 +64,8 @@ impl KaijuRepository {
         .bind(base_stats.to_string()) // current_stats same as base initially
         .bind(&visible_traits)
         .bind(&state_hash)
+        .bind(&kaiju.image_url) // Bind image_url
+        .bind(kaiju.tournaments_won)
         .execute(&self.pool)
         .await?;
 
@@ -78,7 +80,7 @@ impl KaijuRepository {
         let row: Option<KaijuDbRow> = sqlx::query_as(r#"
             SELECT id, name, generation, owner_user_id, 
                    parent_a_id, parent_b_id, genome_hash, visual_seed,
-                   base_stats, visible_traits
+                   base_stats, visible_traits, image_url, tournaments_won
             FROM kaiju 
             WHERE id = ? AND deleted_at IS NULL AND alive = TRUE
         "#)
@@ -96,7 +98,7 @@ impl KaijuRepository {
         let rows: Vec<KaijuDbRow> = sqlx::query_as(r#"
             SELECT id, name, generation, owner_user_id, 
                    parent_a_id, parent_b_id, genome_hash, visual_seed,
-                   base_stats, visible_traits
+                   base_stats, visible_traits, image_url, tournaments_won
             FROM kaiju 
             WHERE owner_user_id = ? AND deleted_at IS NULL AND alive = TRUE
             ORDER BY created_at DESC
@@ -122,6 +124,8 @@ struct KaijuDbRow {
     visual_seed: String,
     base_stats: sqlx::types::Json<KaijuStats>,
     visible_traits: sqlx::types::Json<Vec<Trait>>,
+    image_url: String,
+    tournaments_won: i32,
 }
 
 impl KaijuDbRow {
@@ -150,7 +154,8 @@ impl KaijuDbRow {
             stats: self.base_stats.0,
             traits: self.visible_traits.0,
             owner_id,
-            image_url: String::new(), // TODO: Store and retrieve image_url
+            image_url: self.image_url,
+            tournaments_won: self.tournaments_won,
         }
     }
 }

@@ -16,6 +16,8 @@ struct ServerKaiju {
     pub traits: Vec<ServerTrait>,
     pub owner_id: Uuid,
     pub image_url: String,
+    #[serde(default)]
+    pub tournaments_won: i32,
 }
 
 #[derive(Debug, Deserialize)]
@@ -48,6 +50,7 @@ impl ServerKaiju {
             current_owner: self.owner_id.to_string(),
             image_uri: Some(self.image_url),
             metadata_uri: String::new(),
+            tournaments_won: self.tournaments_won,
         }
     }
 }
@@ -320,17 +323,109 @@ pub fn purchase_kaiju(user_id: Uuid, item_id: &str) -> Result<PurchaseResponse, 
         .send()
         .map_err(|e| format!("Network error: {}", e))?;
     
-    if !response.status().is_success() {
-        return Err(format!("Purchase failed: {}", response.status()));
+    println!("[SERVER->CLIENT] Purchase Status: {}", response.status());
+    let status = response.status();
+
+    if !status.is_success() {
+        let err_text = response.text().unwrap_or_default();
+        println!("[SERVER->CLIENT] Purchase Error Body: {}", err_text);
+        return Err(format!("Purchase failed: {} - {}", status, err_text));
     }
     
     let net_resp = response.json::<ServerPurchaseResponse>()
         .map_err(|e| format!("Invalid purchase response: {}", e))?;
     
+    println!("[SERVER->CLIENT] Purchase Success! New Gold: {}", net_resp.new_gold);
+
     Ok(PurchaseResponse {
         success: net_resp.success,
         kaiju: net_resp.kaiju.map(|k| k.to_client_kaiju()),
         new_gold: net_resp.new_gold,
         message: net_resp.message,
     })
+}
+
+// --- Tournament API ---
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct TournamentStatusDto {
+    pub id: String,
+    pub start_time: String,
+    pub state: String,
+    pub current_round: i32,
+    pub participants_count: i64,
+    pub matches: Vec<MatchDto>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct MatchDto {
+    pub round_number: i32,
+    pub match_index: i32,
+    pub kaiju_a_id: Option<String>,
+    pub kaiju_b_id: Option<String>,
+    pub kaiju_a_name: Option<String>,
+    pub kaiju_b_name: Option<String>,
+    pub winner_id: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+struct TournamentEnrollRequest {
+    user_id: Uuid,
+    kaiju_id: Uuid,
+}
+
+#[derive(Debug, Deserialize)]
+struct TournamentEnrollResponse {
+    success: bool,
+    message: String,
+}
+
+pub fn get_current_tournament() -> Result<TournamentStatusDto, String> {
+    let client = reqwest::blocking::Client::new();
+    
+    // println!("[CLIENT->SERVER] Fetching Tournament Status"); // Verbose
+    
+    let response = client.get("http://localhost:3000/tournament/")
+        .send()
+        .map_err(|e| format!("Network error: {}", e))?;
+    
+    if response.status() == reqwest::StatusCode::NOT_FOUND {
+        return Err("No active tournament".to_string());
+    }
+
+    if !response.status().is_success() {
+        return Err(format!("Failed to fetch tournament: {}", response.status()));
+    }
+    
+    let data = response.json::<TournamentStatusDto>()
+        .map_err(|e| format!("Invalid tournament response: {}", e))?;
+    
+    Ok(data)
+}
+
+pub fn enroll_in_tournament(user_id: Uuid, kaiju_id: Uuid) -> Result<String, String> {
+    let client = reqwest::blocking::Client::new();
+    let request = TournamentEnrollRequest {
+        user_id,
+        kaiju_id,
+    };
+    
+    let response = client.post("http://localhost:3000/tournament/enroll")
+        .json(&request)
+        .send()
+        .map_err(|e| format!("Network error: {}", e))?;
+        
+    if !response.status().is_success() {
+        let err_text = response.text().unwrap_or_default();
+        return Err(format!("Enrollment failed: {}", err_text));
+    }
+    
+    let data = response.json::<TournamentEnrollResponse>()
+        .map_err(|e| format!("Invalid response: {}", e))?;
+        
+    if data.success {
+        Ok(data.message)
+    } else {
+        Err(data.message)
+    }
 }

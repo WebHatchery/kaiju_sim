@@ -25,6 +25,7 @@ pub mod marketplace_service;
 pub mod name_generator;
 pub mod transfer_service;
 pub mod types;
+pub mod tournament;
 
 pub use api::AppState;
 pub use blockchain::{DepositService, IpfsClient, MintService, NftMetadata};

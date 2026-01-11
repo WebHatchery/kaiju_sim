@@ -270,7 +270,7 @@ fn get_fallback_image() -> String {
         "kaiju_serpentine_neutral_1768091108255.png",
     ];
     let chosen = assets.choose(&mut rand::thread_rng()).unwrap();
-    format!("http://localhost:3000/assets/kaiju/{}", chosen)
+    format!("http://localhost:3000/assets/sprites/kaiju/{}", chosen)
 }
 
 /// Check breeding job status

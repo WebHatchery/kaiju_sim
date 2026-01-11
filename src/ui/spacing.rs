@@ -17,7 +17,7 @@ pub const RADIUS_LARGE: f32 = 12.0;
 pub const BUTTON_HEIGHT: f32 = 40.0;
 pub const BUTTON_WIDTH: f32 = 120.0;
 pub const CARD_WIDTH: f32 = 180.0;
-pub const CARD_HEIGHT: f32 = 240.0;
+pub const CARD_HEIGHT: f32 = 320.0;
 pub const PANEL_HEADER: f32 = 50.0;
 pub const STAT_BAR_HEIGHT: f32 = 20.0;
 

@@ -163,6 +163,7 @@ async fn handle_purchase(
                 traits,
                 owner_id: payload.user_id,
                 image_url: market_item.image_url.clone(),
+                tournaments_won: 0,
             };
             
             // Save to database

@@ -205,6 +205,7 @@ pub fn breed_kaiju(
         current_owner: parent_a.current_owner.clone(),
         image_uri: None,
         metadata_uri: String::new(),
+        tournaments_won: 0,
     };
 
     Ok(BreedingResult {
@@ -595,6 +596,7 @@ mod tests {
             current_owner: "test".to_string(),
             image_uri: None,
             metadata_uri: String::new(),
+            tournaments_won: 0,
         }
     }
 

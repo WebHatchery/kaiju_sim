@@ -24,7 +24,7 @@ pub fn draw_kaiju_detail(state: &GameState, kaiju_id: Uuid, assets: &AssetManage
     
     // Header
     draw_rectangle(0.0, 0.0, sw, 60.0, dark::SURFACE);
-    draw_text(&kaiju.name, 20.0, 40.0, FONT_LARGE, dark::TEXT_PRIMARY);
+    draw_text(&kaiju.name, 20.0, 40.0, FONT_LARGE, WHITE);
     
     // Back button
     if draw_back_button(sw - 100.0, 15.0) {
@@ -36,68 +36,92 @@ pub fn draw_kaiju_detail(state: &GameState, kaiju_id: Uuid, assets: &AssetManage
     let right_w = sw - left_w - SPACING_LARGE * 3.0;
     
     let content_y = 80.0;
+    let image_size = left_w - 40.0; // Square image filling width
+    let left_h = image_size + 150.0; // Height for image + info
     
-    // IMAGE CARD
-    draw_rectangle(SPACING_LARGE, content_y, left_w, 400.0, dark::SURFACE);
-    draw_rectangle_lines(SPACING_LARGE, content_y, left_w, 400.0, 2.0, dark::BORDER);
+    // LEFT PANEL (Glass style)
+    draw_rectangle(SPACING_LARGE, content_y, left_w, left_h, Color::new(0.08, 0.08, 0.1, 0.8));
+    draw_rectangle_lines(SPACING_LARGE, content_y, left_w, left_h, 2.0, Color::new(0.3, 0.3, 0.3, 0.3));
     
-    // Big image drawing
-    let img_area_h = 300.0;
-    let img_area_w = left_w - 20.0;
-    draw_rectangle(SPACING_LARGE + 10.0, content_y + 10.0, img_area_w, img_area_h, dark::PANEL);
+    // Big Image drawing
+    let img_x = SPACING_LARGE + 20.0;
+    let img_y = content_y + 20.0;
     
+    let mut drawn = false;
     if let Some(uri) = &kaiju.image_uri {
-        if let Some(path_str) = std::path::Path::new(uri).file_name() {
-             let key = path_str.to_string_lossy();
-             if let Some(tex) = assets.get_texture(&key) {
-                // Keep aspect ratio
-                let aspect = tex.width() / tex.height();
-                let draw_w = img_area_h * aspect; // Fit height
-                let draw_x = SPACING_LARGE + 10.0 + (img_area_w - draw_w) / 2.0;
-
-                draw_texture_ex(
-                    tex,
-                    draw_x,
-                    content_y + 10.0,
-                    WHITE,
-                    DrawTextureParams {
-                        dest_size: Some(vec2(draw_w, img_area_h)),
-                        ..Default::default()
-                    },
-                );
-             }
+        let key = assets.get_filename_from_url(uri);
+        if let Some(tex) = assets.get_texture(&key) {
+            draw_texture_ex(
+                tex,
+                img_x,
+                img_y,
+                WHITE,
+                DrawTextureParams {
+                    dest_size: Some(vec2(image_size, image_size)),
+                    ..Default::default()
+                },
+            );
+            drawn = true;
         }
     }
     
+    if !drawn {
+        draw_rectangle(img_x, img_y, image_size, image_size, dark::PANEL);
+        draw_text_centered("?", img_x + image_size/2.0, img_y + image_size/2.0, FONT_HERO, GRAY);
+    }
+    
+    // Border for image
+    draw_rectangle_lines(img_x, img_y, image_size, image_size, 2.0, dark::ACCENT);
+    
     // Basic Info below image
-    let info_y = content_y + img_area_h + 30.0;
-    draw_text(&format!("Generation: {}", kaiju.generation), SPACING_LARGE + 20.0, info_y, FONT_MEDIUM, dark::TEXT_SECONDARY);
-    draw_text(&format!("Genome: {}", &kaiju.genome_hash[0..8]), SPACING_LARGE + 20.0, info_y + 30.0, FONT_SMALL, dark::TEXT_MUTED);
+    let info_y = img_y + image_size + 30.0;
+    draw_text(&format!("Generation: {}", kaiju.generation), img_x, info_y, FONT_MEDIUM, dark::TEXT_SECONDARY);
+    draw_text(&format!("Genome: {}", &kaiju.genome_hash[0..8]), img_x, info_y + 35.0, FONT_SMALL, dark::TEXT_MUTED);
+    
+    let status_text = if kaiju.alive { "ALIVE" } else { "DECEASED" };
+    let status_color = if kaiju.alive { GREEN } else { RED };
+    draw_text(status_text, img_x + image_size - 100.0, info_y, FONT_MEDIUM, status_color);
 
-    // RIGHT COLUMN - STATS
+    // RIGHT COLUMN - STATS (Panel)
     let right_x = SPACING_LARGE * 2.0 + left_w;
     
-    draw_text("Combat Stats", right_x, content_y, FONT_MEDIUM, dark::TEXT_PRIMARY);
+    // Stats Panel
+    let stats_h = 300.0;
+    draw_rectangle(right_x, content_y, right_w, stats_h, Color::new(0.08, 0.08, 0.1, 0.8));
+    draw_rectangle_lines(right_x, content_y, right_w, stats_h, 2.0, Color::new(0.3, 0.3, 0.3, 0.3));
     
-    let stats_y = content_y + 40.0;
-    draw_stat_row(right_x, stats_y, "HP", kaiju.stats.hp, 1000, dark::HP_COLOR);
-    draw_stat_row(right_x, stats_y + 30.0, "Attack", kaiju.stats.attack, 200, dark::ATK_COLOR);
-    draw_stat_row(right_x, stats_y + 60.0, "Defense", kaiju.stats.defense, 200, dark::DEF_COLOR);
-    draw_stat_row(right_x, stats_y + 90.0, "Speed", kaiju.stats.speed, 200, dark::SPD_COLOR);
-    draw_stat_row(right_x, stats_y + 120.0, "Energy", kaiju.stats.energy, 100, dark::ACCENT);
+    draw_text("Combat Stats", right_x + 20.0, content_y + 35.0, FONT_MEDIUM, WHITE);
+    
+    let stats_y = content_y + 60.0;
+    let stat_gap = 40.0;
+    
+    draw_stat_row(right_x + 20.0, stats_y, "HP", kaiju.stats.hp, 1000, dark::HP_COLOR);
+    draw_stat_row(right_x + 20.0, stats_y + stat_gap, "Attack", kaiju.stats.attack, 200, dark::ATK_COLOR);
+    draw_stat_row(right_x + 20.0, stats_y + stat_gap * 2.0, "Defense", kaiju.stats.defense, 200, dark::DEF_COLOR);
+    draw_stat_row(right_x + 20.0, stats_y + stat_gap * 3.0, "Speed", kaiju.stats.speed, 200, dark::SPD_COLOR);
+    draw_stat_row(right_x + 20.0, stats_y + stat_gap * 4.0, "Energy", kaiju.stats.energy, 100, dark::ACCENT);
 
-    // TRAITS
-    let traits_y = stats_y + 180.0;
-    draw_text("Traits", right_x, traits_y, FONT_MEDIUM, dark::TEXT_PRIMARY);
+    // TRAITS Panel
+    let traits_y = content_y + stats_h + SPACING_LARGE;
+    let traits_h = sh - traits_y - SPACING_LARGE;
     
-    let mut t_y = traits_y + 40.0;
+    draw_rectangle(right_x, traits_y, right_w, traits_h, Color::new(0.08, 0.08, 0.1, 0.8));
+    draw_rectangle_lines(right_x, traits_y, right_w, traits_h, 2.0, Color::new(0.3, 0.3, 0.3, 0.3));
+    
+    draw_text("Traits", right_x + 20.0, traits_y + 35.0, FONT_MEDIUM, WHITE);
+    
+    let mut t_y = traits_y + 60.0;
     if kaiju.traits.is_empty() {
-        draw_text("None", right_x, t_y, FONT_NORMAL, dark::TEXT_MUTED);
+        draw_text("No traits detected.", right_x + 20.0, t_y, FONT_NORMAL, dark::TEXT_MUTED);
     } else {
         for t in &kaiju.traits {
-            draw_rectangle(right_x, t_y - 20.0, 200.0, 30.0, dark::PANEL);
-            draw_text(&t.name, right_x + 10.0, t_y, FONT_NORMAL, dark::TEXT_PRIMARY);
-            t_y += 40.0;
+            // Trait Pill
+            draw_rectangle(right_x + 20.0, t_y - 25.0, 250.0, 35.0, Color::new(0.2, 0.2, 0.25, 1.0));
+            draw_rectangle_lines(right_x + 20.0, t_y - 25.0, 250.0, 35.0, 1.0, dark::ACCENT);
+            
+            draw_text(&t.name, right_x + 35.0, t_y, FONT_NORMAL, WHITE);
+            // draw_text(&t.description, right_x + 300.0, t_y, FONT_SMALL, GRAY); // If space permits
+            t_y += 50.0;
         }
     }
 

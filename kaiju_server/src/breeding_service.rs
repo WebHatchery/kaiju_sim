@@ -53,6 +53,8 @@ pub struct KaijuData {
     pub traits: Vec<Trait>,
     pub owner_id: Uuid,
     pub image_url: String, // Added image URL
+    #[serde(default)]
+    pub tournaments_won: i32,
 }
 
 #[derive(Debug, Clone)]
@@ -161,7 +163,8 @@ impl BreedingService {
             stats,
             traits,
             owner_id: parent_a.owner_id, // Default to A
-            image_url: format!("http://localhost:3000/assets/kaiju/{}", selected_asset),
+            image_url: format!("http://localhost:3000/assets/sprites/kaiju/{}", selected_asset),
+            tournaments_won: 0,
         };
 
         Ok(BreedingResult {

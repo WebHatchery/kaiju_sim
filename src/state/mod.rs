@@ -6,6 +6,7 @@ pub mod game_state;
 pub mod hall_of_fame;
 pub mod persistence;
 pub mod player_data;
+pub mod session;
 
 // Re-export commonly used types
 pub use battle_state::{BattleLogEntry, BattleResult, BattleState};

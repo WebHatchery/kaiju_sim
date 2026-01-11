@@ -5,6 +5,7 @@ pub mod verification;
 pub mod breeding;
 pub mod user;
 pub mod marketplace;
+pub mod tournament;
 
 use axum::Router;
 use std::sync::Arc;
@@ -40,5 +41,6 @@ pub fn create_router(state: Arc<AppState>) -> Router {
         .merge(verification::router())
         .merge(breeding::router())
         .merge(marketplace::router())
+        .nest("/tournament", tournament::router(state.clone()))
         .with_state(state)
 }

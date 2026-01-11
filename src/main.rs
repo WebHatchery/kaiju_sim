@@ -59,15 +59,15 @@ async fn main() {
         }
     };
 
-    // 2. Initialize mutable game state
-    // TODO: Load from save if exists
-    let mut state = GameState::default();
-
-    // 3. Initialize asset manager
+    // 1. Initialize asset manager
     let mut assets = AssetManager::new();
     println!("Loading assets...");
     assets.load_all_assets().await;
     println!("Assets loaded.");
+
+    // 2. Initialize Game Session (Load ID -> Auto-Sync with Server)
+    // This encapsulates all the logic to get a fresh, synced GameState.
+    let mut state = state::session::initialize_session(&mut assets).await;
 
     // 4. Initialize phase stack
     let mut phase_stack = PhaseStack::new(GamePhase::MainMenu);
@@ -142,9 +142,10 @@ async fn main() {
         
         // Input handling for dev/debug
         if is_key_pressed(KeyCode::F5) {
+             let _ = persistence::delete_save();
              state = GameState::default();
              phase_stack = PhaseStack::new(GamePhase::MainMenu);
-             println!("Debug: State Reset");
+             println!("Debug: Save Deleted & State Reset. Restarting...");
         }
 
         // Determine current phase and draw appropriate screen
@@ -156,13 +157,9 @@ async fn main() {
             GamePhase::Breeding => draw_breeding_screen(&state, &mut breeding_state, &locked_kaiju_ids, &assets),
             
             // WIP Screens
+            // WIP Screens
             GamePhase::TournamentLobby => {
-                draw_placeholder("Tournament Lobby (Coming Soon)", &state);
-                if is_key_pressed(KeyCode::Escape) {
-                    Some(UiAction::GoToLaboratory)
-                } else {
-                    None
-                }
+                draw_tournament_lobby(&mut state)
             }
             GamePhase::Leaderboard => {
                 draw_placeholder("Leaderboard (Coming Soon)", &state);
@@ -262,6 +259,7 @@ async fn handle_ui_action(
             match server_bridge::login_to_server(None, Some(choice.clone())) {
                 Ok(response) => {
                     *state = GameState::default(); // Reset Local
+                    state.player.player_id = response.user_id.to_string(); // SYNC WITH SERVER ID!
                     state.player.gold = response.gold as i64;
                     state.roster.clear();
                     
@@ -366,11 +364,15 @@ async fn handle_ui_action(
             stack.apply(PhaseTransition::Replace(GamePhase::Marketplace));
         }
         UiAction::PurchaseKaiju(item_id) => {
-            let user_id = uuid::Uuid::nil(); // TODO: Use actual user ID
+            let user_id = uuid::Uuid::parse_str(&state.player.player_id).unwrap_or_default();
+            println!("[CLIENT] Attempting purchase for user {} item {}", user_id, item_id);
+            
             match server_bridge::purchase_kaiju(user_id, &item_id) {
                 Ok(response) => {
+                    println!("[CLIENT] Purchase response received: Success={}", response.success);
                     if response.success {
                         if let Some(kaiju) = response.kaiju {
+                            println!("[CLIENT] Added new Kaiju: {}", kaiju.name);
                             // Cache Image
                             if let Some(url) = &kaiju.image_uri {
                                 if let Some(path) = assets.download_if_missing(url) {
@@ -385,13 +387,22 @@ async fn handle_ui_action(
                             
                             // Navigate to Roster to show the new Kaiju
                             stack.apply(PhaseTransition::Replace(GamePhase::Roster));
+                        } else {
+                            println!("[CLIENT] Success but no Kaiju in response?");
                         }
                     } else {
+                        println!("[CLIENT] Server returned success=false: {}", response.message);
                         state.notify(response.message, NotificationType::Error);
                     }
                 }
                 Err(e) => {
+                    println!("[CLIENT] Purchase error: {}", e);
                     state.notify(format!("Purchase failed: {}", e), NotificationType::Error);
+                    
+                    // Auto-Recover: If purchase failed (e.g. out of sync), re-sync with server
+                    // Auto-Recover: If purchase failed (e.g. out of sync), re-sync with server
+                    println!("[CLIENT] Attempting to re-sync state after failure...");
+                    state::session::force_resync(state, assets).await;
                 }
             }
         }

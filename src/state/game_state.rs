@@ -30,6 +30,9 @@ pub struct GameState {
     /// UI notifications (not persisted)
     #[serde(skip)]
     pub notifications: Vec<Notification>,
+    /// Last fetched tournament status (UI state)
+    #[serde(skip)]
+    pub tournament_status: Option<crate::server_bridge::TournamentStatusDto>,
 }
 
 impl Default for GameState {
@@ -56,6 +59,7 @@ impl GameState {
             game_time: GameTime::default(),
             selected_kaiju: None,
             notifications: Vec::new(),
+            tournament_status: None,
         }
     }
 
@@ -159,6 +163,7 @@ fn create_starter_kaiju(name: &str, seed: u64) -> Kaiju {
             Some("assets/sprites/kaiju/kaiju_ice_elemental_1768091156648.png".to_string())
         },
         metadata_uri: String::new(),
+        tournaments_won: 0,
     }
 }
 

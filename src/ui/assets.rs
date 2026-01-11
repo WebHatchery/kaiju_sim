@@ -63,6 +63,10 @@ impl AssetManager {
     /// Check cache and download if missing (Sync - Blocking)
     pub fn download_if_missing(&self, url: &str) -> Option<String> {
         let filename = self.get_filename_from_url(url);
+        if filename.is_empty() || filename == "unknown.png" {
+            return None;
+        }
+
         let cache_dir = "assets/cache";
         let path = format!("{}/{}", cache_dir, filename);
         let path_obj = std::path::Path::new(&path);
@@ -74,8 +78,17 @@ impl AssetManager {
                 return None;
             }
 
-            println!("Downloading asset: {} -> {}", url, path);
-            match reqwest::blocking::get(url) {
+            // Handle relative URLs (assume server)
+            let full_url = if url.starts_with("http") {
+                url.to_string()
+            } else {
+                // Remove leading slash if present to avoid double slash
+                let clean_url = url.trim_start_matches('/');
+                format!("http://127.0.0.1:3000/{}", clean_url)
+            };
+
+            println!("Downloading asset: {} -> {}", full_url, path);
+            match reqwest::blocking::get(&full_url) {
                 Ok(response) => {
                     if response.status().is_success() {
                         match response.bytes() {
@@ -107,6 +120,11 @@ impl AssetManager {
     }
 
     pub fn get_filename_from_url(&self, url: &str) -> String {
-        url.split('/').last().unwrap_or("unknown.png").to_string()
+        let name = url.split('/').last().unwrap_or("");
+        if name.is_empty() {
+            "unknown.png".to_string()
+        } else {
+            name.to_string()
+        }
     }
 }
