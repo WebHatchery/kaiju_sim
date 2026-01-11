@@ -383,9 +383,7 @@ struct TournamentEnrollResponse {
 pub fn get_current_tournament() -> Result<TournamentStatusDto, String> {
     let client = reqwest::blocking::Client::new();
     
-    // println!("[CLIENT->SERVER] Fetching Tournament Status"); // Verbose
-    
-    let response = client.get("http://localhost:3000/tournament/")
+    let response = client.get("http://localhost:3000/tournament")
         .send()
         .map_err(|e| format!("Network error: {}", e))?;
     
@@ -394,7 +392,9 @@ pub fn get_current_tournament() -> Result<TournamentStatusDto, String> {
     }
 
     if !response.status().is_success() {
-        return Err(format!("Failed to fetch tournament: {}", response.status()));
+        let status = response.status();
+        let err_text = response.text().unwrap_or_default();
+        return Err(format!("Failed to fetch tournament: {}", status));
     }
     
     let data = response.json::<TournamentStatusDto>()

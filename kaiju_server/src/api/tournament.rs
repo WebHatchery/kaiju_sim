@@ -8,20 +8,21 @@ use axum::{
 use crate::api::{AppState};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use chrono::NaiveDateTime;
+use chrono::{DateTime, Utc};
 use std::sync::Arc;
 use sqlx::Row;
 
-pub fn router(state: Arc<AppState>) -> Router<Arc<AppState>> {
+pub fn router() -> Router<Arc<AppState>> {
     Router::new()
-        .route("/", get(get_current_tournament))
-        .route("/enroll", post(enroll_kaiju))
+        .route("/tournament", get(get_current_tournament))
+        .route("/tournament/enroll", post(enroll_kaiju))
+        .route("/tournament/test", get(|| async { "Tournament router is working!" }))
 }
 
 #[derive(Debug, Serialize)]
 struct TournamentDto {
     id: String,
-    start_time: NaiveDateTime,
+    start_time: DateTime<Utc>,
     state: String,
     current_round: i32,
     participants_count: i64,
@@ -54,54 +55,63 @@ struct EnrollResponse {
 async fn get_current_tournament(
     State(state): State<Arc<AppState>>,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
+    // 0. Ensure active tournament (Create if needed)
+    let current_id = match crate::tournament::manager::ensure_active_tournament(&state.db_pool).await {
+        Ok(id) => id,
+        Err(e) => {
+            tracing::error!("Failed to ensure active tournament: {:?}", e);
+            return Err((StatusCode::INTERNAL_SERVER_ERROR, "Tournament System Error".to_string()));
+        }
+    };
+
     // 1. Get active tournament
-    let current = sqlx::query("SELECT id, start_time, state, current_round FROM tournaments WHERE state != 'Finished' ORDER BY created_at DESC LIMIT 1")
-        .fetch_optional(&state.db_pool)
+    let row = sqlx::query("SELECT id, start_time, state, current_round FROM tournaments WHERE id = ?")
+        .bind(&current_id)
+        .fetch_one(&state.db_pool)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to fetch tournament {}: {:?}", current_id, e);
+            (StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", e))
+        })?;
+
+    let id: String = row.get("id");
+    let start_time: DateTime<Utc> = row.get("start_time");
+    let status: String = row.get("state");
+    let current_round: i32 = row.get("current_round");
+    
+    // 2. Count participants
+    let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM tournament_participants WHERE tournament_id = ?")
+        .bind(&id)
+        .fetch_one(&state.db_pool)
         .await
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
-
-    if let Some(row) = current {
-        let id: String = row.get("id");
-        let start_time: NaiveDateTime = row.get("start_time");
-        let status: String = row.get("state");
-        let current_round: i32 = row.get("current_round");
         
-        // 2. Count participants
-        let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM tournament_participants WHERE tournament_id = ?")
-            .bind(&id)
-            .fetch_one(&state.db_pool)
-            .await
-            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
-            
-        // 3. Get matches with names
-        let matches = sqlx::query_as::<_, MatchDto>(r#"
-            SELECT 
-                m.round_number, m.match_index, 
-                m.kaiju_a_id, m.kaiju_b_id, m.winner_id,
-                ka.name as kaiju_a_name,
-                kb.name as kaiju_b_name
-            FROM tournament_matches m
-            LEFT JOIN kaiju ka ON m.kaiju_a_id = ka.id
-            LEFT JOIN kaiju kb ON m.kaiju_b_id = kb.id
-            WHERE m.tournament_id = ?
-            ORDER BY m.round_number, m.match_index
-        "#)
-            .bind(&id)
-            .fetch_all(&state.db_pool)
-            .await
-            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
-            
-        Ok(Json(TournamentDto {
-            id,
-            start_time,
-            state: status,
-            current_round,
-            participants_count: count,
-            matches,
-        }))
-    } else {
-        Err((StatusCode::NOT_FOUND, "No active tournament".to_string()))
-    }
+    // 3. Get matches with names
+    let matches = sqlx::query_as::<_, MatchDto>(r#"
+        SELECT 
+            m.round_number, m.match_index, 
+            m.kaiju_a_id, m.kaiju_b_id, m.winner_id,
+            ka.name as kaiju_a_name,
+            kb.name as kaiju_b_name
+        FROM tournament_matches m
+        LEFT JOIN kaiju ka ON m.kaiju_a_id = ka.id
+        LEFT JOIN kaiju kb ON m.kaiju_b_id = kb.id
+        WHERE m.tournament_id = ?
+        ORDER BY m.round_number, m.match_index
+    "#)
+        .bind(&id)
+        .fetch_all(&state.db_pool)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+    
+    Ok(Json(TournamentDto {
+        id,
+        start_time,
+        state: status,
+        current_round,
+        participants_count: count,
+        matches,
+    }))
 }
 
 async fn enroll_kaiju(

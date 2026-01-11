@@ -2,10 +2,35 @@ use sqlx::{MySqlPool, Row};
 use std::sync::Arc;
 use tokio::time::{sleep, Duration};
 use uuid::Uuid;
-use chrono::{Utc, NaiveDateTime};
+use chrono::{Utc, DateTime};
 use crate::tournament::simulator;
 use crate::breeding_service::KaijuStats;
 use rand::seq::SliceRandom;
+
+pub async fn ensure_active_tournament(pool: &MySqlPool) -> Result<String, anyhow::Error> {
+    // Check for active tournament
+    let current = sqlx::query("SELECT id FROM tournaments WHERE state != 'Finished' LIMIT 1")
+        .fetch_optional(pool)
+        .await?;
+
+    if let Some(row) = current {
+        let id: String = row.get("id");
+        return Ok(id);
+    }
+
+    // Create new one
+    let id = Uuid::new_v4().to_string();
+    let start_time = Utc::now() + chrono::Duration::minutes(1); 
+    
+    sqlx::query("INSERT INTO tournaments (id, start_time, state) VALUES (?, ?, 'Registration')")
+        .bind(&id)
+        .bind(start_time)
+        .execute(pool)
+        .await?;
+        
+    tracing::info!("Created new tournament {} scheduled for {}", id, start_time);
+    Ok(id)
+}
 
 pub struct TournamentManager {
     pool: MySqlPool,
@@ -27,7 +52,7 @@ impl TournamentManager {
     }
 
     async fn process_tick(&self) -> Result<(), anyhow::Error> {
-        // 1. Get current active tournament or create one
+        // Get current active tournament (don't create one if missing)
         let current = sqlx::query("SELECT id, start_time, state, current_round FROM tournaments WHERE state != 'Finished' ORDER BY created_at DESC LIMIT 1")
             .fetch_optional(&self.pool)
             .await?;
@@ -35,14 +60,30 @@ impl TournamentManager {
         if let Some(row) = current {
             let id: String = row.get("id");
             let state: String = row.get("state");
-            let start_time: NaiveDateTime = row.get("start_time");
+            let start_time: chrono::DateTime<Utc> = row.get("start_time");
             let round: i32 = row.get("current_round");
             
             match state.as_str() {
                 "Registration" => {
-                    let now = Utc::now().naive_utc();
+                    let now = Utc::now();
                     if now >= start_time {
-                        self.start_tournament(&id).await?;
+                        // Check for real players
+                        let real_players: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM tournament_participants WHERE tournament_id = ? AND is_bot = FALSE")
+                            .bind(&id)
+                            .fetch_one(&self.pool)
+                            .await?;
+
+                        if real_players == 0 {
+                            tracing::info!("No real players in tournament {}, extending registration", id);
+                            let new_time = now + chrono::Duration::minutes(1);
+                            sqlx::query("UPDATE tournaments SET start_time = ? WHERE id = ?")
+                                .bind(new_time)
+                                .bind(&id)
+                                .execute(&self.pool)
+                                .await?;
+                        } else {
+                            self.start_tournament(&id).await?;
+                        }
                     }
                 },
                 "Running" => {
@@ -50,25 +91,11 @@ impl TournamentManager {
                 },
                 _ => {}
             }
-        } else {
-            self.create_next_tournament().await?;
         }
 
         Ok(())
     }
 
-    async fn create_next_tournament(&self) -> Result<(), anyhow::Error> {
-        // Schedule for T+1 minute
-        let start_time = Utc::now().naive_utc() + chrono::Duration::minutes(1); // Short for testing
-        
-        sqlx::query("INSERT INTO tournaments (start_time, state) VALUES (?, 'Registration')")
-            .bind(start_time)
-            .execute(&self.pool)
-            .await?;
-            
-        tracing::info!("Created new tournament scheduled for {}", start_time);
-        Ok(())
-    }
 
     async fn start_tournament(&self, tournament_id: &str) -> Result<(), anyhow::Error> {
         tracing::info!("Starting tournament {}", tournament_id);
@@ -141,12 +168,13 @@ impl TournamentManager {
             let stats = r#"{"hp": 500, "attack": 50, "defense": 50, "speed": 50, "energy": 100}"#;
             
             sqlx::query(r#"
-                INSERT INTO kaiju (id, name, generation, owner_user_id, custody_state, genome_hash, visual_seed, base_stats, current_stats, visible_traits, state_hash, image_url)
-                VALUES (?, ?, 0, ?, 'server', 'bot', '0', ?, ?, '[]', 'bot', 'http://localhost:3000/assets/sprites/kaiju/kaiju_bipedal_neutral_1768091093175.png')
+                INSERT INTO kaiju (id, name, generation, owner_user_id, custody_state, genome_hash, genome_data, visual_seed, base_stats, current_stats, visible_traits, state_hash, image_url)
+                VALUES (?, ?, 0, ?, 'server', 'bot', ?, '0', ?, ?, '[]', 'bot', 'http://localhost:3000/assets/sprites/kaiju/kaiju_bipedal_neutral_1768091093175.png')
             "#)
             .bind(&bot_id)
             .bind(&name)
             .bind(bot_user_id)
+            .bind(&vec![0u8]) // genome_data dummy
             .bind(stats)
             .bind(stats)
             .execute(&self.pool)

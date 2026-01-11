@@ -100,7 +100,7 @@ impl PhaseTransition {
     }
 
     pub fn to_tournament_lobby() -> Self {
-        Self::Replace(GamePhase::TournamentLobby)
+        Self::Push(GamePhase::TournamentLobby)
     }
 
     pub fn to_battle() -> Self {

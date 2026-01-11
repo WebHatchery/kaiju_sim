@@ -247,7 +247,13 @@ async fn handle_ui_action(
         UiAction::GoToTournament => stack.apply(PhaseTransition::to_tournament_lobby()),
         UiAction::GoToLeaderboard => stack.apply(PhaseTransition::Replace(GamePhase::Leaderboard)),
         UiAction::GoToSettings => println!("Settings clicked"),
-        UiAction::Back => stack.apply(PhaseTransition::Pop),
+        UiAction::Back => {
+            println!("[MAIN] Handling UiAction::Back, current phase: {:?}", stack.current());
+            // Reset tournament lobby state when leaving
+            crate::screens::tournament_lobby::reset_state();
+            stack.apply(PhaseTransition::Pop);
+            println!("[MAIN] After pop, new phase: {:?}", stack.current());
+        },
         
         // System
         UiAction::NewGame => {

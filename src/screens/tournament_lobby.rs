@@ -7,25 +7,31 @@ use crate::ui::actions::UiAction;
 use crate::ui::spacing::*;
 use uuid::Uuid;
 
-static mut LAST_FETCH: f64 = 0.0;
+static mut INITIALIZED: bool = false;
 static mut FETCH_ERROR: Option<String> = None;
 
-pub fn draw_tournament_lobby(state: &mut GameState) -> Option<UiAction> {
-    let now = get_time();
-    
-    // Poll Server
+pub fn reset_state() {
     unsafe {
-        if now - LAST_FETCH > 2.0 {
+        INITIALIZED = false;
+        FETCH_ERROR = None;
+    }
+}
+
+pub fn draw_tournament_lobby(state: &mut GameState) -> Option<UiAction> {
+    // Fetch once on first entry to this screen
+    unsafe {
+        if !INITIALIZED {
             match server_bridge::get_current_tournament() {
                 Ok(info) => {
                     FETCH_ERROR = None;
                     state.tournament_status = Some(info);
+                    INITIALIZED = true; // Only set after successful fetch
                 }
                 Err(e) => {
                     FETCH_ERROR = Some(e);
+                    INITIALIZED = true; // Set anyway to avoid spam
                 }
             }
-            LAST_FETCH = now;
         }
     }
     
@@ -39,7 +45,21 @@ pub fn draw_tournament_lobby(state: &mut GameState) -> Option<UiAction> {
     // Back Button
     let back_btn_w = 100.0;
     if draw_back_button(sw - back_btn_w - 20.0, 15.0) {
+        println!("[TOURNAMENT] Back button clicked, returning UiAction::Back");
         return Some(UiAction::Back);
+    }
+    
+    // Refresh Button
+    if draw_centered_btn("Refresh", sw - back_btn_w - 140.0, 15.0, 100.0, 30.0) {
+        match server_bridge::get_current_tournament() {
+            Ok(info) => {
+                unsafe { FETCH_ERROR = None; }
+                state.tournament_status = Some(info);
+            }
+            Err(e) => {
+                unsafe { FETCH_ERROR = Some(e); }
+            }
+        }
     }
     
     // Content

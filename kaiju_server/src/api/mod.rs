@@ -41,6 +41,6 @@ pub fn create_router(state: Arc<AppState>) -> Router {
         .merge(verification::router())
         .merge(breeding::router())
         .merge(marketplace::router())
-        .nest("/tournament", tournament::router(state.clone()))
+        .merge(tournament::router())
         .with_state(state)
 }
