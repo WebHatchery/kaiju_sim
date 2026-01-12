@@ -13,6 +13,7 @@ use std::sync::Arc;
 use crate::crypto::Verifier;
 use crate::transfer_service::TransferService;
 use crate::breeding_service::BreedingService;
+use crate::breeding::AdvancedBreedingService;
 use crate::breeding_jobs::BreedingJobManager;
 use crate::image_gen::ImageGenerationService;
 use crate::kaiju_repo::KaijuRepository;
@@ -24,6 +25,7 @@ pub struct AppState {
     pub kaiju_repo: KaijuRepository,
     pub transfer_service: Arc<TransferService>,
     pub breeding_service: Arc<BreedingService>,
+    pub advanced_breeding_service: Arc<AdvancedBreedingService>,
     pub breeding_job_manager: Arc<BreedingJobManager>,
     pub image_gen_service: Arc<ImageGenerationService>,
     pub verifier: Verifier,

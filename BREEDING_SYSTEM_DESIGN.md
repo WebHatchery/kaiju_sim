@@ -1,5 +1,5 @@
 # BREEDING SYSTEM DESIGN
-**Version**: 2.0 (Depth Update)
+**Version**: 2.1 (Implementation Complete)
 **References**: `BREEDING_ALGORITHM_SPEC.md`, `GENOME_ENCODING_SPEC.md`, `TRAIT_SYSTEM_DESIGN.md`
 
 ## 1. Design Philosophy: "Genetic Depth"
@@ -18,6 +18,8 @@ Based on User Requirements (overriding previous default specs):
 | **Recessive** | **25%** | Low chance. Requires consistent lineage or luck to preserve. |
 | **Mutation** | **2% - 5%** | Ultra-rare. The "Jackpot" mechanic. |
 
+**Implementation**: See `kaiju_server/src/breeding/inheritance.rs`
+
 ### 2.2 Hybridization & Stats
 Offspring stats are not just averages; they are **weighted resultants** of parents, influenced by Element Types.
 
@@ -30,10 +32,19 @@ Offspring stats are not just averages; they are **weighted resultants** of paren
     - **Defense**: `weighted_avg(A_low, B_high)` -> 79
     - **Speed**: `variance_bloom` -> 109 (Speed breakout due to Steam/Gas element interaction?)
 
-**Hybrid Elements**:
+**Hybrid Elements** (Implemented in `element_system.rs`):
 - **Fire + Water** -> **Steam / Misty** (High Speed / Evasion)
 - **Earth + Wind** -> **Sandstorm** (Erosion damage)
 - **Dark + Light** -> **Eclipse** (Phase shifting)
+- **Electric + Water** -> **Conductivity** (Amplified damage)
+- **Fire + Earth** -> **Volcanic** (High defense + damage)
+- **Ice + Wind** -> **Blizzard** (High speed + slow)
+- **Poison + Dark** -> **Necrotic** (DoT + debuff)
+- **Nature + Water** -> **Swamp** (Regen + poison)
+- **Electric + Wind** -> **Storm** (Chain attacks)
+- **Ice + Water** -> **Arctic** (Freeze + defense)
+- **Psychic + Dark** -> **Void** (Reality warp)
+- **Light + Nature** -> **Radiant** (Healing + buff)
 
 ---
 
@@ -58,17 +69,34 @@ Breeding is expensive and slow to prevent market flooding and increase the value
 | **Maturation** | **24 - 120 hours** | Time until Kaiju can battle/breed. |
 | **Cooldown** | **12 hours** | Minimum rest between breeding cycles per parent. |
 
+**Implementation**: See `kaiju_server/src/breeding/stat_calculator.rs`
+
 ---
 
 ## 4. Special Materials (Item System)
 Players can influence the RNG using consumables.
 
-| Item Name | Effect | Rarity |
-|-----------|--------|--------|
-| **Elemental Essence** | **Guarantees** primary element inheritance (e.g., Fire Essence guarantees Fire type). | Uncommon |
-| **Mutation Catalyst** | Increases Mutation Chance by **+5%** (Flat). Max 1 per breed. | Rare |
-| **Genetic Stabilizer** | Prevents inheritance of **Negative Traits** and **Stat Down-scaling**. | Rare |
-| **Fertility Idol** | Reduces Gestation Time by **50%**. | Uncommon |
+| Item Name | Effect | Rarity | Cost |
+|-----------|--------|--------|------|
+| **Elemental Essence** | **Guarantees** primary element inheritance (e.g., Fire Essence guarantees Fire type). | Uncommon | 2,000 |
+| **Mutation Catalyst** | Increases Mutation Chance by **+5%** (Flat). Max 1 per breed. | Rare | 5,000 |
+| **Genetic Stabilizer** | Prevents inheritance of **Negative Traits** and **Stat Down-scaling**. | Rare | 3,000 |
+| **Fertility Idol** | Reduces Gestation Time by **50%**. | Uncommon | 1,500 |
+
+**API Usage**:
+```json
+POST /breeding/breed
+{
+  "parent_a_id": "uuid-a",
+  "parent_b_id": "uuid-b",
+  "client_seed": 12345,
+  "user_id": "uuid-user",
+  "materials": [
+    { "type": "mutation_catalyst" },
+    { "type": "elemental_essence", "element": "fire" }
+  ]
+}
+```
 
 ---
 
@@ -130,5 +158,45 @@ Every breeding event emits a `BreedingLog`:
 }
 ```
 
+**Implementation**: See `kaiju_server/src/breeding/breeding_log.rs`
+
 **Admin Dashboard**:
 Admins can view a "Tree Diagram" of any Kaiju, clicking on connections to see *exactly* why a trait was passed or lost (the specific RNG roll vs Threshold).
+
+---
+
+## 7. Implementation Summary
+
+### Modules Created
+| Module | Purpose |
+|--------|---------|
+| `breeding/mod.rs` | Module exports |
+| `breeding/breeding_config.rs` | All breeding parameters and rates |
+| `breeding/breeding_log.rs` | Full admin visibility logging |
+| `breeding/element_system.rs` | Hybrid elements and visual keywords |
+| `breeding/inheritance.rs` | Dominant/Recessive/Polygenic trait logic |
+| `breeding/mutation.rs` | Mutation triggering and effects |
+| `breeding/stat_calculator.rs` | Stat inheritance with constraints |
+| `breeding/trait_registry.rs` | Default trait and synergy definitions |
+| `breeding/service.rs` | Main AdvancedBreedingService |
+
+### API Endpoints Added
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/breeding/breed` | POST | Start breeding with optional materials |
+| `/breeding/status/:job_id` | GET | Check breeding job status |
+| `/breeding/locked` | GET | Get list of kaiju currently in breeding |
+| `/breeding/cost` | POST | Calculate breeding costs before starting |
+
+### Database Migrations
+- `20240101000013_create_breeding_depth.sql`: Breeding logs, cooldowns, and materials inventory tables
+
+### Key Features
+1. ✅ **Inheritance by Type**: Dominant (75%), Recessive (25%), Polygenic (accumulation), Conditional
+2. ✅ **Hybrid Elements**: 12 unique hybrid combinations with stat bonuses and visual keywords
+3. ✅ **Mutation System**: 4 mutation types (Stat Boost, New Trait, Trait Power, Hidden Unlock)
+4. ✅ **Stat Constraints**: Floors, soft ceilings, hard caps, generation scaling with diminishing returns
+5. ✅ **Materials Support**: 4 special breeding materials that modify outcomes
+6. ✅ **Full Logging**: Glass Box admin visibility with structured JSON logs
+7. ✅ **Cost Calculation**: Economy system based on parent rarity
+8. ✅ **Time Requirements**: Gestation and maturation scaling with generation/power

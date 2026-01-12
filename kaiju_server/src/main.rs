@@ -15,6 +15,7 @@ use kaiju_server::{
     crypto::{KeyPurpose, ServerKeyPair, Signer, Verifier},
     TransferService,
     BreedingService,
+    breeding::AdvancedBreedingService,
     breeding_jobs::BreedingJobManager,
     ImageGenerationService,
     kaiju_repo::KaijuRepository,
@@ -84,6 +85,7 @@ async fn main() -> anyhow::Result<()> {
     let signer = Signer::new(key_pair.secret_key);
     let transfer_service = Arc::new(TransferService::new(pool.clone(), signer));
     let breeding_service = Arc::new(BreedingService::new());
+    let advanced_breeding_service = Arc::new(AdvancedBreedingService::new());
     let breeding_job_manager = Arc::new(BreedingJobManager::new());
     let image_gen_service = Arc::new(ImageGenerationService::new("assets/kaiju/generated"));
     let kaiju_repo = KaijuRepository::new(pool.clone());
@@ -98,6 +100,7 @@ async fn main() -> anyhow::Result<()> {
         kaiju_repo,
         transfer_service,
         breeding_service,
+        advanced_breeding_service,
         breeding_job_manager,
         image_gen_service,
         verifier: Verifier::new(),

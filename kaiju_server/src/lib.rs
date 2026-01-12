@@ -12,6 +12,7 @@
 
 pub mod api;
 pub mod blockchain;
+pub mod breeding;
 pub mod breeding_jobs;
 pub mod breeding_rights_service;
 pub mod breeding_service;

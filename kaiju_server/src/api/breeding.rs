@@ -1,4 +1,5 @@
 //! Breeding API - Async job-based breeding with ComfyUI image generation
+//! Enhanced with Advanced Breeding System depth features.
 
 use axum::{
     extract::{State, Json, Path},
@@ -14,9 +15,38 @@ use crate::{
     api::AppState,
     breeding_service::KaijuData,
     breeding_jobs::BreedingJobStatus,
+    breeding::{BreedingMaterial, ElementType, KaijuRarity},
     name_generator::generate_kaiju_name,
     image_gen::prompt_builder::KaijuGenetics,
 };
+
+/// Material specification in API request
+#[derive(Debug, Clone, Deserialize)]
+#[serde(tag = "type", content = "element")]
+pub enum MaterialRequest {
+    #[serde(rename = "elemental_essence")]
+    ElementalEssence(String),
+    #[serde(rename = "mutation_catalyst")]
+    MutationCatalyst,
+    #[serde(rename = "genetic_stabilizer")]
+    GeneticStabilizer,
+    #[serde(rename = "fertility_idol")]
+    FertilityIdol,
+}
+
+impl MaterialRequest {
+    fn to_breeding_material(&self) -> BreedingMaterial {
+        match self {
+            MaterialRequest::ElementalEssence(elem) => {
+                let element = ElementType::from_str(elem).unwrap_or(ElementType::Neutral);
+                BreedingMaterial::ElementalEssence(element)
+            }
+            MaterialRequest::MutationCatalyst => BreedingMaterial::MutationCatalyst,
+            MaterialRequest::GeneticStabilizer => BreedingMaterial::GeneticStabilizer,
+            MaterialRequest::FertilityIdol => BreedingMaterial::FertilityIdol,
+        }
+    }
+}
 
 #[derive(Debug, Deserialize)]
 pub struct BreedRequest {
@@ -24,6 +54,9 @@ pub struct BreedRequest {
     pub parent_b_id: Uuid,
     pub client_seed: u64,
     pub user_id: Uuid,
+    /// Optional materials to use during breeding
+    #[serde(default)]
+    pub materials: Vec<MaterialRequest>,
 }
 
 /// Response when breeding is initiated (async)
@@ -32,6 +65,8 @@ pub struct BreedStartResponse {
     pub job_id: Uuid,
     pub message: String,
     pub locked_kaiju: Vec<Uuid>,
+    /// Estimated gestation time in hours
+    pub estimated_gestation_hours: Option<f32>,
 }
 
 /// Response for job status check
@@ -41,6 +76,8 @@ pub struct BreedStatusResponse {
     pub status: BreedingJobStatus,
     pub offspring: Option<KaijuData>,
     pub error_message: Option<String>,
+    /// Breeding log summary for admin debugging
+    pub breeding_log_event_id: Option<String>,
 }
 
 /// Response for locked kaiju query
@@ -49,11 +86,30 @@ pub struct LockedKaijuResponse {
     pub locked_ids: Vec<Uuid>,
 }
 
+/// Response for breeding cost calculation
+#[derive(Debug, Serialize)]
+pub struct BreedingCostResponse {
+    pub parent_a_rarity: String,
+    pub parent_b_rarity: String,
+    pub base_cost: i64,
+    pub material_costs: Vec<MaterialCost>,
+    pub total_cost: i64,
+    pub estimated_gestation_hours: f32,
+    pub estimated_maturation_hours: f32,
+}
+
+#[derive(Debug, Serialize)]
+pub struct MaterialCost {
+    pub material_type: String,
+    pub cost: i64,
+}
+
 pub fn router() -> Router<Arc<AppState>> {
     Router::new()
         .route("/breeding/breed", post(handle_start_breed))
         .route("/breeding/status/:job_id", get(handle_breed_status))
         .route("/breeding/locked", get(handle_get_locked))
+        .route("/breeding/cost", post(handle_calculate_cost))
 }
 
 /// Start an async breeding job
@@ -89,6 +145,7 @@ async fn handle_start_breed(
         job_id,
         message: "Breeding started! Your Kaiju are now breeding.".to_string(),
         locked_kaiju: vec![payload.parent_a_id, payload.parent_b_id],
+        estimated_gestation_hours: None, // Will be updated when job starts
     }))
 }
 
@@ -137,17 +194,30 @@ async fn process_breeding_job(
         parent_b.name, parent_b.traits.iter().map(|t| &t.name).collect::<Vec<_>>()
     );
 
-    // 2. Execute breeding logic
-    let breeding_result = state.breeding_service.breed(&parent_a, &parent_b, seed);
+    // 2. Execute ADVANCED breeding logic with full logging
+    // For now, use empty materials list (can be extended via API later)
+    let materials = Vec::new();
+    let breeding_result = state.advanced_breeding_service.breed(&parent_a, &parent_b, seed, materials);
 
-    let mut offspring = match breeding_result {
-        Ok(result) => result.offspring,
+    let (result, breeding_log) = match breeding_result {
+        Ok((result, log)) => {
+            // Log the detailed breeding log at debug level
+            tracing::debug!("Breeding Log: {}", log.to_json_string());
+            (result, log)
+        }
         Err(e) => {
             tracing::error!("Breeding logic failed: {}", e);
             state.breeding_job_manager.fail_job(job_id, e).await;
             return;
         }
     };
+    
+    let mut offspring = result.offspring;
+    
+    // Log mutations if any occurred
+    if !result.mutations.is_empty() {
+        tracing::info!("Offspring {} has mutations: {:?}", offspring.name, result.mutations);
+    }
 
     // 2. Generate unique name
     offspring.name = generate_kaiju_name();
@@ -284,6 +354,7 @@ async fn handle_breed_status(
             status: job.status,
             offspring: job.offspring,
             error_message: job.error_message,
+            breeding_log_event_id: None, // TODO: Store and retrieve from job
         })),
         None => Err((StatusCode::NOT_FOUND, "Breeding job not found".to_string())),
     }
@@ -296,4 +367,80 @@ async fn handle_get_locked(
     Json(LockedKaijuResponse {
         locked_ids: state.breeding_job_manager.get_locked_kaiju().await,
     })
+}
+
+/// Calculate breeding costs before starting
+#[derive(Debug, Deserialize)]
+pub struct BreedingCostRequest {
+    pub parent_a_id: Uuid,
+    pub parent_b_id: Uuid,
+    #[serde(default)]
+    pub materials: Vec<MaterialRequest>,
+}
+
+async fn handle_calculate_cost(
+    State(state): State<Arc<AppState>>,
+    Json(payload): Json<BreedingCostRequest>,
+) -> Result<Json<BreedingCostResponse>, (StatusCode, String)> {
+    use crate::breeding::{BreedingConfig, StatCalculator};
+    
+    // Fetch parents
+    let parent_a = state.kaiju_repo.get_by_id(payload.parent_a_id).await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
+        .ok_or((StatusCode::NOT_FOUND, "Parent A not found".to_string()))?;
+    
+    let parent_b = state.kaiju_repo.get_by_id(payload.parent_b_id).await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
+        .ok_or((StatusCode::NOT_FOUND, "Parent B not found".to_string()))?;
+    
+    // Calculate rarity for each parent
+    let a_trait_power: i32 = parent_a.traits.iter().map(|t| t.power).sum();
+    let a_stat_total = parent_a.stats.hp + parent_a.stats.attack + parent_a.stats.defense + parent_a.stats.speed;
+    let a_rarity = KaijuRarity::calculate(a_trait_power, a_stat_total);
+    
+    let b_trait_power: i32 = parent_b.traits.iter().map(|t| t.power).sum();
+    let b_stat_total = parent_b.stats.hp + parent_b.stats.attack + parent_b.stats.defense + parent_b.stats.speed;
+    let b_rarity = KaijuRarity::calculate(b_trait_power, b_stat_total);
+    
+    // Calculate base cost based on rarity
+    let config = BreedingConfig::default();
+    let base_cost = match (a_rarity, b_rarity) {
+        (KaijuRarity::Legendary, _) | (_, KaijuRarity::Legendary) => config.economy.breeding_costs.legendary_any,
+        (KaijuRarity::Rare, KaijuRarity::Rare) | (KaijuRarity::Epic, _) | (_, KaijuRarity::Epic) => config.economy.breeding_costs.rare_rare,
+        (KaijuRarity::Rare, _) | (_, KaijuRarity::Rare) | (KaijuRarity::Uncommon, KaijuRarity::Uncommon) => config.economy.breeding_costs.common_rare,
+        _ => config.economy.breeding_costs.common_common,
+    };
+    
+    // Calculate material costs
+    let material_costs: Vec<MaterialCost> = payload.materials.iter().map(|m| {
+        let cost = match m {
+            MaterialRequest::ElementalEssence(_) => 2000,
+            MaterialRequest::MutationCatalyst => 5000,
+            MaterialRequest::GeneticStabilizer => 3000,
+            MaterialRequest::FertilityIdol => 1500,
+        };
+        MaterialCost {
+            material_type: format!("{:?}", m),
+            cost,
+        }
+    }).collect();
+    
+    let total_cost = base_cost + material_costs.iter().map(|m| m.cost).sum::<i64>();
+    
+    // Calculate timing
+    let offspring_gen = parent_a.generation.max(parent_b.generation) + 1;
+    let total_power = a_trait_power + b_trait_power;
+    let stat_calc = StatCalculator::new(config);
+    let gestation = stat_calc.calculate_gestation_hours(offspring_gen, total_power);
+    let maturation = stat_calc.calculate_maturation_hours(offspring_gen);
+    
+    Ok(Json(BreedingCostResponse {
+        parent_a_rarity: format!("{:?}", a_rarity),
+        parent_b_rarity: format!("{:?}", b_rarity),
+        base_cost,
+        material_costs,
+        total_cost,
+        estimated_gestation_hours: gestation,
+        estimated_maturation_hours: maturation,
+    }))
 }
