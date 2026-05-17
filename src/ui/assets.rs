@@ -2,7 +2,6 @@
 
 use macroquad::prelude::*;
 use std::collections::HashMap;
-use std::path::Path;
 
 pub struct AssetManager {
     textures: HashMap<String, Texture2D>,
@@ -61,6 +60,7 @@ impl AssetManager {
     }
 
     /// Check cache and download if missing (Sync - Blocking)
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn download_if_missing(&self, url: &str) -> Option<String> {
         let filename = self.get_filename_from_url(url);
         if filename.is_empty() || filename == "unknown.png" {
@@ -117,6 +117,16 @@ impl AssetManager {
         }
 
         Some(path)
+    }
+
+    /// Browser builds load remote assets directly instead of caching to disk.
+    #[cfg(target_arch = "wasm32")]
+    pub fn download_if_missing(&self, url: &str) -> Option<String> {
+        if url.is_empty() {
+            None
+        } else {
+            Some(url.to_string())
+        }
     }
 
     pub fn get_filename_from_url(&self, url: &str) -> String {

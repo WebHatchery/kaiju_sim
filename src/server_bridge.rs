@@ -4,6 +4,88 @@ use crate::data::{
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+#[cfg(target_arch = "wasm32")]
+mod reqwest {
+    use serde::{de::DeserializeOwned, Serialize};
+    use std::{fmt, time::Duration};
+
+    #[derive(Debug)]
+    pub struct Error;
+
+    impl fmt::Display for Error {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            write!(f, "server bridge is unavailable in this WebGL build")
+        }
+    }
+
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    pub struct StatusCode;
+
+    impl StatusCode {
+        pub const NOT_FOUND: Self = Self;
+
+        pub fn is_success(self) -> bool {
+            false
+        }
+    }
+
+    impl fmt::Display for StatusCode {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            write!(f, "unavailable")
+        }
+    }
+
+    pub mod blocking {
+        use super::{DeserializeOwned, Duration, Error, Serialize, StatusCode};
+
+        pub struct Client;
+        pub struct RequestBuilder;
+        pub struct Response;
+
+        impl Client {
+            pub fn new() -> Self {
+                Self
+            }
+
+            pub fn get<T: ToString>(&self, _url: T) -> RequestBuilder {
+                RequestBuilder
+            }
+
+            pub fn post<T: ToString>(&self, _url: T) -> RequestBuilder {
+                RequestBuilder
+            }
+        }
+
+        impl RequestBuilder {
+            pub fn json<T: Serialize + ?Sized>(self, _request: &T) -> Self {
+                self
+            }
+
+            pub fn timeout(self, _duration: Duration) -> Self {
+                self
+            }
+
+            pub fn send(self) -> Result<Response, Error> {
+                Err(Error)
+            }
+        }
+
+        impl Response {
+            pub fn status(&self) -> StatusCode {
+                StatusCode
+            }
+
+            pub fn text(self) -> Result<String, Error> {
+                Err(Error)
+            }
+
+            pub fn json<T: DeserializeOwned>(self) -> Result<T, Error> {
+                Err(Error)
+            }
+        }
+    }
+}
+
 // --- Network DTOs (Mirroring Server Types) ---
 
 #[derive(Debug, Deserialize)]
