@@ -72,11 +72,7 @@ impl DepositService {
     }
 
     /// Process a detected transfer event
-    pub fn process_transfer_detected(
-        &self,
-        request: &mut DepositRequest,
-        tx_hash: String,
-    ) {
+    pub fn process_transfer_detected(&self, request: &mut DepositRequest, tx_hash: String) {
         request.status = DepositStatus::Detected;
         request.tx_hash = Some(tx_hash);
         request.detected_at = Some(Utc::now());
@@ -88,11 +84,7 @@ impl DepositService {
     }
 
     /// Complete deposit (update database ownership)
-    pub fn complete_deposit(
-        &self,
-        request: &mut DepositRequest,
-        kaiju_id: Uuid,
-    ) -> DepositResult {
+    pub fn complete_deposit(&self, request: &mut DepositRequest, kaiju_id: Uuid) -> DepositResult {
         request.status = DepositStatus::Completed;
         request.completed_at = Some(Utc::now());
 
@@ -126,7 +118,7 @@ impl DepositService {
         // let filter = contract.transfer_filter().to(custodial_wallet);
         // let mut stream = filter.subscribe().await?;
         // while let Some(event) = stream.next().await { ... }
-        
+
         eprintln!(
             "Listening for deposits to {} on {}",
             self.custodial_wallet, self.contract_address
@@ -177,17 +169,10 @@ mod tests {
 
     #[test]
     fn test_create_deposit_request() {
-        let service = DepositService::new(
-            "0xCUSTODIAL".to_string(),
-            "0xCONTRACT".to_string(),
-        );
+        let service = DepositService::new("0xCUSTODIAL".to_string(), "0xCONTRACT".to_string());
 
-        let request = service.create_deposit_request(
-            1234,
-            "0xUSER".to_string(),
-            Uuid::new_v4(),
-            24,
-        );
+        let request =
+            service.create_deposit_request(1234, "0xUSER".to_string(), Uuid::new_v4(), 24);
 
         assert_eq!(request.status, DepositStatus::AwaitingTransfer);
         assert_eq!(request.token_id, 1234);
@@ -195,10 +180,7 @@ mod tests {
 
     #[test]
     fn test_verify_destination() {
-        let service = DepositService::new(
-            "0xABCD1234".to_string(),
-            "0xCONTRACT".to_string(),
-        );
+        let service = DepositService::new("0xABCD1234".to_string(), "0xCONTRACT".to_string());
 
         assert!(service.verify_transfer_destination("0xabcd1234"));
         assert!(service.verify_transfer_destination("0xABCD1234"));

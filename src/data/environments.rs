@@ -189,6 +189,8 @@ mod tests {
         let effects = volcanic.get_per_turn_effects();
 
         assert_eq!(effects.len(), 1);
-        assert!(matches!(effects[0], PerTurnEffect::Damage { percent } if (percent - 0.02).abs() < 0.001));
+        assert!(
+            matches!(effects[0], PerTurnEffect::Damage { percent } if (percent - 0.02).abs() < 0.001)
+        );
     }
 }

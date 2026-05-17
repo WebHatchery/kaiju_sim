@@ -1,8 +1,8 @@
 //! Session management: Initialization and Sync logic.
 
+use crate::server_bridge;
 use crate::state::game_state::GameState;
 use crate::state::persistence;
-use crate::server_bridge;
 use crate::ui::assets::AssetManager;
 use uuid::Uuid;
 
@@ -13,16 +13,19 @@ use uuid::Uuid;
 pub async fn initialize_session(assets: &mut AssetManager) -> GameState {
     let mut state = GameState::default();
     // Default gold 0 to indicate pending sync
-    state.player.gold = 0; 
-    
+    state.player.gold = 0;
+
     // 1. Try Load ID from Save
     match persistence::load_game() {
         Ok(loaded_state) => {
             if !loaded_state.player.player_id.is_empty() {
-                println!("[SESSION] Found saved User ID: {}", loaded_state.player.player_id);
+                println!(
+                    "[SESSION] Found saved User ID: {}",
+                    loaded_state.player.player_id
+                );
                 state.player.player_id = loaded_state.player.player_id;
             }
-        },
+        }
         Err(_) => {
             println!("[SESSION] No save file found. Starting fresh.");
         }
@@ -33,21 +36,25 @@ pub async fn initialize_session(assets: &mut AssetManager) -> GameState {
         println!("[SESSION] Syncing with server for User ID: {}", user_id);
         match server_bridge::login_to_server(Some(user_id), None) {
             Ok(response) => {
-                println!("[SESSION] Sync Successful! Gold: {}, Kaiju: {}", response.gold, response.roster.len());
+                println!(
+                    "[SESSION] Sync Successful! Gold: {}, Kaiju: {}",
+                    response.gold,
+                    response.roster.len()
+                );
                 state.player.gold = response.gold as i64;
                 state.player.player_id = response.user_id.to_string();
                 state.roster = response.roster;
-                
+
                 // 3. Ensure assets for roster are loaded
                 for kaiju in &state.roster {
-                     if let Some(url) = &kaiju.image_uri {
+                    if let Some(url) = &kaiju.image_uri {
                         if let Some(path) = assets.download_if_missing(url) {
                             let key = assets.get_filename_from_url(url);
                             assets.load_texture(&key, &path).await;
                         }
                     }
                 }
-            },
+            }
             Err(e) => {
                 println!("[SESSION] Sync Failed: {}", e);
                 // We keep the ID but state remains default (0 gold).
@@ -70,17 +77,17 @@ pub async fn force_resync(state: &mut GameState, assets: &mut AssetManager) {
                 println!("[SESSION] Re-sync Successful. Gold: {}", response.gold);
                 state.player.gold = response.gold as i64;
                 state.roster = response.roster;
-                
+
                 // Reload assets
                 for kaiju in &state.roster {
-                     if let Some(url) = &kaiju.image_uri {
+                    if let Some(url) = &kaiju.image_uri {
                         if let Some(path) = assets.download_if_missing(url) {
                             let key = assets.get_filename_from_url(url);
                             assets.load_texture(&key, &path).await;
                         }
                     }
                 }
-            },
+            }
             Err(e) => println!("[SESSION] Re-sync failed: {}", e),
         }
     }

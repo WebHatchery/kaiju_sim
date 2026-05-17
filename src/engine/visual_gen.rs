@@ -94,29 +94,29 @@ pub struct Appearance {
 /// Generate appearance from kaiju data deterministically
 pub fn generate_appearance(kaiju: &Kaiju) -> Appearance {
     let mut rng = ChaCha8Rng::seed_from_u64(kaiju.visual_seed);
-    
+
     // Determine body type from stats
     let body_type = determine_body_type(&mut rng, kaiju);
-    
+
     // Determine element from traits
     let element = determine_element(&kaiju.traits);
-    
+
     // Determine size from HP
     let size_category = determine_size(kaiju.stats.hp);
-    
+
     // Generate color scheme
     let color_scheme = generate_color_scheme(&mut rng, element);
-    
+
     // Scale variation
     let scale = 0.9 + rng.gen::<f32>() * 0.2; // 0.9 to 1.1
-    
+
     // Determine sprite path
     let sprite_path = if let Some(elem_sprite) = element.sprite_name() {
         format!("assets/sprites/kaiju/{}.png", elem_sprite)
     } else {
         format!("assets/sprites/kaiju/{}.png", body_type.sprite_name())
     };
-    
+
     Appearance {
         body_type,
         element,
@@ -130,23 +130,23 @@ pub fn generate_appearance(kaiju: &Kaiju) -> Appearance {
 /// Determine body type from stats
 fn determine_body_type(rng: &mut ChaCha8Rng, kaiju: &Kaiju) -> BodyType {
     let stats = &kaiju.stats;
-    
+
     // High speed = serpentine, high defense = quadruped, high attack = bipedal
     let speed_ratio = stats.speed as f32 / 100.0;
     let def_ratio = stats.defense as f32 / 100.0;
     let atk_ratio = stats.attack as f32 / 100.0;
-    
+
     let weights = [
-        def_ratio * 1.2,      // Quadruped
-        atk_ratio * 1.0,      // Bipedal
-        speed_ratio * 1.5,    // Serpentine
+        def_ratio * 1.2,                 // Quadruped
+        atk_ratio * 1.0,                 // Bipedal
+        speed_ratio * 1.5,               // Serpentine
         (speed_ratio + atk_ratio) * 0.5, // Winged
         (def_ratio + speed_ratio) * 0.3, // Aquatic
     ];
-    
+
     let total: f32 = weights.iter().sum();
     let roll = rng.gen::<f32>() * total;
-    
+
     let mut cumulative = 0.0;
     for (i, weight) in weights.iter().enumerate() {
         cumulative += weight;
@@ -154,7 +154,7 @@ fn determine_body_type(rng: &mut ChaCha8Rng, kaiju: &Kaiju) -> BodyType {
             return BodyType::all()[i];
         }
     }
-    
+
     BodyType::Bipedal
 }
 
@@ -227,7 +227,7 @@ fn generate_color_scheme(rng: &mut ChaCha8Rng, element: Element) -> ColorScheme 
             None,
         ),
     };
-    
+
     ColorScheme {
         primary,
         secondary,
@@ -261,6 +261,7 @@ mod tests {
             current_owner: "test".to_string(),
             image_uri: None,
             metadata_uri: String::new(),
+            tournaments_won: 0,
         }
     }
 
@@ -269,7 +270,7 @@ mod tests {
         let kaiju = create_test_kaiju(12345);
         let app1 = generate_appearance(&kaiju);
         let app2 = generate_appearance(&kaiju);
-        
+
         assert_eq!(app1.body_type, app2.body_type);
         assert_eq!(app1.element, app2.element);
         assert!((app1.scale - app2.scale).abs() < 0.001);

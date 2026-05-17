@@ -276,7 +276,10 @@ pub enum GenomeError {
 impl std::fmt::Display for GenomeError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::InvalidChecksum { expected, calculated } => {
+            Self::InvalidChecksum {
+                expected,
+                calculated,
+            } => {
                 write!(
                     f,
                     "Invalid checksum: expected {:04x}, got {:04x}",
@@ -319,14 +322,7 @@ mod tests {
             },
         ];
 
-        let genome = Genome::new(
-            5,
-            2,
-            stats,
-            traits,
-            HiddenTraitData::default(),
-            12345,
-        );
+        let genome = Genome::new(5, 2, stats, traits, HiddenTraitData::default(), 12345);
 
         // Test byte roundtrip
         let bytes = genome.to_bytes();

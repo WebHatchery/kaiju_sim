@@ -62,7 +62,7 @@ impl PlayerData {
     pub fn add_experience(&mut self, xp: u64) -> bool {
         self.experience += xp;
         let xp_needed = self.xp_for_next_level();
-        
+
         if self.experience >= xp_needed {
             self.player_level += 1;
             true
@@ -125,7 +125,7 @@ mod tests {
     #[test]
     fn test_gold_operations() {
         let mut player = PlayerData::default();
-        
+
         player.add_gold(500);
         assert_eq!(player.gold, 1500);
 

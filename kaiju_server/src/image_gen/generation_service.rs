@@ -2,9 +2,9 @@
 
 use chrono::{DateTime, Utc};
 use std::collections::HashMap;
+use std::sync::Arc;
 use tokio::sync::Mutex;
 use uuid::Uuid;
-use std::sync::Arc;
 
 use super::comfy_client::{ComfyClient, ComfyConfig};
 use super::prompt_builder::{build_kaiju_prompt, KaijuGenetics};
@@ -85,7 +85,7 @@ impl ImageGenerationService {
         let (prompt, negative, seed) = {
             let mut queue = self.queue.lock().await;
             let record = queue.get_mut(&request_id).ok_or("Request not found")?;
-            
+
             if record.status != GenerationStatus::Queued {
                 return Ok(()); // Already processed or processing
             }
@@ -141,7 +141,7 @@ impl ImageGenerationService {
                     Ok(bytes) => {
                         // Ensure output directory exists
                         let _ = std::fs::create_dir_all(&self.output_dir);
-                        
+
                         // Save to disk
                         let output_path = format!("{}/{}.png", self.output_dir, request_id);
                         match std::fs::write(&output_path, &bytes) {
@@ -153,7 +153,7 @@ impl ImageGenerationService {
                                 return Err(format!("Failed to save image: {}", e));
                             }
                         }
-                        
+
                         let mut queue = self.queue.lock().await;
                         if let Some(record) = queue.get_mut(&request_id) {
                             record.status = GenerationStatus::Completed;

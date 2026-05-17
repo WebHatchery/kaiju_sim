@@ -1,22 +1,22 @@
 //! API modules for the Kaiju server.
 
-pub mod transfer;
-pub mod verification;
 pub mod breeding;
-pub mod user;
 pub mod marketplace;
 pub mod tournament;
+pub mod transfer;
+pub mod user;
+pub mod verification;
 
 use axum::Router;
 use std::sync::Arc;
 
-use crate::crypto::Verifier;
-use crate::transfer_service::TransferService;
-use crate::breeding_service::BreedingService;
 use crate::breeding::AdvancedBreedingService;
 use crate::breeding_jobs::BreedingJobManager;
+use crate::breeding_service::BreedingService;
+use crate::crypto::Verifier;
 use crate::image_gen::ImageGenerationService;
 use crate::kaiju_repo::KaijuRepository;
+use crate::transfer_service::TransferService;
 use sqlx::mysql::MySqlPool;
 
 /// Shared application state

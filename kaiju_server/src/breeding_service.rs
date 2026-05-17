@@ -3,8 +3,8 @@ use rand::SeedableRng;
 use rand_chacha::ChaCha8Rng;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-use uuid::Uuid;
-use tracing; // Added for logging
+use tracing;
+use uuid::Uuid; // Added for logging
 
 // --- Domain Types (Mirrors Client) ---
 
@@ -19,7 +19,13 @@ pub struct KaijuStats {
 
 impl KaijuStats {
     pub fn new(hp: i32, attack: i32, defense: i32, speed: i32, energy: i32) -> Self {
-        Self { hp, attack, defense, speed, energy }
+        Self {
+            hp,
+            attack,
+            defense,
+            speed,
+            energy,
+        }
     }
 }
 
@@ -103,7 +109,8 @@ impl BreedingService {
         parent_a: &KaijuData,
         parent_b: &KaijuData,
         seed: u64,
-    ) -> Result<BreedingResult, String> { // Using String error for simplicity in port
+    ) -> Result<BreedingResult, String> {
+        // Using String error for simplicity in port
         let config = BreedingConfig::default();
         let mut rng = ChaCha8Rng::seed_from_u64(seed);
 
@@ -111,11 +118,46 @@ impl BreedingService {
         let generation = parent_a.generation.max(parent_b.generation) + 1;
 
         // Stats Logic (Simplified Port)
-        let hp = self.inherit_stat("HP", parent_a.stats.hp, parent_b.stats.hp, generation, &config, &mut rng);
-        let attack = self.inherit_stat("Attack", parent_a.stats.attack, parent_b.stats.attack, generation, &config, &mut rng);
-        let defense = self.inherit_stat("Defense", parent_a.stats.defense, parent_b.stats.defense, generation, &config, &mut rng);
-        let speed = self.inherit_stat("Speed", parent_a.stats.speed, parent_b.stats.speed, generation, &config, &mut rng);
-        let energy = self.inherit_stat("Energy", parent_a.stats.energy, parent_b.stats.energy, generation, &config, &mut rng);
+        let hp = self.inherit_stat(
+            "HP",
+            parent_a.stats.hp,
+            parent_b.stats.hp,
+            generation,
+            &config,
+            &mut rng,
+        );
+        let attack = self.inherit_stat(
+            "Attack",
+            parent_a.stats.attack,
+            parent_b.stats.attack,
+            generation,
+            &config,
+            &mut rng,
+        );
+        let defense = self.inherit_stat(
+            "Defense",
+            parent_a.stats.defense,
+            parent_b.stats.defense,
+            generation,
+            &config,
+            &mut rng,
+        );
+        let speed = self.inherit_stat(
+            "Speed",
+            parent_a.stats.speed,
+            parent_b.stats.speed,
+            generation,
+            &config,
+            &mut rng,
+        );
+        let energy = self.inherit_stat(
+            "Energy",
+            parent_a.stats.energy,
+            parent_b.stats.energy,
+            generation,
+            &config,
+            &mut rng,
+        );
 
         let stats = KaijuStats::new(hp, attack, defense, speed, energy);
         tracing::debug!("Generated Stats: {:?}", stats);
@@ -138,7 +180,7 @@ impl BreedingService {
         hasher.update(visual_seed.to_be_bytes());
         let result_hash = hasher.finalize();
         let genome_hash = hex::encode(result_hash);
-        
+
         tracing::info!("Minted Offspring: Hash={}", genome_hash);
 
         // Select random asset for now
@@ -163,7 +205,10 @@ impl BreedingService {
             stats,
             traits,
             owner_id: parent_a.owner_id, // Default to A
-            image_url: format!("http://localhost:3000/assets/sprites/kaiju/{}", selected_asset),
+            image_url: format!(
+                "http://localhost:3000/assets/sprites/kaiju/{}",
+                selected_asset
+            ),
             tournaments_won: 0,
         };
 
@@ -173,16 +218,36 @@ impl BreedingService {
         })
     }
 
-    fn inherit_stat(&self, name: &str, a: i32, b: i32, gen: u32, config: &BreedingConfig, rng: &mut ChaCha8Rng) -> i32 {
+    fn inherit_stat(
+        &self,
+        name: &str,
+        a: i32,
+        b: i32,
+        gen: u32,
+        config: &BreedingConfig,
+        rng: &mut ChaCha8Rng,
+    ) -> i32 {
         let base = (a + b) as f32 / 2.0;
         let creep = 1.0 + (gen as f32 * config.generation_power_creep);
         let variance = rng.gen_range(config.stat_variance_min..=config.stat_variance_max);
         let result = (base * creep * variance) as i32;
-        tracing::debug!("Stat {}: Base={} Creep={} Var={} -> {}", name, base, creep, variance, result);
+        tracing::debug!(
+            "Stat {}: Base={} Creep={} Var={} -> {}",
+            name,
+            base,
+            creep,
+            variance,
+            result
+        );
         result
     }
 
-    fn inherit_traits(&self, traits_a: &[Trait], traits_b: &[Trait], rng: &mut ChaCha8Rng) -> Vec<Trait> {
+    fn inherit_traits(
+        &self,
+        traits_a: &[Trait],
+        traits_b: &[Trait],
+        rng: &mut ChaCha8Rng,
+    ) -> Vec<Trait> {
         // Simplified inheritance: random mix
         let mut mixed = Vec::new();
         mixed.extend_from_slice(traits_a);

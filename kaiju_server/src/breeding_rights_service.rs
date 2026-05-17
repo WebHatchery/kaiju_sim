@@ -117,7 +117,13 @@ impl BreedingRightsService {
         // Transfer currency
         let transfer = self
             .currency_service
-            .transfer(buyer_balance, seller_balance, currency, price, "Breeding right purchase")
+            .transfer(
+                buyer_balance,
+                seller_balance,
+                currency,
+                price,
+                "Breeding right purchase",
+            )
             .ok_or(BreedingRightError::InsufficientFunds)?;
 
         // Transfer ownership

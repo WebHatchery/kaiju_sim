@@ -32,9 +32,7 @@ pub struct MarketplaceListing {
 impl MarketplaceListing {
     /// Check if listing is active
     pub fn is_active(&self) -> bool {
-        !self.sold
-            && !self.cancelled
-            && self.expires_at.map(|e| e > Utc::now()).unwrap_or(true)
+        !self.sold && !self.cancelled && self.expires_at.map(|e| e > Utc::now()).unwrap_or(true)
     }
 }
 
@@ -82,7 +80,11 @@ impl MarketplaceService {
         }
 
         // Check not already listed
-        if self.listings.iter().any(|l| l.asset_id == right.id && l.is_active()) {
+        if self
+            .listings
+            .iter()
+            .any(|l| l.asset_id == right.id && l.is_active())
+        {
             return Err(MarketplaceError::AlreadyListed);
         }
 
@@ -176,12 +178,20 @@ impl MarketplaceService {
             .iter()
             .filter(|l| l.is_active())
             .filter(|l| {
-                filters.listing_type.map(|t| l.listing_type == t).unwrap_or(true)
+                filters
+                    .listing_type
+                    .map(|t| l.listing_type == t)
+                    .unwrap_or(true)
             })
             .filter(|l| filters.min_price.map(|p| l.price >= p).unwrap_or(true))
             .filter(|l| filters.max_price.map(|p| l.price <= p).unwrap_or(true))
             .filter(|l| filters.currency.map(|c| l.currency == c).unwrap_or(true))
-            .filter(|l| filters.seller_id.map(|s| l.seller_user_id == s).unwrap_or(true))
+            .filter(|l| {
+                filters
+                    .seller_id
+                    .map(|s| l.seller_user_id == s)
+                    .unwrap_or(true)
+            })
             .collect()
     }
 
@@ -267,7 +277,7 @@ mod tests {
     #[test]
     fn test_filter_listings() {
         let mut service = MarketplaceService::new();
-        
+
         // Add some listings
         for i in 0..5 {
             let right = BreedingRight {

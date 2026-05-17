@@ -1,8 +1,8 @@
 //! Kaiju Repository - Database operations for Kaiju entities
 
+use serde_json;
 use sqlx::mysql::MySqlPool;
 use uuid::Uuid;
-use serde_json;
 
 use crate::breeding_service::{KaijuData, KaijuStats, Trait, TraitInheritance};
 
@@ -22,7 +22,7 @@ impl KaijuRepository {
         let owner_id = kaiju.owner_id.to_string();
         let parent_a_id = kaiju.parent_ids.as_ref().map(|(a, _)| a.to_string());
         let parent_b_id = kaiju.parent_ids.as_ref().map(|(_, b)| b.to_string());
-        
+
         let base_stats = serde_json::json!({
             "hp": kaiju.stats.hp,
             "attack": kaiju.stats.attack,
@@ -30,16 +30,18 @@ impl KaijuRepository {
             "speed": kaiju.stats.speed,
             "energy": kaiju.stats.energy,
         });
-        
-        let visible_traits = serde_json::to_string(&kaiju.traits).unwrap_or_else(|_| "[]".to_string());
-        
+
+        let visible_traits =
+            serde_json::to_string(&kaiju.traits).unwrap_or_else(|_| "[]".to_string());
+
         // Generate state hash
         let mut hasher = sha2::Sha256::new();
         use sha2::Digest;
         hasher.update(format!("{}{}", kaiju.genome_hash, kaiju.visual_seed).as_bytes());
         let state_hash = format!("{:x}", hasher.finalize());
 
-        sqlx::query(r#"
+        sqlx::query(
+            r#"
             INSERT INTO kaiju (
                 id, name, generation, owner_user_id, custody_state,
                 parent_a_id, parent_b_id, genome_hash, genome_data, visual_seed,
@@ -51,7 +53,8 @@ impl KaijuRepository {
                 ?, ?, ?, '[]',
                 ?, ?, ?
             )
-        "#)
+        "#,
+        )
         .bind(&id)
         .bind(&kaiju.name)
         .bind(kaiju.generation as i32)
@@ -76,14 +79,16 @@ impl KaijuRepository {
     /// Get a Kaiju by ID
     pub async fn get_by_id(&self, id: Uuid) -> Result<Option<KaijuData>, sqlx::Error> {
         let id_str = id.to_string();
-        
-        let row: Option<KaijuDbRow> = sqlx::query_as(r#"
+
+        let row: Option<KaijuDbRow> = sqlx::query_as(
+            r#"
             SELECT id, name, generation, owner_user_id, 
                    parent_a_id, parent_b_id, genome_hash, visual_seed,
                    base_stats, visible_traits, image_url, tournaments_won
             FROM kaiju 
             WHERE id = ? AND deleted_at IS NULL AND alive = TRUE
-        "#)
+        "#,
+        )
         .bind(&id_str)
         .fetch_optional(&self.pool)
         .await?;
@@ -94,15 +99,17 @@ impl KaijuRepository {
     /// Get all Kaiju for a user
     pub async fn get_by_owner(&self, owner_id: Uuid) -> Result<Vec<KaijuData>, sqlx::Error> {
         let owner_str = owner_id.to_string();
-        
-        let rows: Vec<KaijuDbRow> = sqlx::query_as(r#"
+
+        let rows: Vec<KaijuDbRow> = sqlx::query_as(
+            r#"
             SELECT id, name, generation, owner_user_id, 
                    parent_a_id, parent_b_id, genome_hash, visual_seed,
                    base_stats, visible_traits, image_url, tournaments_won
             FROM kaiju 
             WHERE owner_user_id = ? AND deleted_at IS NULL AND alive = TRUE
             ORDER BY created_at DESC
-        "#)
+        "#,
+        )
         .bind(&owner_str)
         .fetch_all(&self.pool)
         .await?;
@@ -132,7 +139,7 @@ impl KaijuDbRow {
     fn into_kaiju_data(self) -> KaijuData {
         let id = Uuid::parse_str(&self.id).unwrap_or_default();
         let owner_id = Uuid::parse_str(&self.owner_user_id).unwrap_or_default();
-        
+
         let parent_ids = match (&self.parent_a_id, &self.parent_b_id) {
             (Some(a), Some(b)) => {
                 let a_uuid = Uuid::parse_str(a).unwrap_or_default();
@@ -141,7 +148,7 @@ impl KaijuDbRow {
             }
             _ => None,
         };
-        
+
         let visual_seed: u64 = self.visual_seed.parse().unwrap_or(0);
 
         KaijuData {

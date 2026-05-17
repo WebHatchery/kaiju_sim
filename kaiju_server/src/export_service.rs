@@ -84,14 +84,9 @@ impl ExportService {
         alive: bool,
     ) -> KaijuExportPackage {
         let export_timestamp = Utc::now();
-        
+
         // Create state hash
-        let state_hash = self.compute_state_hash(
-            kaiju_id,
-            &genome_hash,
-            alive,
-            &stats,
-        );
+        let state_hash = self.compute_state_hash(kaiju_id, &genome_hash, alive, &stats);
 
         // Sign the export
         let server_signature = self.sign_export(&state_hash, export_timestamp);
@@ -137,10 +132,8 @@ impl ExportService {
         }
 
         // Verify signature
-        let expected_sig = self.sign_export(
-            &package.data.state_hash,
-            package.data.export_timestamp,
-        );
+        let expected_sig =
+            self.sign_export(&package.data.state_hash, package.data.export_timestamp);
         if expected_sig != package.data.server_signature {
             return VerificationResult::InvalidSignature;
         }
@@ -164,7 +157,8 @@ impl ExportService {
 
     /// Export to JSON string
     pub fn to_json(&self, package: &KaijuExportPackage) -> Result<String, ExportError> {
-        serde_json::to_string_pretty(package).map_err(|e| ExportError::SerializationFailed(e.to_string()))
+        serde_json::to_string_pretty(package)
+            .map_err(|e| ExportError::SerializationFailed(e.to_string()))
     }
 
     /// Import from JSON string
@@ -189,14 +183,21 @@ impl ExportService {
 
     fn sign_export(&self, state_hash: &str, timestamp: DateTime<Utc>) -> String {
         // In production, use proper cryptographic signing (Ed25519, etc.)
-        format!("sig:{}:{}:{}", self.server_key, state_hash, timestamp.timestamp())
+        format!(
+            "sig:{}:{}:{}",
+            self.server_key,
+            state_hash,
+            timestamp.timestamp()
+        )
     }
 
     fn compute_checksum(&self, data: &KaijuExportData) -> String {
         // In production, use proper checksum (CRC32, SHA256, etc.)
         format!(
             "checksum:{}:{}:{}",
-            data.kaiju_id, data.generation, data.export_timestamp.timestamp()
+            data.kaiju_id,
+            data.generation,
+            data.export_timestamp.timestamp()
         )
     }
 }
@@ -243,14 +244,19 @@ mod tests {
     #[test]
     fn test_create_and_verify_export() {
         let service = ExportService::new("test_key");
-        
+
         let package = service.create_export(
             Uuid::new_v4(),
             "TestKaiju".to_string(),
             2,
             "abc123".to_string(),
             12345,
-            ExportedStats { hp: 300, attack: 50, defense: 40, speed: 60 },
+            ExportedStats {
+                hp: 300,
+                attack: 50,
+                defense: 40,
+                speed: 60,
+            },
             vec!["Fire Breath".to_string()],
             5,
             Utc::now(),
@@ -266,14 +272,19 @@ mod tests {
     #[test]
     fn test_tampered_export() {
         let service = ExportService::new("test_key");
-        
+
         let mut package = service.create_export(
             Uuid::new_v4(),
             "TestKaiju".to_string(),
             2,
             "abc123".to_string(),
             12345,
-            ExportedStats { hp: 300, attack: 50, defense: 40, speed: 60 },
+            ExportedStats {
+                hp: 300,
+                attack: 50,
+                defense: 40,
+                speed: 60,
+            },
             vec![],
             5,
             Utc::now(),
@@ -286,20 +297,28 @@ mod tests {
         package.data.stats.hp = 9999;
 
         let result = service.verify_export(&package);
-        assert!(matches!(result, VerificationResult::TamperedData | VerificationResult::GenomeMismatch));
+        assert!(matches!(
+            result,
+            VerificationResult::TamperedData | VerificationResult::GenomeMismatch
+        ));
     }
 
     #[test]
     fn test_json_roundtrip() {
         let service = ExportService::new("test_key");
-        
+
         let package = service.create_export(
             Uuid::new_v4(),
             "TestKaiju".to_string(),
             1,
             "def456".to_string(),
             54321,
-            ExportedStats { hp: 200, attack: 40, defense: 30, speed: 50 },
+            ExportedStats {
+                hp: 200,
+                attack: 40,
+                defense: 30,
+                speed: 50,
+            },
             vec!["Ice Breath".to_string()],
             3,
             Utc::now(),
@@ -311,6 +330,9 @@ mod tests {
         let json = service.to_json(&package).unwrap();
         let restored = service.from_json(&json).unwrap();
 
-        assert!(matches!(service.verify_export(&restored), VerificationResult::Valid { .. }));
+        assert!(matches!(
+            service.verify_export(&restored),
+            VerificationResult::Valid { .. }
+        ));
     }
 }

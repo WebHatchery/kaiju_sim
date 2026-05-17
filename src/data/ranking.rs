@@ -82,10 +82,7 @@ impl EloRating {
 }
 
 /// Update Elo ratings for both participants after a match
-pub fn update_elo_ratings(
-    winner: &mut EloRating,
-    loser: &mut EloRating,
-) {
+pub fn update_elo_ratings(winner: &mut EloRating, loser: &mut EloRating) {
     let winner_rating = winner.rating;
     let loser_rating = loser.rating;
 
@@ -142,8 +139,14 @@ mod tests {
 
     #[test]
     fn test_expected_score() {
-        let higher = EloRating { rating: 1600, ..Default::default() };
-        let lower = EloRating { rating: 1400, ..Default::default() };
+        let higher = EloRating {
+            rating: 1600,
+            ..Default::default()
+        };
+        let lower = EloRating {
+            rating: 1400,
+            ..Default::default()
+        };
 
         // Higher rated should expect to win more
         assert!(higher.expected_score(1400) > 0.5);
@@ -185,7 +188,10 @@ mod tests {
 
     #[test]
     fn test_rating_floor() {
-        let mut low = EloRating { rating: 10, ..Default::default() };
+        let mut low = EloRating {
+            rating: 10,
+            ..Default::default()
+        };
         low.record_loss(2000);
         assert!(low.rating >= 0);
     }

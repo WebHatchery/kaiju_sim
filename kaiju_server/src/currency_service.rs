@@ -7,9 +7,9 @@ use uuid::Uuid;
 /// Currency types
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum CurrencyType {
-    Gold,     // Primary in-game currency
-    Gems,     // Premium currency
-    Credits,  // Tournament rewards
+    Gold,    // Primary in-game currency
+    Gems,    // Premium currency
+    Credits, // Tournament rewards
 }
 
 impl CurrencyType {
@@ -108,14 +108,14 @@ impl CurrencyService {
         reason: &str,
     ) -> CurrencyTransaction {
         let balance_before = balance.get(currency);
-        
+
         match currency {
             CurrencyType::Gold => balance.gold += amount,
             CurrencyType::Gems => balance.gems += amount,
             CurrencyType::Credits => balance.credits += amount,
         }
         balance.updated_at = Utc::now();
-        
+
         CurrencyTransaction {
             id: Uuid::new_v4(),
             user_id: balance.user_id,
@@ -143,14 +143,14 @@ impl CurrencyService {
         }
 
         let balance_before = balance.get(currency);
-        
+
         match currency {
             CurrencyType::Gold => balance.gold -= amount,
             CurrencyType::Gems => balance.gems -= amount,
             CurrencyType::Credits => balance.credits -= amount,
         }
         balance.updated_at = Utc::now();
-        
+
         Some(CurrencyTransaction {
             id: Uuid::new_v4(),
             user_id: balance.user_id,
@@ -243,10 +243,10 @@ mod tests {
     fn test_credit() {
         let service = CurrencyService::new();
         let mut balance = CurrencyBalance::new(Uuid::new_v4());
-        
+
         let initial = balance.gold;
         service.credit(&mut balance, CurrencyType::Gold, 500, "Test credit");
-        
+
         assert_eq!(balance.gold, initial + 500);
     }
 
@@ -255,9 +255,9 @@ mod tests {
         let service = CurrencyService::new();
         let mut balance = CurrencyBalance::new(Uuid::new_v4());
         balance.gold = 1000;
-        
+
         let tx = service.debit(&mut balance, CurrencyType::Gold, 500, "Test debit");
-        
+
         assert!(tx.is_some());
         assert_eq!(balance.gold, 500);
     }
@@ -267,9 +267,9 @@ mod tests {
         let service = CurrencyService::new();
         let mut balance = CurrencyBalance::new(Uuid::new_v4());
         balance.gold = 100;
-        
+
         let tx = service.debit(&mut balance, CurrencyType::Gold, 500, "Test debit");
-        
+
         assert!(tx.is_none());
         assert_eq!(balance.gold, 100);
     }
@@ -281,9 +281,10 @@ mod tests {
         let mut to = CurrencyBalance::new(Uuid::new_v4());
         from.gold = 1000;
         to.gold = 0;
-        
-        let receipt = service.transfer(&mut from, &mut to, CurrencyType::Gold, 500, "Test transfer");
-        
+
+        let receipt =
+            service.transfer(&mut from, &mut to, CurrencyType::Gold, 500, "Test transfer");
+
         assert!(receipt.is_some());
         assert_eq!(from.gold, 500);
         assert_eq!(to.gold, 500);

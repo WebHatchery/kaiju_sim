@@ -64,13 +64,7 @@ impl BracketGenerator for SingleEliminationGenerator {
         let mut round_1_match_ids = Vec::new();
 
         for (kaiju_a, kaiju_b) in pairings {
-            let match_obj = Match::new(
-                tournament_id,
-                1,
-                kaiju_a,
-                kaiju_b,
-                environment.clone(),
-            );
+            let match_obj = Match::new(tournament_id, 1, kaiju_a, kaiju_b, environment.clone());
             round_1_match_ids.push(match_obj.id);
             matches.push(match_obj);
         }
@@ -147,11 +141,8 @@ impl BracketGenerator for SwissGenerator {
         }
 
         // Create first round with random pairings
-        let first_round_matches = self.create_initial_pairings(
-            tournament_id,
-            participants.clone(),
-            environment.clone(),
-        );
+        let first_round_matches =
+            self.create_initial_pairings(tournament_id, participants.clone(), environment.clone());
 
         let match_ids: Vec<MatchId> = first_round_matches.iter().map(|m| m.id).collect();
 
@@ -173,7 +164,9 @@ impl BracketGenerator for SwissGenerator {
         }
 
         Ok(Bracket {
-            bracket_type: BracketSystem::Swiss { rounds: self.total_rounds },
+            bracket_type: BracketSystem::Swiss {
+                rounds: self.total_rounds,
+            },
             matches: first_round_matches,
             rounds,
             participant_count: participants.len() as u32,
@@ -220,7 +213,10 @@ pub fn generate_swiss_next_round(
 }
 
 /// Select environment for a round based on tournament settings
-pub fn select_environment(mode: &crate::data::tournament::EnvironmentMode, round: u32) -> Environment {
+pub fn select_environment(
+    mode: &crate::data::tournament::EnvironmentMode,
+    round: u32,
+) -> Environment {
     match mode {
         crate::data::tournament::EnvironmentMode::Fixed(env) => env.clone(),
         crate::data::tournament::EnvironmentMode::Random => {
@@ -307,13 +303,19 @@ mod tests {
         let generator = SingleEliminationGenerator;
         let result = generator.generate(tournament_id, participants, Environment::Neutral);
 
-        assert!(matches!(result, Err(BracketError::InsufficientParticipants)));
+        assert!(matches!(
+            result,
+            Err(BracketError::InsufficientParticipants)
+        ));
     }
 
     #[test]
     fn test_environment_selection() {
         let fixed = crate::data::tournament::EnvironmentMode::Fixed(Environment::Volcanic);
-        assert!(matches!(select_environment(&fixed, 1), Environment::Volcanic));
+        assert!(matches!(
+            select_environment(&fixed, 1),
+            Environment::Volcanic
+        ));
 
         let rotating = crate::data::tournament::EnvironmentMode::RotatingPerRound;
         // Should rotate through environments

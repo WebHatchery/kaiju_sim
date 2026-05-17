@@ -111,7 +111,11 @@ impl NftMetadata {
         let description = format!(
             "Generation {} Kaiju. {}",
             generation,
-            if alive { "Battle-ready." } else { "Fallen in battle. Forever remembered." }
+            if alive {
+                "Battle-ready."
+            } else {
+                "Fallen in battle. Forever remembered."
+            }
         );
 
         Self {
@@ -155,7 +159,12 @@ mod tests {
 
     #[test]
     fn test_metadata_creation() {
-        let stats = KaijuStats { hp: 300, attack: 50, defense: 40, speed: 60 };
+        let stats = KaijuStats {
+            hp: 300,
+            attack: 50,
+            defense: 40,
+            speed: 60,
+        };
         let metadata = NftMetadata::new(
             1234,
             "Volthor".to_string(),
@@ -172,7 +181,7 @@ mod tests {
 
         assert_eq!(metadata.name, "Volthor #1234");
         assert!(metadata.attributes.len() >= 5);
-        
+
         let json = metadata.to_json().unwrap();
         assert!(json.contains("Volthor"));
     }

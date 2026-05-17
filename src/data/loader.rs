@@ -26,11 +26,11 @@ impl TraitDatabase {
     }
 
     /// Get all traits by category
-    pub fn get_by_category(
-        &self,
-        category: super::traits::TraitCategory,
-    ) -> Vec<&Trait> {
-        self.traits.iter().filter(|t| t.category == category).collect()
+    pub fn get_by_category(&self, category: super::traits::TraitCategory) -> Vec<&Trait> {
+        self.traits
+            .iter()
+            .filter(|t| t.category == category)
+            .collect()
     }
 }
 

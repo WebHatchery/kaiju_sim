@@ -14,29 +14,29 @@ pub enum UiAction {
     GoToLeaderboard,
     GoToSettings,
     Back,
-    
+
     // Kaiju Management
     SelectKaiju(Uuid),
     DeselectKaiju,
     ViewKaijuDetails(Uuid),
-    
+
     // Breeding
     SelectParentA(Uuid),
     SelectParentB(Uuid),
     PreviewOffspring,
     ConfirmBreeding,
     CancelBreeding,
-    
+
     // Tournament
     EnterTournament { tournament_id: Uuid, kaiju_id: Uuid },
     WatchTournament(Uuid),
     ViewBracket(Uuid),
-    
+
     // Battle
     SkipBattle,
     PauseBattle,
     ResumeBattle,
-    
+
     // System
     NewGame,
     SelectStarter(String), // Added for starter selection
@@ -44,7 +44,7 @@ pub enum UiAction {
     SaveGame,
     LoadGame,
     ExitGame,
-    
+
     // Marketplace
     GoToMarketplace,
     PurchaseKaiju(String), // item_id
@@ -53,11 +53,9 @@ pub enum UiAction {
 impl UiAction {
     /// Check if action requires game state
     pub fn requires_game_state(&self) -> bool {
-        !matches!(self, 
-            UiAction::GoToMenu | 
-            UiAction::NewGame | 
-            UiAction::LoadGame |
-            UiAction::ExitGame
+        !matches!(
+            self,
+            UiAction::GoToMenu | UiAction::NewGame | UiAction::LoadGame | UiAction::ExitGame
         )
     }
 }

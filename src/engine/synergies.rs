@@ -4,8 +4,8 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::data::Trait;
 use crate::data::traits::{TraitCategory, TraitCondition, TraitInheritance};
+use crate::data::Trait;
 
 /// Synergy definition loaded from traits.json
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -101,9 +101,9 @@ impl IncompatibilityMatrix {
 
     /// Check if two traits are incompatible
     pub fn are_incompatible(&self, trait_a: &str, trait_b: &str) -> bool {
-        self.pairs.iter().any(|(a, b)| {
-            (a == trait_a && b == trait_b) || (a == trait_b && b == trait_a)
-        })
+        self.pairs
+            .iter()
+            .any(|(a, b)| (a == trait_a && b == trait_b) || (a == trait_b && b == trait_a))
     }
 
     /// Filter out incompatible traits from a list

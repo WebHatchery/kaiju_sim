@@ -23,7 +23,9 @@ impl Default for ResearchFacility {
 impl ResearchFacility {
     /// Create a new facility at the specified level
     pub fn new(level: u8) -> Self {
-        Self { level: level.min(5) }
+        Self {
+            level: level.min(5),
+        }
     }
 
     /// Get available capabilities at current level
@@ -208,10 +210,7 @@ pub fn decode_genome(genome: &Genome, layer: DecodingLayer) -> DecodedGenome {
 }
 
 /// Calculate stat ranges with given variance
-fn calculate_stat_ranges(
-    stats: &crate::data::genome::GenomeStats,
-    variance: f32,
-) -> StatRanges {
+fn calculate_stat_ranges(stats: &crate::data::genome::GenomeStats, variance: f32) -> StatRanges {
     let range = |stat: u16| {
         let min = (stat as f32 * (1.0 - variance)) as u16;
         let max = (stat as f32 * (1.0 + variance)) as u16;
@@ -260,10 +259,7 @@ impl TraitKnowledge {
 
         // Narrow power estimate
         let (min, max) = self.power_estimate;
-        self.power_estimate = (
-            min.max(observed_power - 5),
-            max.min(observed_power + 5),
-        );
+        self.power_estimate = (min.max(observed_power - 5), max.min(observed_power + 5));
 
         // Add condition hint if new
         if let Some(hint) = condition_hint {

@@ -3,8 +3,8 @@
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::data::{Kaiju, KaijuStats, Trait};
 use crate::data::types::KaijuId;
+use crate::data::{Kaiju, KaijuStats, Trait};
 use crate::state::player_data::PlayerData;
 
 /// Main game state - owns all mutable game data
@@ -80,14 +80,19 @@ impl GameState {
 
     /// Get kaiju by generation
     pub fn kaiju_by_generation(&self, gen: u32) -> impl Iterator<Item = &Kaiju> {
-        self.roster.iter().filter(move |k| k.generation == gen && k.alive)
+        self.roster
+            .iter()
+            .filter(move |k| k.generation == gen && k.alive)
     }
 
     /// Add kaiju to roster
     pub fn add_kaiju(&mut self, kaiju: Kaiju) {
         let name = kaiju.name.clone();
         self.roster.push(kaiju);
-        self.notify(format!("{} joined your roster!", name), NotificationType::Success);
+        self.notify(
+            format!("{} joined your roster!", name),
+            NotificationType::Success,
+        );
     }
 
     /// Mark kaiju as dead
@@ -140,7 +145,7 @@ impl GameState {
 fn create_starter_kaiju(name: &str, seed: u64) -> Kaiju {
     let base_hp = 200 + (seed * 20) as i32;
     let base_attack = 40 + (seed * 5) as i32;
-    
+
     Kaiju {
         id: Uuid::new_v4(),
         token_id: 0,
@@ -242,7 +247,7 @@ mod tests {
     fn test_get_kaiju() {
         let state = GameState::new();
         let first_id = state.roster[0].id;
-        
+
         assert!(state.get_kaiju(first_id).is_some());
         assert!(state.get_kaiju(Uuid::new_v4()).is_none());
     }

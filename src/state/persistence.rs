@@ -38,8 +38,7 @@ pub fn save_game(state: &GameState) -> Result<(), PersistenceError> {
         .map_err(|e| PersistenceError::SerializationFailed(e.to_string()))?;
 
     let path = get_save_path()?;
-    std::fs::write(&path, json)
-        .map_err(|e| PersistenceError::WriteFailed(e.to_string()))?;
+    std::fs::write(&path, json).map_err(|e| PersistenceError::WriteFailed(e.to_string()))?;
 
     eprintln!("Game saved to: {}", path.display());
     Ok(())
@@ -53,8 +52,8 @@ pub fn load_game() -> Result<GameState, PersistenceError> {
         return Err(PersistenceError::SaveNotFound);
     }
 
-    let json = std::fs::read_to_string(&path)
-        .map_err(|e| PersistenceError::ReadFailed(e.to_string()))?;
+    let json =
+        std::fs::read_to_string(&path).map_err(|e| PersistenceError::ReadFailed(e.to_string()))?;
 
     let save_data: SaveData = serde_json::from_str(&json)
         .map_err(|e| PersistenceError::DeserializationFailed(e.to_string()))?;
@@ -80,8 +79,7 @@ pub fn save_exists() -> bool {
 pub fn delete_save() -> Result<(), PersistenceError> {
     let path = get_save_path()?;
     if path.exists() {
-        std::fs::remove_file(&path)
-            .map_err(|e| PersistenceError::DeleteFailed(e.to_string()))?;
+        std::fs::remove_file(&path).map_err(|e| PersistenceError::DeleteFailed(e.to_string()))?;
     }
     Ok(())
 }

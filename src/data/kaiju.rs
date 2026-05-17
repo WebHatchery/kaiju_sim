@@ -31,11 +31,11 @@ impl KaijuStats {
     /// Create new stats with validation
     pub fn new(hp: i32, attack: i32, defense: i32, speed: i32, energy: i32) -> Self {
         Self {
-            hp: hp.max(50),         // Minimum HP floor
-            attack: attack.max(10), // Minimum attack floor
+            hp: hp.max(50),          // Minimum HP floor
+            attack: attack.max(10),  // Minimum attack floor
             defense: defense.max(5), // Minimum defense floor
-            speed: speed.max(5),    // Minimum speed floor
-            energy: energy.max(50), // Minimum energy floor
+            speed: speed.max(5),     // Minimum speed floor
+            energy: energy.max(50),  // Minimum energy floor
         }
     }
 

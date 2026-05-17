@@ -195,7 +195,9 @@ mod tests {
         stack.apply(PhaseTransition::Replace(GamePhase::Laboratory));
         assert_eq!(stack.current(), &GamePhase::Laboratory);
 
-        stack.apply(PhaseTransition::Push(GamePhase::KaijuDetail(Uuid::new_v4())));
+        stack.apply(PhaseTransition::Push(
+            GamePhase::KaijuDetail(Uuid::new_v4()),
+        ));
         assert_eq!(stack.depth(), 2);
 
         stack.apply(PhaseTransition::Pop);

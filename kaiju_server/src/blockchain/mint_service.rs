@@ -93,7 +93,7 @@ impl MintService {
     ) -> Result<MintResult, MintError> {
         // Step 1: Upload metadata to IPFS
         request.status = MintStatus::UploadingMetadata;
-        
+
         let token_id = self.next_token_id;
         let metadata = NftMetadata::new(
             token_id,
@@ -109,29 +109,31 @@ impl MintService {
             true, // alive
         );
 
-        let metadata_json = metadata.to_json()
+        let metadata_json = metadata
+            .to_json()
             .map_err(|e| MintError::MetadataError(e.to_string()))?;
 
-        let ipfs_response = self.ipfs_client.upload_json(&metadata_json).await
+        let ipfs_response = self
+            .ipfs_client
+            .upload_json(&metadata_json)
+            .await
             .map_err(|e| MintError::IpfsError(e))?;
 
         request.ipfs_uri = Some(ipfs_response.uri.clone());
 
         // Step 2: Execute blockchain mint
         request.status = MintStatus::Minting;
-        
+
         // In production, this would call the smart contract
-        let tx_hash = self.simulate_blockchain_mint(
-            token_id,
-            &request.destination_wallet,
-            &ipfs_response.uri,
-        ).await?;
+        let tx_hash = self
+            .simulate_blockchain_mint(token_id, &request.destination_wallet, &ipfs_response.uri)
+            .await?;
 
         request.tx_hash = Some(tx_hash.clone());
 
         // Step 3: Wait for confirmation
         request.status = MintStatus::Confirming;
-        
+
         // In production, wait for block confirmations
         self.wait_for_confirmation(&tx_hash).await?;
 
@@ -139,7 +141,7 @@ impl MintService {
         request.status = MintStatus::Completed;
         request.token_id = Some(token_id);
         request.completed_at = Some(Utc::now());
-        
+
         self.next_token_id += 1;
 
         Ok(MintResult {
@@ -160,7 +162,7 @@ impl MintService {
         // In production, use ethers-rs:
         // let contract = KaijuNFT::new(address, client);
         // let tx = contract.mint(to_wallet, token_id, metadata_uri).send().await?;
-        
+
         eprintln!(
             "Minting token {} to {} with metadata {}",
             token_id, to_wallet, metadata_uri
@@ -230,12 +232,8 @@ mod tests {
     #[tokio::test]
     async fn test_mint_request_creation() {
         let service = MintService::new("0x1234".to_string());
-        let request = service.create_mint_request(
-            Uuid::new_v4(),
-            Uuid::new_v4(),
-            "0xABCD".to_string(),
-            500,
-        );
+        let request =
+            service.create_mint_request(Uuid::new_v4(), Uuid::new_v4(), "0xABCD".to_string(), 500);
 
         assert_eq!(request.status, MintStatus::Pending);
         assert!(request.tx_hash.is_none());

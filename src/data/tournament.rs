@@ -22,15 +22,9 @@ pub enum TournamentType {
     /// Winner takes all, losers die permanently
     LethalWinnerTakesAll,
     /// Restricted by generation range
-    GenerationRestricted {
-        min_gen: u32,
-        max_gen: Option<u32>,
-    },
+    GenerationRestricted { min_gen: u32, max_gen: Option<u32> },
     /// Special event with custom modifiers
-    SpecialEvent {
-        name: String,
-        xp_multiplier: f32,
-    },
+    SpecialEvent { name: String, xp_multiplier: f32 },
 }
 
 /// Bracket system for tournament structure

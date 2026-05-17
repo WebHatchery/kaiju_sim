@@ -69,7 +69,9 @@ impl TransferService {
         self.check_transfer_lock(&mut *tx, &kaiju_id_str).await?;
 
         // 6. Get and increment nonce
-        let nonce = self.get_and_increment_nonce(&mut *tx, &from_user_id_str).await?;
+        let nonce = self
+            .get_and_increment_nonce(&mut *tx, &from_user_id_str)
+            .await?;
 
         // 7. Generate signature
         let timestamp = Utc::now();
@@ -104,11 +106,7 @@ impl TransferService {
     }
 
     /// Lock kaiju for update
-    async fn lock_kaiju(
-        &self,
-        tx: &mut Transaction<'_, MySql>,
-        kaiju_id: &str,
-    ) -> Result<Kaiju> {
+    async fn lock_kaiju(&self, tx: &mut Transaction<'_, MySql>, kaiju_id: &str) -> Result<Kaiju> {
         let kaiju: Option<Kaiju> = sqlx::query_as(
             "SELECT id, name, owner_user_id, custody_state, alive,
                     blockchain_token_id, state_hash, state_version
@@ -120,7 +118,9 @@ impl TransferService {
         .fetch_optional(&mut **tx)
         .await?;
 
-        kaiju.ok_or_else(|| TransferError::KaijuNotFound(Uuid::parse_str(kaiju_id).unwrap_or_default()))
+        kaiju.ok_or_else(|| {
+            TransferError::KaijuNotFound(Uuid::parse_str(kaiju_id).unwrap_or_default())
+        })
     }
 
     /// Check if kaiju is locked
@@ -154,15 +154,16 @@ impl TransferService {
         user_id: &str,
     ) -> Result<i64> {
         // First get the current nonce
-        let current: Option<(i64,)> = sqlx::query_as(
-            "SELECT transfer_nonce FROM users WHERE id = ?",
-        )
-        .bind(user_id)
-        .fetch_optional(&mut **tx)
-        .await?;
+        let current: Option<(i64,)> =
+            sqlx::query_as("SELECT transfer_nonce FROM users WHERE id = ?")
+                .bind(user_id)
+                .fetch_optional(&mut **tx)
+                .await?;
 
         let nonce = current
-            .ok_or_else(|| TransferError::UserNotFound(Uuid::parse_str(user_id).unwrap_or_default()))?
+            .ok_or_else(|| {
+                TransferError::UserNotFound(Uuid::parse_str(user_id).unwrap_or_default())
+            })?
             .0;
 
         // Increment nonce
@@ -257,7 +258,9 @@ impl TransferService {
         let owner_uuid = Uuid::parse_str(&kaiju.owner_user_id)
             .map_err(|e| TransferError::InvalidState(format!("Invalid owner UUID: {}", e)))?;
 
-        let proof = self.signer.sign_ownership(kaiju_id, owner_uuid, timestamp, kaiju.state_hash);
+        let proof = self
+            .signer
+            .sign_ownership(kaiju_id, owner_uuid, timestamp, kaiju.state_hash);
 
         Ok(OwnershipProof {
             kaiju_id,

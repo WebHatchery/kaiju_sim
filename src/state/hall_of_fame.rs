@@ -115,7 +115,8 @@ impl HallOfFame {
     /// Add a new entry
     pub fn add_entry(&mut self, entry: HallOfFameEntry) {
         self.entries.push(entry);
-        self.entries.sort_by(|a, b| b.prestige_score.cmp(&a.prestige_score));
+        self.entries
+            .sort_by(|a, b| b.prestige_score.cmp(&a.prestige_score));
     }
 
     /// Find entry by kaiju ID

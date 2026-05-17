@@ -15,7 +15,7 @@ pub struct KaijuGenetics {
 /// Build positive and negative prompts for a Kaiju
 pub fn build_kaiju_prompt(genetics: &KaijuGenetics) -> (String, String) {
     let base_style = "anime style, cel shaded, vibrant colors, masterpiece, high quality, 4k";
-    
+
     // Body description
     let body_desc = match genetics.body_type.to_lowercase().as_str() {
         "quadruped" => "four legged monster, beast, wolf-like creature",
@@ -38,7 +38,10 @@ pub fn build_kaiju_prompt(genetics: &KaijuGenetics) -> (String, String) {
     };
 
     // Color
-    let color_desc = format!("{} skin, {} accents", genetics.primary_color, genetics.secondary_color);
+    let color_desc = format!(
+        "{} skin, {} accents",
+        genetics.primary_color, genetics.secondary_color
+    );
 
     // Specific traits
     let traits_desc = genetics.visual_traits.join(", ");
@@ -75,7 +78,7 @@ mod tests {
         };
 
         let (pos, neg) = build_kaiju_prompt(&genetics);
-        
+
         assert!(pos.contains("anime style"));
         assert!(pos.contains("bipedal monster"));
         assert!(pos.contains("flames"));

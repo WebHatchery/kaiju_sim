@@ -50,7 +50,7 @@ impl Particle {
         let alpha = (self.lifetime / self.max_lifetime).clamp(0.0, 1.0);
         let color = Color::new(self.color.r, self.color.g, self.color.b, alpha);
         let size = self.size * alpha;
-        
+
         draw_circle(self.position.x, self.position.y, size, color);
     }
 
@@ -110,15 +110,21 @@ impl ParticleSystem {
     /// Spawn particles from a burst config
     pub fn spawn_burst(&mut self, config: &EmitterConfig) {
         let mut rng = ::rand::thread_rng();
-        
+
         for _ in 0..config.count {
             if self.particles.len() >= self.max_particles {
                 // Recycle dead particles
                 if let Some(dead) = self.particles.iter_mut().find(|p| !p.is_alive()) {
                     dead.position = config.position;
                     dead.velocity = Vec2::new(
-                        ::rand::Rng::gen_range(&mut rng, config.velocity_min.x..config.velocity_max.x),
-                        ::rand::Rng::gen_range(&mut rng, config.velocity_min.y..config.velocity_max.y),
+                        ::rand::Rng::gen_range(
+                            &mut rng,
+                            config.velocity_min.x..config.velocity_max.x,
+                        ),
+                        ::rand::Rng::gen_range(
+                            &mut rng,
+                            config.velocity_min.y..config.velocity_max.y,
+                        ),
                     );
                     dead.lifetime = config.particle_lifetime;
                     dead.max_lifetime = config.particle_lifetime;
@@ -131,7 +137,7 @@ impl ParticleSystem {
                     ::rand::Rng::gen_range(&mut rng, config.velocity_min.x..config.velocity_max.x),
                     ::rand::Rng::gen_range(&mut rng, config.velocity_min.y..config.velocity_max.y),
                 );
-                
+
                 self.particles.push(Particle::new(
                     config.position,
                     velocity,

@@ -1,6 +1,8 @@
+use crate::data::{
+    Kaiju, KaijuId, KaijuStats, Trait, TraitCategory, TraitCondition, TraitInheritance,
+};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use crate::data::{Kaiju, KaijuStats, Trait, TraitCategory, TraitCondition, TraitInheritance, KaijuId};
 
 // --- Network DTOs (Mirroring Server Types) ---
 
@@ -43,7 +45,11 @@ impl ServerKaiju {
             visual_seed: self.visual_seed,
             genome_hash: self.genome_hash,
             stats: self.stats,
-            traits: self.traits.into_iter().map(|t| t.to_client_trait()).collect(),
+            traits: self
+                .traits
+                .into_iter()
+                .map(|t| t.to_client_trait())
+                .collect(),
             hidden_traits: Vec::new(),
             experience: 0,
             alive: true,
@@ -134,7 +140,8 @@ pub fn start_breeding(
 
     println!("[CLIENT->SERVER] Starting Breeding Job");
 
-    let response = client.post("http://localhost:3000/breeding/breed")
+    let response = client
+        .post("http://localhost:3000/breeding/breed")
         .json(&request)
         .send()
         .map_err(|e| format!("Network error: {}", e))?;
@@ -143,7 +150,8 @@ pub fn start_breeding(
         return Err(format!("Server refused breeding: {}", response.status()));
     }
 
-    response.json::<BreedStartResponse>()
+    response
+        .json::<BreedStartResponse>()
         .map_err(|e| format!("Invalid server response: {}", e))
 }
 
@@ -151,7 +159,8 @@ pub fn start_breeding(
 pub fn check_breeding_status(job_id: Uuid) -> Result<BreedStatusResponse, String> {
     let client = reqwest::blocking::Client::new();
 
-    let response = client.get(format!("http://localhost:3000/breeding/status/{}", job_id))
+    let response = client
+        .get(format!("http://localhost:3000/breeding/status/{}", job_id))
         .send()
         .map_err(|e| format!("Network error: {}", e))?;
 
@@ -159,7 +168,8 @@ pub fn check_breeding_status(job_id: Uuid) -> Result<BreedStatusResponse, String
         return Err(format!("Failed to get status: {}", response.status()));
     }
 
-    let net_resp = response.json::<ServerBreedStatusResponse>()
+    let net_resp = response
+        .json::<ServerBreedStatusResponse>()
         .map_err(|e| format!("Invalid server response: {}", e))?;
 
     Ok(BreedStatusResponse {
@@ -174,7 +184,8 @@ pub fn check_breeding_status(job_id: Uuid) -> Result<BreedStatusResponse, String
 pub fn get_locked_kaiju() -> Result<Vec<Uuid>, String> {
     let client = reqwest::blocking::Client::new();
 
-    let response = client.get("http://localhost:3000/breeding/locked")
+    let response = client
+        .get("http://localhost:3000/breeding/locked")
         .send()
         .map_err(|e| format!("Network error: {}", e))?;
 
@@ -182,7 +193,8 @@ pub fn get_locked_kaiju() -> Result<Vec<Uuid>, String> {
         return Err(format!("Failed to get locked kaiju: {}", response.status()));
     }
 
-    let resp = response.json::<LockedKaijuResponse>()
+    let resp = response
+        .json::<LockedKaijuResponse>()
         .map_err(|e| format!("Invalid response: {}", e))?;
 
     Ok(resp.locked_ids)
@@ -190,11 +202,12 @@ pub fn get_locked_kaiju() -> Result<Vec<Uuid>, String> {
 
 pub fn check_server_health() -> Result<(), String> {
     let client = reqwest::blocking::Client::new();
-    let response = client.get("http://localhost:3000/health")
+    let response = client
+        .get("http://localhost:3000/health")
         .timeout(std::time::Duration::from_secs(2))
         .send()
         .map_err(|e| format!("Connection failed: {}", e))?;
-    
+
     if response.status().is_success() {
         Ok(())
     } else {
@@ -224,13 +237,20 @@ pub struct LoginResponse {
     pub roster: Vec<Kaiju>,
 }
 
-pub fn login_to_server(user_id: Option<Uuid>, starter_choice: Option<String>) -> Result<LoginResponse, String> {
+pub fn login_to_server(
+    user_id: Option<Uuid>,
+    starter_choice: Option<String>,
+) -> Result<LoginResponse, String> {
     let client = reqwest::blocking::Client::new();
-    let request = LoginRequest { user_id, starter_choice };
+    let request = LoginRequest {
+        user_id,
+        starter_choice,
+    };
 
     println!("[CLIENT->SERVER] Sending Login Request");
-    
-    let response = client.post("http://localhost:3000/user/login")
+
+    let response = client
+        .post("http://localhost:3000/user/login")
         .json(&request)
         .send()
         .map_err(|e| format!("Network error: {}", e))?;
@@ -238,16 +258,21 @@ pub fn login_to_server(user_id: Option<Uuid>, starter_choice: Option<String>) ->
     println!("[SERVER->CLIENT] Login Response: {}", response.status());
 
     if !response.status().is_success() {
-         return Err(format!("Login failed: {}", response.status()));
+        return Err(format!("Login failed: {}", response.status()));
     }
 
-    let net_resp = response.json::<ServerLoginResponse>()
+    let net_resp = response
+        .json::<ServerLoginResponse>()
         .map_err(|e| format!("Invalid login response: {}", e))?;
 
     Ok(LoginResponse {
         user_id: net_resp.user_id,
         gold: net_resp.gold,
-        roster: net_resp.roster.into_iter().map(|k| k.to_client_kaiju()).collect(),
+        roster: net_resp
+            .roster
+            .into_iter()
+            .map(|k| k.to_client_kaiju())
+            .collect(),
     })
 }
 
@@ -292,20 +317,25 @@ pub struct PurchaseResponse {
 
 pub fn list_marketplace() -> Result<Vec<MarketplaceItem>, String> {
     let client = reqwest::blocking::Client::new();
-    
+
     println!("[CLIENT->SERVER] Fetching Marketplace");
-    
-    let response = client.get("http://localhost:3000/marketplace/list")
+
+    let response = client
+        .get("http://localhost:3000/marketplace/list")
         .send()
         .map_err(|e| format!("Network error: {}", e))?;
-    
+
     if !response.status().is_success() {
-        return Err(format!("Failed to fetch marketplace: {}", response.status()));
+        return Err(format!(
+            "Failed to fetch marketplace: {}",
+            response.status()
+        ));
     }
-    
-    let data = response.json::<MarketplaceListResponse>()
+
+    let data = response
+        .json::<MarketplaceListResponse>()
         .map_err(|e| format!("Invalid marketplace response: {}", e))?;
-    
+
     Ok(data.items)
 }
 
@@ -315,14 +345,15 @@ pub fn purchase_kaiju(user_id: Uuid, item_id: &str) -> Result<PurchaseResponse, 
         user_id,
         item_id: item_id.to_string(),
     };
-    
+
     println!("[CLIENT->SERVER] Purchasing: {}", item_id);
-    
-    let response = client.post("http://localhost:3000/marketplace/purchase")
+
+    let response = client
+        .post("http://localhost:3000/marketplace/purchase")
         .json(&request)
         .send()
         .map_err(|e| format!("Network error: {}", e))?;
-    
+
     println!("[SERVER->CLIENT] Purchase Status: {}", response.status());
     let status = response.status();
 
@@ -331,11 +362,15 @@ pub fn purchase_kaiju(user_id: Uuid, item_id: &str) -> Result<PurchaseResponse, 
         println!("[SERVER->CLIENT] Purchase Error Body: {}", err_text);
         return Err(format!("Purchase failed: {} - {}", status, err_text));
     }
-    
-    let net_resp = response.json::<ServerPurchaseResponse>()
+
+    let net_resp = response
+        .json::<ServerPurchaseResponse>()
         .map_err(|e| format!("Invalid purchase response: {}", e))?;
-    
-    println!("[SERVER->CLIENT] Purchase Success! New Gold: {}", net_resp.new_gold);
+
+    println!(
+        "[SERVER->CLIENT] Purchase Success! New Gold: {}",
+        net_resp.new_gold
+    );
 
     Ok(PurchaseResponse {
         success: net_resp.success,
@@ -382,11 +417,12 @@ struct TournamentEnrollResponse {
 
 pub fn get_current_tournament() -> Result<TournamentStatusDto, String> {
     let client = reqwest::blocking::Client::new();
-    
-    let response = client.get("http://localhost:3000/tournament")
+
+    let response = client
+        .get("http://localhost:3000/tournament")
         .send()
         .map_err(|e| format!("Network error: {}", e))?;
-    
+
     if response.status() == reqwest::StatusCode::NOT_FOUND {
         return Err("No active tournament".to_string());
     }
@@ -396,33 +432,33 @@ pub fn get_current_tournament() -> Result<TournamentStatusDto, String> {
         let err_text = response.text().unwrap_or_default();
         return Err(format!("Failed to fetch tournament: {}", status));
     }
-    
-    let data = response.json::<TournamentStatusDto>()
+
+    let data = response
+        .json::<TournamentStatusDto>()
         .map_err(|e| format!("Invalid tournament response: {}", e))?;
-    
+
     Ok(data)
 }
 
 pub fn enroll_in_tournament(user_id: Uuid, kaiju_id: Uuid) -> Result<String, String> {
     let client = reqwest::blocking::Client::new();
-    let request = TournamentEnrollRequest {
-        user_id,
-        kaiju_id,
-    };
-    
-    let response = client.post("http://localhost:3000/tournament/enroll")
+    let request = TournamentEnrollRequest { user_id, kaiju_id };
+
+    let response = client
+        .post("http://localhost:3000/tournament/enroll")
         .json(&request)
         .send()
         .map_err(|e| format!("Network error: {}", e))?;
-        
+
     if !response.status().is_success() {
         let err_text = response.text().unwrap_or_default();
         return Err(format!("Enrollment failed: {}", err_text));
     }
-    
-    let data = response.json::<TournamentEnrollResponse>()
+
+    let data = response
+        .json::<TournamentEnrollResponse>()
         .map_err(|e| format!("Invalid response: {}", e))?;
-        
+
     if data.success {
         Ok(data.message)
     } else {

@@ -12,13 +12,11 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 use kaiju_server::{
     api::{self, AppState},
-    crypto::{KeyPurpose, ServerKeyPair, Signer, Verifier},
-    TransferService,
-    BreedingService,
     breeding::AdvancedBreedingService,
     breeding_jobs::BreedingJobManager,
-    ImageGenerationService,
+    crypto::{KeyPurpose, ServerKeyPair, Signer, Verifier},
     kaiju_repo::KaijuRepository,
+    BreedingService, ImageGenerationService, TransferService,
 };
 
 #[tokio::main]
@@ -38,10 +36,9 @@ async fn main() -> anyhow::Result<()> {
     tracing::info!("Starting Kaiju Server...");
 
     // Get configuration from environment
-    let database_url = std::env::var("DATABASE_URL")
-        .expect("DATABASE_URL must be set");
-    let server_secret_key = std::env::var("SERVER_SECRET_KEY")
-        .expect("SERVER_SECRET_KEY must be set");
+    let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+    let server_secret_key =
+        std::env::var("SERVER_SECRET_KEY").expect("SERVER_SECRET_KEY must be set");
     let server_port: u16 = std::env::var("SERVER_PORT")
         .unwrap_or_else(|_| "3000".to_string())
         .parse()
@@ -58,9 +55,11 @@ async fn main() -> anyhow::Result<()> {
 
     // Run migrations
     tracing::info!("Running database migrations...");
-    
+
     // Cleanup corrupt/duplicate migration checksums (Fix for 007 collision)
-    let _ = sqlx::query("DELETE FROM _sqlx_migrations WHERE version >= 20240101000007").execute(&pool).await;
+    let _ = sqlx::query("DELETE FROM _sqlx_migrations WHERE version >= 20240101000007")
+        .execute(&pool)
+        .await;
 
     sqlx::migrate!("./migrations")
         .run(&pool)
@@ -69,14 +68,15 @@ async fn main() -> anyhow::Result<()> {
     tracing::info!("Migrations applied successfully");
 
     // Load or generate server key
-    let key_pair = if server_secret_key.is_empty() || server_secret_key == "<hex_encoded_secret_key>" {
-        tracing::warn!("SERVER_SECRET_KEY not configured, generating temporary key");
-        tracing::warn!("Run 'cargo run --bin generate-keys' to generate a proper key");
-        ServerKeyPair::generate(KeyPurpose::Ownership)
-    } else {
-        ServerKeyPair::from_hex(&server_secret_key, KeyPurpose::Ownership)
-            .expect("Invalid SERVER_SECRET_KEY format")
-    };
+    let key_pair =
+        if server_secret_key.is_empty() || server_secret_key == "<hex_encoded_secret_key>" {
+            tracing::warn!("SERVER_SECRET_KEY not configured, generating temporary key");
+            tracing::warn!("Run 'cargo run --bin generate-keys' to generate a proper key");
+            ServerKeyPair::generate(KeyPurpose::Ownership)
+        } else {
+            ServerKeyPair::from_hex(&server_secret_key, KeyPurpose::Ownership)
+                .expect("Invalid SERVER_SECRET_KEY format")
+        };
 
     let public_key_hex = key_pair.public_key_hex();
     tracing::info!("Server public key: {}", &public_key_hex[..20]);
@@ -89,9 +89,11 @@ async fn main() -> anyhow::Result<()> {
     let breeding_job_manager = Arc::new(BreedingJobManager::new());
     let image_gen_service = Arc::new(ImageGenerationService::new("assets/kaiju/generated"));
     let kaiju_repo = KaijuRepository::new(pool.clone());
-    
+
     // Start Tournament Scheduler
-    let tournament_manager = Arc::new(kaiju_server::tournament::manager::TournamentManager::new(pool.clone()));
+    let tournament_manager = Arc::new(kaiju_server::tournament::manager::TournamentManager::new(
+        pool.clone(),
+    ));
     tokio::spawn(tournament_manager.run());
 
     // Create app state
@@ -107,7 +109,7 @@ async fn main() -> anyhow::Result<()> {
         server_public_keys: vec![public_key_hex],
     });
 
-use tower_http::services::ServeDir; // Added import
+    use tower_http::services::ServeDir; // Added import
 
     // Build router
     let app = Router::new()

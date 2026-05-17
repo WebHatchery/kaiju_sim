@@ -200,7 +200,11 @@ impl BattleResult {
         for entry in &self.battle_log {
             output.push_str(&format!(
                 "Turn {}: {} hits {} for {} damage ({} HP remaining)\n",
-                entry.turn, entry.attacker_name, entry.defender_name, entry.damage, entry.hp_remaining
+                entry.turn,
+                entry.attacker_name,
+                entry.defender_name,
+                entry.damage,
+                entry.hp_remaining
             ));
 
             for effect in &entry.special_effects {
@@ -234,8 +238,8 @@ pub struct BattleSummary {
 mod tests {
     use super::*;
     use crate::data::KaijuStats;
-    use uuid::Uuid;
     use chrono::Utc;
+    use uuid::Uuid;
 
     fn create_test_kaiju(name: &str, hp: i32) -> Kaiju {
         Kaiju {
@@ -256,6 +260,7 @@ mod tests {
             current_owner: "test".to_string(),
             image_uri: None,
             metadata_uri: String::new(),
+            tournaments_won: 0,
         }
     }
 

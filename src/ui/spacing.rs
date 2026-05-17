@@ -35,7 +35,15 @@ pub fn grid_cols(screen_width: f32, item_width: f32, gap: f32) -> (usize, f32) {
 }
 
 /// Calculate grid position
-pub fn grid_position(index: usize, cols: usize, start_x: f32, start_y: f32, item_width: f32, item_height: f32, gap: f32) -> (f32, f32) {
+pub fn grid_position(
+    index: usize,
+    cols: usize,
+    start_x: f32,
+    start_y: f32,
+    item_width: f32,
+    item_height: f32,
+    gap: f32,
+) -> (f32, f32) {
     let row = index / cols;
     let col = index % cols;
     let x = start_x + col as f32 * (item_width + gap);

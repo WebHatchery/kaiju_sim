@@ -47,7 +47,7 @@ impl IpfsClient {
     pub async fn upload_json(&self, json_content: &str) -> Result<IpfsUploadResponse, IpfsError> {
         // In production, use reqwest to call Pinata API:
         // POST https://api.pinata.cloud/pinning/pinJSONToIPFS
-        
+
         // For now, generate a mock hash
         let hash = format!("Qm{}", generate_mock_hash(json_content));
         let uri = format!("ipfs://{}", hash);
@@ -59,8 +59,11 @@ impl IpfsClient {
     pub async fn upload_image(&self, image_bytes: &[u8]) -> Result<IpfsUploadResponse, IpfsError> {
         // In production, use reqwest to call Pinata API:
         // POST https://api.pinata.cloud/pinning/pinFileToIPFS
-        
-        let hash = format!("Qm{}", generate_mock_hash(&format!("{:?}", image_bytes.len())));
+
+        let hash = format!(
+            "Qm{}",
+            generate_mock_hash(&format!("{:?}", image_bytes.len()))
+        );
         let uri = format!("ipfs://{}", hash);
 
         Ok(IpfsUploadResponse { hash, uri })
@@ -90,7 +93,7 @@ impl IpfsClient {
 fn generate_mock_hash(content: &str) -> String {
     use std::collections::hash_map::DefaultHasher;
     use std::hash::{Hash, Hasher};
-    
+
     let mut hasher = DefaultHasher::new();
     content.hash(&mut hasher);
     let hash = hasher.finish();
@@ -127,7 +130,7 @@ mod tests {
     async fn test_upload_json() {
         let client = IpfsClient::default();
         let result = client.upload_json(r#"{"name": "test"}"#).await;
-        
+
         assert!(result.is_ok());
         let response = result.unwrap();
         assert!(response.uri.starts_with("ipfs://Qm"));

@@ -79,8 +79,7 @@ impl Lineage {
         }
 
         // Cannot breed parent with child
-        if lineage_a.has_ancestor(lineage_b.kaiju_id)
-            || lineage_b.has_ancestor(lineage_a.kaiju_id)
+        if lineage_a.has_ancestor(lineage_b.kaiju_id) || lineage_b.has_ancestor(lineage_a.kaiju_id)
         {
             return false;
         }

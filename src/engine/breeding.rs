@@ -3,16 +3,16 @@
 //! Implements stat inheritance, trait inheritance, mutations, and
 //! deterministic offspring generation.
 
-use rand::Rng;
-use rand_chacha::ChaCha8Rng;
-use rand::SeedableRng;
-use uuid::Uuid;
 use chrono::Utc;
+use rand::Rng;
+use rand::SeedableRng;
+use rand_chacha::ChaCha8Rng;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
+use uuid::Uuid;
 
+use crate::data::genome::{Genome, GenomeStats, HiddenTraitData, TraitSlot};
 use crate::data::{Kaiju, KaijuStats, Trait, TraitInheritance};
-use crate::data::genome::{Genome, GenomeStats, TraitSlot, HiddenTraitData};
 
 /// Breeding configuration loaded from balance.json
 #[derive(Debug, Clone)]
@@ -141,7 +141,10 @@ pub enum MutationType {
     /// New random trait
     NewTrait { trait_id: String },
     /// Existing trait power boost
-    TraitPowerBoost { trait_id: String, power_increase: i32 },
+    TraitPowerBoost {
+        trait_id: String,
+        power_increase: i32,
+    },
     /// Hidden trait revealed
     HiddenUnlock { trait_id: String },
 }
@@ -346,7 +349,8 @@ fn inherit_single_stat(
 
     // Step 5: Apply constraints
     let floored = raw.max(floor as f32);
-    let soft_cap = base_cap as f32 * (1.0 + generation as f32 * config.soft_cap_multiplier_per_generation);
+    let soft_cap =
+        base_cap as f32 * (1.0 + generation as f32 * config.soft_cap_multiplier_per_generation);
     let soft_capped = floored.min(soft_cap);
     let hard_capped = soft_capped.min(hard_cap as f32);
 
@@ -496,7 +500,10 @@ fn apply_mutations(
                         trait_id: trait_to_boost.id.clone(),
                         power_increase: boost,
                     },
-                    description: format!("Trait {} power increased by {}", trait_to_boost.id, boost),
+                    description: format!(
+                        "Trait {} power increased by {}",
+                        trait_to_boost.id, boost
+                    ),
                 });
             }
         } else {

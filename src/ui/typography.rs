@@ -14,8 +14,14 @@ pub const FONT_HERO: f32 = 60.0;
 /// Draw text with drop shadow
 pub fn draw_text_shadow(text: &str, x: f32, y: f32, font_size: f32, color: Color) {
     let shadow = Color::new(0.0, 0.0, 0.0, 0.6);
-    draw_text(text, x + 2.0, y + 2.0, font_size, shadow);
-    draw_text(text, x, y, font_size, color);
+    macroquad_toolkit::ui::draw_text_shadow(
+        text,
+        x,
+        y,
+        macroquad_toolkit::ui::TextStyle::new(font_size, color),
+        vec2(2.0, 2.0),
+        shadow,
+    );
 }
 
 /// Draw bold text (simulated with double render)
@@ -26,18 +32,29 @@ pub fn draw_text_bold(text: &str, x: f32, y: f32, font_size: f32, color: Color) 
 
 /// Measure text dimensions
 pub fn measure_text_size(text: &str, font_size: f32) -> (f32, f32) {
-    let dims = measure_text(text, None, font_size as u16, 1.0);
+    let dims = macroquad_toolkit::ui::measure_text_size(
+        text,
+        macroquad_toolkit::ui::TextStyle::new(font_size, WHITE),
+    );
     (dims.width, dims.height)
 }
 
 /// Draw centered text
 pub fn draw_text_centered(text: &str, center_x: f32, y: f32, font_size: f32, color: Color) {
-    let (width, _) = measure_text_size(text, font_size);
-    draw_text(text, center_x - width / 2.0, y, font_size, color);
+    macroquad_toolkit::ui::draw_text_centered(
+        text,
+        center_x,
+        y,
+        macroquad_toolkit::ui::TextStyle::new(font_size, color),
+    );
 }
 
 /// Draw right-aligned text
 pub fn draw_text_right(text: &str, right_x: f32, y: f32, font_size: f32, color: Color) {
-    let (width, _) = measure_text_size(text, font_size);
-    draw_text(text, right_x - width, y, font_size, color);
+    macroquad_toolkit::ui::draw_text_right(
+        text,
+        right_x,
+        y,
+        macroquad_toolkit::ui::TextStyle::new(font_size, color),
+    );
 }

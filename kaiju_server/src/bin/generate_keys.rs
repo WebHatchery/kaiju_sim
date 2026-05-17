@@ -23,7 +23,10 @@ fn main() {
     println!("Add the following to your .env file:\n");
 
     // Find ownership key for primary use
-    let ownership_key = keys.iter().find(|k| k.purpose == KeyPurpose::Ownership).unwrap();
+    let ownership_key = keys
+        .iter()
+        .find(|k| k.purpose == KeyPurpose::Ownership)
+        .unwrap();
     println!("SERVER_SECRET_KEY={}", ownership_key.secret_key_hex());
 
     println!("\n=== IMPORTANT ===");

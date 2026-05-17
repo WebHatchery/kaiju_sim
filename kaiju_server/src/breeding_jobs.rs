@@ -2,10 +2,10 @@
 //! Tracks async breeding operations with parent locking.
 
 use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use tokio::sync::RwLock;
 use uuid::Uuid;
-use serde::{Deserialize, Serialize};
 
 use crate::breeding_service::{KaijuData, KaijuStats};
 
@@ -156,7 +156,9 @@ impl BreedingJobManager {
 
     /// Get all jobs for a user
     pub async fn get_user_jobs(&self, user_id: Uuid) -> Vec<BreedingJob> {
-        self.jobs.read().await
+        self.jobs
+            .read()
+            .await
             .values()
             .filter(|j| j.user_id == user_id)
             .cloned()

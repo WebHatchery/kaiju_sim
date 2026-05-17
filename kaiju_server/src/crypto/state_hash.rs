@@ -83,9 +83,11 @@ mod tests {
         let stats = json!({"hp": 100, "attack": 50});
         let traits = json!(["fire", "flying"]);
 
-        let hash1 = compute_kaiju_state_hash(kaiju_id, owner_id, "server", true, 1, &stats, &traits);
+        let hash1 =
+            compute_kaiju_state_hash(kaiju_id, owner_id, "server", true, 1, &stats, &traits);
 
-        let hash2 = compute_kaiju_state_hash(kaiju_id, owner_id, "server", true, 1, &stats, &traits);
+        let hash2 =
+            compute_kaiju_state_hash(kaiju_id, owner_id, "server", true, 1, &stats, &traits);
 
         assert_eq!(hash1, hash2);
     }

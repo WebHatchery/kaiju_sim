@@ -70,7 +70,13 @@ impl BattleSimulator {
         kaiju_b: Kaiju,
         environment: Environment,
     ) -> BattleResult {
-        execute_battle(kaiju_a, kaiju_b, environment, battle_result.seed, &self.config)
+        execute_battle(
+            kaiju_a,
+            kaiju_b,
+            environment,
+            battle_result.seed,
+            &self.config,
+        )
     }
 
     /// Verify a battle result is valid
@@ -217,7 +223,8 @@ pub fn calculate_damage(
     config: &CombatConfig,
 ) -> i32 {
     // Step 1: Base damage = attack - (defense * 0.5)
-    let base = attacker.stats.attack as f32 - (defender.stats.defense as f32 * config.defense_scaling);
+    let base =
+        attacker.stats.attack as f32 - (defender.stats.defense as f32 * config.defense_scaling);
 
     // Step 2: Apply minimum floor
     let base = base.max(config.minimum_damage as f32);
@@ -235,7 +242,8 @@ pub fn calculate_damage(
     let variance = rng.gen_range(config.variance_min..=config.variance_max);
 
     // Step 7: Calculate final damage
-    let final_damage = ((base + trait_bonus as f32) * env_multiplier * synergy_multiplier * variance) as i32;
+    let final_damage =
+        ((base + trait_bonus as f32) * env_multiplier * synergy_multiplier * variance) as i32;
 
     final_damage.max(1) // Absolute minimum: 1 damage
 }
@@ -380,6 +388,7 @@ mod tests {
             current_owner: "test".to_string(),
             image_uri: None,
             metadata_uri: String::new(),
+            tournaments_won: 0,
         }
     }
 
@@ -391,7 +400,13 @@ mod tests {
         let mut rng = ChaCha8Rng::seed_from_u64(0);
 
         // Expected: 50 - (30 * 0.5) = 50 - 15 = 35
-        let damage = calculate_damage(&attacker, &defender, &Environment::Neutral, &mut rng, &config);
+        let damage = calculate_damage(
+            &attacker,
+            &defender,
+            &Environment::Neutral,
+            &mut rng,
+            &config,
+        );
 
         // With ±5% variance, should be 33-37
         assert!(damage >= 33 && damage <= 37, "Damage was {}", damage);
@@ -404,7 +419,13 @@ mod tests {
         let config = CombatConfig::default();
         let mut rng = ChaCha8Rng::seed_from_u64(0);
 
-        let damage = calculate_damage(&attacker, &defender, &Environment::Neutral, &mut rng, &config);
+        let damage = calculate_damage(
+            &attacker,
+            &defender,
+            &Environment::Neutral,
+            &mut rng,
+            &config,
+        );
 
         // Should apply minimum floor and then variance
         assert!(damage >= 4, "Damage was {}", damage);
@@ -428,7 +449,13 @@ mod tests {
         let config = CombatConfig::default();
         let mut rng = ChaCha8Rng::seed_from_u64(0);
 
-        let damage = calculate_damage(&attacker, &defender, &Environment::Neutral, &mut rng, &config);
+        let damage = calculate_damage(
+            &attacker,
+            &defender,
+            &Environment::Neutral,
+            &mut rng,
+            &config,
+        );
 
         // Expected: (50 - 15 + 8) * 1.0 * ~1.0 = ~43
         assert!(damage >= 40 && damage <= 46, "Damage was {}", damage);

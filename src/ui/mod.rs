@@ -10,6 +10,6 @@ pub mod typography;
 // Re-exports
 pub use actions::UiAction;
 pub use colors::{dark, stat_color, trait_color, StatType};
-pub use components::{draw_kaiju_card, draw_stat_bar, CardState, CardAction};
+pub use components::{draw_kaiju_card, draw_stat_bar, CardAction, CardState};
 pub use spacing::*;
 pub use typography::*;

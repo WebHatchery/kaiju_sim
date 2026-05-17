@@ -93,7 +93,7 @@ impl ComfyClient {
         seed: i64,
     ) -> Result<String, ComfyError> {
         let client_id = Uuid::new_v4().to_string();
-        
+
         // Construct workflow JSON structure based on template
         let workflow = self.build_workflow(positive_prompt, negative_prompt, seed);
 
@@ -103,17 +103,24 @@ impl ComfyClient {
         });
 
         let url = format!("{}/prompt", self.config.server_url);
-        let response = self.client.post(&url)
+        let response = self
+            .client
+            .post(&url)
             .json(&payload)
             .send()
             .await
             .map_err(|e| ComfyError::NetworkError(e.to_string()))?;
 
         if !response.status().is_success() {
-            return Err(ComfyError::RequestFailed(format!("Status: {}", response.status())));
+            return Err(ComfyError::RequestFailed(format!(
+                "Status: {}",
+                response.status()
+            )));
         }
 
-        let prompt_res: PromptResponse = response.json().await
+        let prompt_res: PromptResponse = response
+            .json()
+            .await
             .map_err(|e| ComfyError::ParseError(e.to_string()))?;
 
         Ok(prompt_res.prompt_id)
@@ -122,8 +129,10 @@ impl ComfyClient {
     /// Check status and get image filename if complete
     pub async fn check_history(&self, prompt_id: &str) -> Result<Option<String>, ComfyError> {
         let url = format!("{}/history/{}", self.config.server_url, prompt_id);
-        
-        let response = self.client.get(&url)
+
+        let response = self
+            .client
+            .get(&url)
             .send()
             .await
             .map_err(|e| ComfyError::NetworkError(e.to_string()))?;
@@ -134,7 +143,9 @@ impl ComfyClient {
             return Ok(None);
         }
 
-        let history: HashMap<String, HistoryData> = response.json().await
+        let history: HashMap<String, HistoryData> = response
+            .json()
+            .await
             .map_err(|e| ComfyError::ParseError(e.to_string()))?;
 
         if let Some(data) = history.get(prompt_id) {
@@ -152,18 +163,25 @@ impl ComfyClient {
     /// Download generated image
     pub async fn download_image(&self, filename: &str) -> Result<Vec<u8>, ComfyError> {
         let url = format!("{}/view", self.config.server_url);
-        
-        let response = self.client.get(&url)
+
+        let response = self
+            .client
+            .get(&url)
             .query(&[("filename", filename), ("type", "output")])
             .send()
             .await
             .map_err(|e| ComfyError::NetworkError(e.to_string()))?;
 
         if !response.status().is_success() {
-            return Err(ComfyError::RequestFailed(format!("Download failed: {}", response.status())));
+            return Err(ComfyError::RequestFailed(format!(
+                "Download failed: {}",
+                response.status()
+            )));
         }
 
-        let bytes = response.bytes().await
+        let bytes = response
+            .bytes()
+            .await
             .map_err(|e| ComfyError::NetworkError(e.to_string()))?;
 
         Ok(bytes.to_vec())
@@ -261,9 +279,9 @@ mod tests {
     fn test_workflow_structure() {
         let config = ComfyConfig::default();
         let client = ComfyClient::new(config);
-        
+
         let workflow = client.build_workflow("test prompt", "bad prompt", 12345);
-        
+
         assert!(workflow.get("3").is_some()); // KSampler
         assert_eq!(workflow["3"]["inputs"]["seed"], 12345);
         assert_eq!(workflow["6"]["inputs"]["text"], "test prompt");

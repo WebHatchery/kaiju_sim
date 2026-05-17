@@ -192,7 +192,10 @@ pub struct BreedingOutcome {
 impl BreedingLog {
     pub fn new(parent_a_id: Uuid, parent_b_id: Uuid) -> Self {
         Self {
-            event_id: format!("breed_{}", Uuid::new_v4().to_string().split('-').next().unwrap()),
+            event_id: format!(
+                "breed_{}",
+                Uuid::new_v4().to_string().split('-').next().unwrap()
+            ),
             parents: ParentInfo {
                 parent_a: ParentRecord {
                     id: parent_a_id,
@@ -250,17 +253,17 @@ impl BreedingLog {
             timestamp: chrono::Utc::now(),
         }
     }
-    
+
     /// Convert to formatted JSON for logging
     pub fn to_json_string(&self) -> String {
         serde_json::to_string_pretty(self).unwrap_or_else(|_| format!("{:?}", self))
     }
-    
+
     /// Log to tracing at debug level
     pub fn log_debug(&self) {
         tracing::debug!("BreedingLog: {}", self.to_json_string());
     }
-    
+
     /// Log to tracing at info level (summarized)
     pub fn log_info(&self) {
         tracing::info!(
@@ -271,22 +274,41 @@ impl BreedingLog {
             self.outcome.generation,
             self.outcome.rarity
         );
-        
+
         if self.rolls.mutation_roll.triggered {
             tracing::info!(
                 "  MUTATION: {:?} -> {}",
                 self.rolls.mutation_roll.mutation_type,
-                self.rolls.mutation_roll.mutation_result.as_deref().unwrap_or("unknown")
+                self.rolls
+                    .mutation_roll
+                    .mutation_result
+                    .as_deref()
+                    .unwrap_or("unknown")
             );
         }
-        
-        let inherited_count = self.rolls.trait_inheritance.iter()
-            .filter(|t| matches!(t.result, TraitInheritResult::Inherited | TraitInheritResult::InheritedHidden))
+
+        let inherited_count = self
+            .rolls
+            .trait_inheritance
+            .iter()
+            .filter(|t| {
+                matches!(
+                    t.result,
+                    TraitInheritResult::Inherited | TraitInheritResult::InheritedHidden
+                )
+            })
             .count();
-        let lost_count = self.rolls.trait_inheritance.iter()
+        let lost_count = self
+            .rolls
+            .trait_inheritance
+            .iter()
             .filter(|t| matches!(t.result, TraitInheritResult::Lost))
             .count();
-        
-        tracing::info!("  Traits: {} inherited, {} lost", inherited_count, lost_count);
+
+        tracing::info!(
+            "  Traits: {} inherited, {} lost",
+            inherited_count,
+            lost_count
+        );
     }
 }

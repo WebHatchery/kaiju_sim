@@ -4,7 +4,10 @@
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 
-use super::{BreedingConfig, MutationRoll, MutationType as LogMutationType, MutationModifier, TraitDefinition, TraitCategory, InheritanceType};
+use super::{
+    BreedingConfig, InheritanceType, MutationModifier, MutationRoll,
+    MutationType as LogMutationType, TraitCategory, TraitDefinition,
+};
 
 /// Mutation type weights for rolling
 const MUTATION_TYPE_WEIGHTS: [(MutationKind, f32); 4] = [
@@ -71,7 +74,10 @@ pub fn get_mutation_trait_pool() -> Vec<TraitDefinition> {
             inheritance_type: InheritanceType::Recessive,
             power: 8,
             is_hidden: true,
-            visual_keywords: vec!["additional appendage".to_string(), "asymmetric limbs".to_string()],
+            visual_keywords: vec![
+                "additional appendage".to_string(),
+                "asymmetric limbs".to_string(),
+            ],
             condition: None,
             polygenic_points: 0,
         },
@@ -95,7 +101,10 @@ pub fn get_mutation_trait_pool() -> Vec<TraitDefinition> {
             inheritance_type: InheritanceType::Recessive,
             power: 3,
             is_hidden: true,
-            visual_keywords: vec!["glowing marks".to_string(), "luminescent patterns".to_string()],
+            visual_keywords: vec![
+                "glowing marks".to_string(),
+                "luminescent patterns".to_string(),
+            ],
             condition: None,
             polygenic_points: 0,
         },
@@ -107,7 +116,10 @@ pub fn get_mutation_trait_pool() -> Vec<TraitDefinition> {
             inheritance_type: InheritanceType::Recessive,
             power: 12,
             is_hidden: true,
-            visual_keywords: vec!["crackling energy".to_string(), "overloaded aura".to_string()],
+            visual_keywords: vec![
+                "crackling energy".to_string(),
+                "overloaded aura".to_string(),
+            ],
             condition: None,
             polygenic_points: 0,
         },
@@ -119,7 +131,10 @@ pub fn get_mutation_trait_pool() -> Vec<TraitDefinition> {
             inheritance_type: InheritanceType::Recessive,
             power: -8,
             is_hidden: true,
-            visual_keywords: vec!["thin structure".to_string(), "fragile appearance".to_string()],
+            visual_keywords: vec![
+                "thin structure".to_string(),
+                "fragile appearance".to_string(),
+            ],
             condition: None,
             polygenic_points: 0,
         },
@@ -131,7 +146,10 @@ pub fn get_mutation_trait_pool() -> Vec<TraitDefinition> {
             inheritance_type: InheritanceType::Recessive,
             power: 15,
             is_hidden: true,
-            visual_keywords: vec!["oversized features".to_string(), "accelerated development".to_string()],
+            visual_keywords: vec![
+                "oversized features".to_string(),
+                "accelerated development".to_string(),
+            ],
             condition: None,
             polygenic_points: 0,
         },
@@ -155,7 +173,10 @@ pub fn get_mutation_trait_pool() -> Vec<TraitDefinition> {
             inheritance_type: InheritanceType::Recessive,
             power: 6,
             is_hidden: true,
-            visual_keywords: vec!["heat-sensing organs".to_string(), "infrared eyes".to_string()],
+            visual_keywords: vec![
+                "heat-sensing organs".to_string(),
+                "infrared eyes".to_string(),
+            ],
             condition: None,
             polygenic_points: 0,
         },
@@ -191,7 +212,10 @@ pub fn get_mutation_trait_pool() -> Vec<TraitDefinition> {
             inheritance_type: InheritanceType::Recessive,
             power: 6,
             is_hidden: true,
-            visual_keywords: vec!["color-shifting skin".to_string(), "chromatic scales".to_string()],
+            visual_keywords: vec![
+                "color-shifting skin".to_string(),
+                "chromatic scales".to_string(),
+            ],
             condition: None,
             polygenic_points: 0,
         },
@@ -207,7 +231,7 @@ impl MutationProcessor {
     pub fn new(config: BreedingConfig) -> Self {
         Self { config }
     }
-    
+
     /// Calculate mutation chance based on various factors
     pub fn calculate_mutation_chance(
         &self,
@@ -217,7 +241,7 @@ impl MutationProcessor {
     ) -> (f32, Vec<MutationModifier>) {
         let mut chance = self.config.mutation.base_chance;
         let mut modifiers = Vec::new();
-        
+
         // Generation modifier
         let gen_mod = offspring_generation as f32 * self.config.mutation.generation_modifier;
         if gen_mod > 0.0 {
@@ -227,16 +251,19 @@ impl MutationProcessor {
             });
             chance += gen_mod;
         }
-        
+
         // High trait count modifier
         if total_parent_traits > self.config.mutation.high_trait_threshold {
             modifiers.push(MutationModifier {
-                source: format!("High trait count ({} > {})", total_parent_traits, self.config.mutation.high_trait_threshold),
+                source: format!(
+                    "High trait count ({} > {})",
+                    total_parent_traits, self.config.mutation.high_trait_threshold
+                ),
                 value: self.config.mutation.high_trait_bonus,
             });
             chance += self.config.mutation.high_trait_bonus;
         }
-        
+
         // Mutation Catalyst item
         if mutation_catalyst_used {
             modifiers.push(MutationModifier {
@@ -245,13 +272,13 @@ impl MutationProcessor {
             });
             chance += 0.05;
         }
-        
+
         // Cap at max chance
         chance = chance.min(self.config.mutation.max_chance);
-        
+
         (chance, modifiers)
     }
-    
+
     /// Process mutation roll
     pub fn process_mutation<R: Rng>(
         &self,
@@ -268,22 +295,22 @@ impl MutationProcessor {
             total_parent_traits,
             mutation_catalyst_used,
         );
-        
+
         let roll: f32 = rng.gen();
         let triggered = roll < final_chance;
-        
+
         let mut result = MutationResult::default();
         let mut log_type = None;
         let mut log_result = None;
-        
+
         if triggered {
             result.occurred = true;
-            
+
             // Roll for mutation type
             let type_roll: f32 = rng.gen();
             let mut cumulative = 0.0;
             let mut mutation_kind = MutationKind::StatBoost;
-            
+
             for (kind, weight) in MUTATION_TYPE_WEIGHTS.iter() {
                 cumulative += weight;
                 if type_roll < cumulative {
@@ -291,21 +318,23 @@ impl MutationProcessor {
                     break;
                 }
             }
-            
+
             result.kind = Some(mutation_kind);
-            
+
             match mutation_kind {
                 MutationKind::StatBoost => {
                     // Boost random stat by 5-15%
                     let stat_names = ["hp", "attack", "defense", "speed", "energy"];
                     let target_stat = stat_names[rng.gen_range(0..stat_names.len())].to_string();
-                    let boost = rng.gen_range(self.config.mutation.stat_boost_min..=self.config.mutation.stat_boost_max);
-                    
+                    let boost = rng.gen_range(
+                        self.config.mutation.stat_boost_min..=self.config.mutation.stat_boost_max,
+                    );
+
                     if let Some(stat_val) = stats.get_mut(&target_stat) {
                         let new_val = (*stat_val as f32 * boost) as i32;
                         *stat_val = new_val;
                     }
-                    
+
                     result.affected_target = Some(target_stat.clone());
                     result.effect_value = Some(boost);
                     log_type = Some(LogMutationType::StatBoost);
@@ -314,15 +343,17 @@ impl MutationProcessor {
                 MutationKind::NewTrait => {
                     // Add random mutation trait
                     let pool = get_mutation_trait_pool();
-                    let existing_ids: std::collections::HashSet<_> = existing_visible_traits.iter()
+                    let existing_ids: std::collections::HashSet<_> = existing_visible_traits
+                        .iter()
                         .chain(existing_hidden_traits.iter())
                         .map(|t| t.id.clone())
                         .collect();
-                    
-                    let available: Vec<_> = pool.into_iter()
+
+                    let available: Vec<_> = pool
+                        .into_iter()
                         .filter(|t| !existing_ids.contains(&t.id))
                         .collect();
-                    
+
                     if !available.is_empty() {
                         let new_trait = available[rng.gen_range(0..available.len())].clone();
                         result.affected_target = Some(new_trait.name.clone());
@@ -334,16 +365,18 @@ impl MutationProcessor {
                 }
                 MutationKind::TraitPowerBoost => {
                     // Boost existing trait power by 1-3
-                    let all_traits: Vec<_> = existing_visible_traits.iter_mut()
+                    let all_traits: Vec<_> = existing_visible_traits
+                        .iter_mut()
                         .chain(existing_hidden_traits.iter_mut())
                         .collect();
-                    
+
                     if !all_traits.is_empty() {
                         let idx = rng.gen_range(0..all_traits.len());
                         let boost = rng.gen_range(1..=3);
-                        
+
                         // Need to re-collect mutably
-                        let combined_len = existing_visible_traits.len() + existing_hidden_traits.len();
+                        let combined_len =
+                            existing_visible_traits.len() + existing_hidden_traits.len();
                         if combined_len > 0 {
                             let target_idx = rng.gen_range(0..combined_len);
                             if target_idx < existing_visible_traits.len() {
@@ -371,7 +404,7 @@ impl MutationProcessor {
                     if !existing_hidden_traits.is_empty() {
                         let idx = rng.gen_range(0..existing_hidden_traits.len());
                         let t = &mut existing_hidden_traits[idx];
-                        
+
                         // 50% chance to reveal, 50% chance to boost
                         if rng.gen_bool(0.5) {
                             t.is_hidden = false;
@@ -392,7 +425,7 @@ impl MutationProcessor {
                 }
             }
         }
-        
+
         let mutation_log = MutationRoll {
             base_chance: self.config.mutation.base_chance,
             modifiers,
@@ -402,7 +435,7 @@ impl MutationProcessor {
             mutation_type: log_type,
             mutation_result: log_result,
         };
-        
+
         (result, mutation_log)
     }
 }
@@ -433,7 +466,10 @@ impl<'de> Deserialize<'de> for MutationKind {
             "new_trait" => Ok(MutationKind::NewTrait),
             "trait_power_boost" => Ok(MutationKind::TraitPowerBoost),
             "hidden_unlock" => Ok(MutationKind::HiddenUnlock),
-            _ => Err(serde::de::Error::custom(format!("unknown mutation kind: {}", s))),
+            _ => Err(serde::de::Error::custom(format!(
+                "unknown mutation kind: {}",
+                s
+            ))),
         }
     }
 }

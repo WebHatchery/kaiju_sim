@@ -2,10 +2,10 @@
 //! Provides endpoints to list and purchase Kaiju from the server-controlled catalog.
 
 use axum::{
-    extract::{State, Json},
+    extract::{Json, State},
+    http::StatusCode,
     routing::{get, post},
     Router,
-    http::StatusCode,
 };
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
@@ -77,14 +77,13 @@ impl MarketplaceItemDbRow {
 }
 
 /// Get the marketplace catalog
-async fn handle_list(
-    State(state): State<Arc<AppState>>,
-) -> Json<ListResponse> {
-    let rows: Vec<MarketplaceItemDbRow> = sqlx::query_as("SELECT * FROM marketplace_items ORDER BY price ASC")
-        .fetch_all(&state.db_pool)
-        .await
-        .unwrap_or_default();
-        
+async fn handle_list(State(state): State<Arc<AppState>>) -> Json<ListResponse> {
+    let rows: Vec<MarketplaceItemDbRow> =
+        sqlx::query_as("SELECT * FROM marketplace_items ORDER BY price ASC")
+            .fetch_all(&state.db_pool)
+            .await
+            .unwrap_or_default();
+
     let items = rows.into_iter().map(|r| r.into_item()).collect();
     Json(ListResponse { items })
 }
@@ -94,63 +93,104 @@ async fn handle_purchase(
     State(state): State<Arc<AppState>>,
     Json(payload): Json<PurchaseRequest>,
 ) -> Result<Json<PurchaseResponse>, (StatusCode, String)> {
-    tracing::info!("Purchase request: user={}, item={}", payload.user_id, payload.item_id);
-    
+    tracing::info!(
+        "Purchase request: user={}, item={}",
+        payload.user_id,
+        payload.item_id
+    );
+
     // Fetch item from DB
-    let item_row: Option<MarketplaceItemDbRow> = sqlx::query_as("SELECT * FROM marketplace_items WHERE id = ?")
-        .bind(&payload.item_id)
-        .fetch_optional(&state.db_pool)
-        .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+    let item_row: Option<MarketplaceItemDbRow> =
+        sqlx::query_as("SELECT * FROM marketplace_items WHERE id = ?")
+            .bind(&payload.item_id)
+            .fetch_optional(&state.db_pool)
+            .await
+            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
     match item_row {
         Some(row) => {
             let market_item = row.into_item();
             let price = market_item.price as i64;
-            
+
             // 1. Transaction to check and deduct gold
-            let mut tx = state.db_pool.begin().await
-                .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
-            
-            let user_id_str = payload.user_id.to_string();
-            
-            let user_gold: i64 = sqlx::query_scalar("SELECT gold FROM users WHERE id = ? FOR UPDATE")
-                .bind(&user_id_str)
-                .fetch_optional(&mut *tx)
+            let mut tx = state
+                .db_pool
+                .begin()
                 .await
-                .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
-                .unwrap_or(0);
-                
+                .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+            let user_id_str = payload.user_id.to_string();
+
+            let user_gold: i64 =
+                sqlx::query_scalar("SELECT gold FROM users WHERE id = ? FOR UPDATE")
+                    .bind(&user_id_str)
+                    .fetch_optional(&mut *tx)
+                    .await
+                    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
+                    .unwrap_or(0);
+
             if user_gold < price {
-                return Err((StatusCode::BAD_REQUEST, format!("Insufficient Gold: Have {}, Need {}", user_gold, price)));
+                return Err((
+                    StatusCode::BAD_REQUEST,
+                    format!("Insufficient Gold: Have {}, Need {}", user_gold, price),
+                ));
             }
-            
+
             let new_gold = user_gold - price;
-            
+
             sqlx::query("UPDATE users SET gold = ? WHERE id = ?")
                 .bind(new_gold)
                 .bind(&user_id_str)
                 .execute(&mut *tx)
                 .await
                 .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
-                
-            tx.commit().await
+
+            tx.commit()
+                .await
                 .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
             // 3. Create a new Kaiju record owned by the user
             use crate::breeding_service::{Trait, TraitInheritance};
-            
+
             // Add traits based on item ID (e.g. bipedal_neutral)
             let mut traits = Vec::new();
             if market_item.id.contains("bipedal") {
-                traits.push(Trait { id: "body".to_string(), name: "Bipedal".to_string(), description: "Bipedal body type".to_string(), inheritance: TraitInheritance::Dominant, is_hidden: false, power: 10 });
+                traits.push(Trait {
+                    id: "body".to_string(),
+                    name: "Bipedal".to_string(),
+                    description: "Bipedal body type".to_string(),
+                    inheritance: TraitInheritance::Dominant,
+                    is_hidden: false,
+                    power: 10,
+                });
             } else if market_item.id.contains("quadruped") {
-                traits.push(Trait { id: "body".to_string(), name: "Quadruped".to_string(), description: "Quadruped body type".to_string(), inheritance: TraitInheritance::Dominant, is_hidden: false, power: 10 });
+                traits.push(Trait {
+                    id: "body".to_string(),
+                    name: "Quadruped".to_string(),
+                    description: "Quadruped body type".to_string(),
+                    inheritance: TraitInheritance::Dominant,
+                    is_hidden: false,
+                    power: 10,
+                });
             } else if market_item.id.contains("serpentine") {
-                traits.push(Trait { id: "body".to_string(), name: "Serpentine".to_string(), description: "Serpentine body type".to_string(), inheritance: TraitInheritance::Dominant, is_hidden: false, power: 10 });
+                traits.push(Trait {
+                    id: "body".to_string(),
+                    name: "Serpentine".to_string(),
+                    description: "Serpentine body type".to_string(),
+                    inheritance: TraitInheritance::Dominant,
+                    is_hidden: false,
+                    power: 10,
+                });
             }
-            
-            traits.push(Trait { id: "element".to_string(), name: "Neutral".to_string(), description: "Neutral element".to_string(), inheritance: TraitInheritance::Dominant, is_hidden: false, power: 10 });
+
+            traits.push(Trait {
+                id: "element".to_string(),
+                name: "Neutral".to_string(),
+                description: "Neutral element".to_string(),
+                inheritance: TraitInheritance::Dominant,
+                is_hidden: false,
+                power: 10,
+            });
 
             let kaiju = KaijuData {
                 id: Uuid::new_v4(),
@@ -165,14 +205,17 @@ async fn handle_purchase(
                 image_url: market_item.image_url.clone(),
                 tournaments_won: 0,
             };
-            
+
             // Save to database
             if let Err(e) = state.kaiju_repo.insert(&kaiju).await {
                 tracing::error!("Failed to save purchased Kaiju: {}", e);
                 // Note: Gold was already deducted. Ideally we would refund here or use distributed tx.
-                return Err((StatusCode::INTERNAL_SERVER_ERROR, "Failed to persist purchase".to_string()));
+                return Err((
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Failed to persist purchase".to_string(),
+                ));
             }
-            
+
             Ok(Json(PurchaseResponse {
                 success: true,
                 kaiju: Some(kaiju),
@@ -180,8 +223,9 @@ async fn handle_purchase(
                 message: format!("Successfully purchased {}!", market_item.name),
             }))
         }
-        None => {
-            Err((StatusCode::NOT_FOUND, format!("Item '{}' not found", payload.item_id)))
-        }
+        None => Err((
+            StatusCode::NOT_FOUND,
+            format!("Item '{}' not found", payload.item_id),
+        )),
     }
 }
