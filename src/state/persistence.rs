@@ -34,11 +34,9 @@ pub fn save_game(state: &GameState) -> Result<(), PersistenceError> {
         },
     };
 
-    let json = serde_json::to_string_pretty(&save_data)
-        .map_err(|e| PersistenceError::SerializationFailed(e.to_string()))?;
-
     let path = get_save_path()?;
-    std::fs::write(&path, json).map_err(|e| PersistenceError::WriteFailed(e.to_string()))?;
+    macroquad_toolkit::persistence::save_json_atomic(&path, &save_data)
+        .map_err(PersistenceError::WriteFailed)?;
 
     eprintln!("Game saved to: {}", path.display());
     Ok(())
