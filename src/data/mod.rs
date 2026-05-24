@@ -7,6 +7,7 @@ pub mod lineage;
 pub mod loader;
 pub mod ranking;
 pub mod tournament;
+pub mod training;
 pub mod traits;
 pub mod types;
 
@@ -18,5 +19,6 @@ pub use lineage::{Lineage, LineageHighlight};
 pub use loader::GameData;
 pub use ranking::EloRating;
 pub use tournament::{BracketSystem, Match, MatchResult, Tournament, TournamentType};
+pub use training::TrainingFocus;
 pub use traits::{Trait, TraitCategory, TraitCondition, TraitInheritance};
 pub use types::*;

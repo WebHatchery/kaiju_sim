@@ -11,7 +11,7 @@ pub mod session;
 // Re-export commonly used types
 pub use battle_state::{BattleLogEntry, BattleResult, BattleState};
 pub use game_phase::{GamePhase, PhaseStack, PhaseTransition};
-pub use game_state::{GameState, Notification, NotificationType};
+pub use game_state::{GameState, LastBattleReport, Notification, NotificationType};
 pub use hall_of_fame::{HallOfFame, HallOfFameEntry, LegacyRecord};
 pub use persistence::{load_game, save_exists, save_game, AutoSaveManager, PersistenceError};
 pub use player_data::{PlayerData, PlayerSettings, PlayerStats};

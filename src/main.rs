@@ -9,17 +9,16 @@ mod server_bridge;
 mod state;
 mod ui;
 
-use data::GameData;
+use data::{Environment, GameData, TrainingFocus};
+use engine::mvp;
+use engine::{breed_kaiju, BattleSimulator};
 use screens::*;
 use state::game_phase::{GamePhase, PhaseStack, PhaseTransition};
 use state::persistence::{self, AutoSaveManager};
-use state::GameState;
-use state::NotificationType;
+use state::{GameState, LastBattleReport, NotificationType};
 use ui::actions::UiAction;
 use ui::assets::AssetManager;
 use ui::colors::dark;
-// use engine::breeding::{self, BreedingConfig}; // Replaced by server bridge
-// use rand::Rng; // Removed for WebGL compatibility
 
 fn window_conf() -> Conf {
     Conf {
@@ -34,20 +33,7 @@ fn window_conf() -> Conf {
 
 #[macroquad::main(window_conf)]
 async fn main() {
-    // 0. Verify Server Connection (Mandatory)
-    println!("Connecting to Kaiju Server...");
-    match server_bridge::check_server_health() {
-        Ok(_) => println!("Server Connected."),
-        Err(e) => {
-            eprintln!("CRITICAL ERROR: Kaiju Server not found!");
-            eprintln!("Details: {}", e);
-            eprintln!("Please run 'cargo run --bin kaiju-server' in another terminal.");
-            std::process::exit(1);
-        }
-    }
-
-    // 1. Load static game data
-    let _game_data = match GameData::load() {
+    let game_data = match GameData::load() {
         Ok(data) => {
             println!("Loaded {} traits", data.traits.traits.len());
             data
@@ -59,98 +45,20 @@ async fn main() {
         }
     };
 
-    // 1. Initialize asset manager
     let mut assets = AssetManager::new();
     println!("Loading assets...");
     assets.load_all_assets().await;
     println!("Assets loaded.");
 
-    // 2. Initialize Game Session (Load ID -> Auto-Sync with Server)
-    // This encapsulates all the logic to get a fresh, synced GameState.
-    let mut state = state::session::initialize_session(&mut assets).await;
-
-    // 4. Initialize phase stack
+    let mut state = GameState::default();
     let mut phase_stack = PhaseStack::new(GamePhase::MainMenu);
-
-    // 5. Initialize UI states
     let mut breeding_state = BreedingState::default();
-    let mut marketplace_state = MarketplaceState::default();
-
-    // 6. Initialize AutoSave Manager
     let mut auto_save = AutoSaveManager::new();
 
-    // 7. Track pending breeding jobs
-    let mut pending_breeding_jobs: Vec<uuid::Uuid> = Vec::new();
-    let mut locked_kaiju_ids: std::collections::HashSet<uuid::Uuid> =
-        std::collections::HashSet::new();
-
-    // Main game loop
     loop {
-        // Global time update
         state.tick();
-
-        // Auto-save check
         auto_save.update(&state);
 
-        // Poll pending breeding jobs for completion
-        let mut completed_jobs = Vec::new();
-        for job_id in &pending_breeding_jobs {
-            match server_bridge::check_breeding_status(*job_id) {
-                Ok(status) => {
-                    println!("[CLIENT] Job {} status: {:?}", job_id, status.status);
-                    if status.status == server_bridge::BreedingJobStatus::Complete {
-                        println!(
-                            "[CLIENT] Job complete! Offspring: {:?}",
-                            status.offspring.is_some()
-                        );
-                        if let Some(offspring) = status.offspring {
-                            // Cache the new image
-                            if let Some(url) = &offspring.image_uri {
-                                println!("[CLIENT] Downloading image from: {}", url);
-                                if let Some(path) = assets.download_if_missing(url) {
-                                    let key = assets.get_filename_from_url(url);
-                                    assets.load_texture(&key, &path).await;
-                                }
-                            }
-
-                            let name = offspring.name.clone();
-                            state.add_kaiju(offspring);
-                            state.notify(
-                                format!("{} has hatched!", name),
-                                NotificationType::Success,
-                            );
-                            println!("[CLIENT] Added {} to roster!", name);
-                        }
-                        completed_jobs.push(*job_id);
-                    } else if status.status == server_bridge::BreedingJobStatus::Failed {
-                        if let Some(err) = status.error_message {
-                            state.notify(
-                                format!("Breeding failed: {}", err),
-                                NotificationType::Error,
-                            );
-                        }
-                        completed_jobs.push(*job_id);
-                    }
-                }
-                Err(e) => {
-                    println!("[CLIENT] Poll error for job {}: {}", job_id, e);
-                }
-            }
-        }
-
-        // Remove completed jobs and unlock parents
-        for job_id in completed_jobs {
-            pending_breeding_jobs.retain(|id| *id != job_id);
-            // Refresh locked Kaiju list from server
-            if let Ok(locked) = server_bridge::get_locked_kaiju() {
-                locked_kaiju_ids.clear();
-                for id in locked {
-                    locked_kaiju_ids.insert(id);
-                }
-            }
-        }
-
-        // Input handling for dev/debug
         if is_key_pressed(KeyCode::F5) {
             let _ = persistence::delete_save();
             state = GameState::default();
@@ -158,43 +66,23 @@ async fn main() {
             println!("Debug: Save Deleted & State Reset. Restarting...");
         }
 
-        // Determine current phase and draw appropriate screen
         let action = match phase_stack.current() {
             GamePhase::Loading => None,
             GamePhase::MainMenu => draw_main_menu(),
             GamePhase::Laboratory => draw_laboratory(&state),
             GamePhase::Roster => draw_roster_view(&state, &assets),
+            GamePhase::Training => {
+                draw_training_screen(&state, &assets, game_data.balance.mvp.training.cost)
+            }
             GamePhase::Breeding => {
+                let locked_kaiju_ids = std::collections::HashSet::new();
                 draw_breeding_screen(&state, &mut breeding_state, &locked_kaiju_ids, &assets)
             }
-
-            // WIP Screens
-            // WIP Screens
-            GamePhase::TournamentLobby => draw_tournament_lobby(&mut state),
-            GamePhase::Leaderboard => {
-                draw_placeholder("Leaderboard (Coming Soon)", &state);
-                if is_key_pressed(KeyCode::Escape) {
-                    Some(UiAction::GoToLaboratory)
-                } else {
-                    None
-                }
+            GamePhase::TournamentLobby => {
+                draw_arena_screen(&state, &assets, game_data.balance.mvp.battle.entry_fee)
             }
-            GamePhase::Battle => {
-                draw_placeholder("Battle Simulation (Coming Soon)", &state);
-                if is_key_pressed(KeyCode::Escape) {
-                    Some(UiAction::GoToLaboratory)
-                } else {
-                    None
-                }
-            }
-            GamePhase::Results => {
-                draw_placeholder("Battle Results", &state);
-                if is_key_pressed(KeyCode::Escape) {
-                    Some(UiAction::GoToLaboratory)
-                } else {
-                    None
-                }
-            }
+            GamePhase::Leaderboard => draw_leaderboard(&state),
+            GamePhase::Battle | GamePhase::Results => draw_battle_results(&state, &assets),
             GamePhase::KaijuDetail(id) => {
                 let action = draw_kaiju_detail(&state, *id, &assets);
                 if let Some(UiAction::Back) = action {
@@ -205,7 +93,12 @@ async fn main() {
             }
             GamePhase::StarterSelection => draw_starter_selection(&assets).await,
             GamePhase::Marketplace => {
-                draw_marketplace(&mut marketplace_state, state.player.gold, &assets)
+                draw_placeholder("Marketplace is outside the local MVP", &state);
+                if is_key_pressed(KeyCode::Escape) {
+                    Some(UiAction::GoToLaboratory)
+                } else {
+                    None
+                }
             }
             _ => {
                 draw_placeholder(
@@ -220,17 +113,14 @@ async fn main() {
             }
         };
 
-        // Handle returned action
         if let Some(act) = action {
             handle_ui_action(
                 &mut state,
                 &mut phase_stack,
                 &mut breeding_state,
-                &mut marketplace_state,
-                &mut pending_breeding_jobs,
-                &mut locked_kaiju_ids,
                 &mut auto_save,
                 &mut assets,
+                &game_data,
                 act,
             )
             .await;
@@ -245,11 +135,9 @@ async fn handle_ui_action(
     state: &mut GameState,
     stack: &mut PhaseStack,
     breeding_state: &mut BreedingState,
-    marketplace_state: &mut MarketplaceState,
-    pending_breeding_jobs: &mut Vec<uuid::Uuid>,
-    locked_kaiju_ids: &mut std::collections::HashSet<uuid::Uuid>,
     auto_save: &mut AutoSaveManager,
     assets: &mut AssetManager,
+    game_data: &GameData,
     action: UiAction,
 ) {
     match action {
@@ -262,60 +150,26 @@ async fn handle_ui_action(
         }
         UiAction::GoToLaboratory => stack.apply(PhaseTransition::to_laboratory()),
         UiAction::GoToRoster => stack.apply(PhaseTransition::Replace(GamePhase::Roster)),
+        UiAction::GoToTraining => stack.apply(PhaseTransition::to_training()),
         UiAction::GoToBreeding => {
             *breeding_state = BreedingState::default(); // Reset state
             stack.apply(PhaseTransition::to_breeding());
         }
-        UiAction::GoToTournament => stack.apply(PhaseTransition::to_tournament_lobby()),
+        UiAction::GoToTournament => {
+            stack.apply(PhaseTransition::Replace(GamePhase::TournamentLobby))
+        }
         UiAction::GoToLeaderboard => stack.apply(PhaseTransition::Replace(GamePhase::Leaderboard)),
         UiAction::GoToSettings => println!("Settings clicked"),
-        UiAction::Back => {
-            println!(
-                "[MAIN] Handling UiAction::Back, current phase: {:?}",
-                stack.current()
-            );
-            // Reset tournament lobby state when leaving
-            crate::screens::tournament_lobby::reset_state();
-            stack.apply(PhaseTransition::Pop);
-            println!("[MAIN] After pop, new phase: {:?}", stack.current());
-        }
+        UiAction::Back => stack.apply(PhaseTransition::Pop),
 
         // System
         UiAction::NewGame => {
-            // Go to Starter Selection
             stack.apply(PhaseTransition::Replace(GamePhase::StarterSelection));
         }
         UiAction::SelectStarter(choice) => {
-            // Server Authoritative Login with Choice
-            match server_bridge::login_to_server(None, Some(choice.clone())) {
-                Ok(response) => {
-                    *state = GameState::default(); // Reset Local
-                    state.player.player_id = response.user_id.to_string(); // SYNC WITH SERVER ID!
-                    state.player.gold = response.gold as i64;
-                    state.roster.clear();
-
-                    println!("Logged in as User: {}", response.user_id);
-
-                    for kaiju in response.roster {
-                        // Cache Image
-                        if let Some(url) = &kaiju.image_uri {
-                            if let Some(path) = assets.download_if_missing(url) {
-                                let key = assets.get_filename_from_url(url);
-                                assets.load_texture(&key, &path).await;
-                            }
-                        }
-                        state.add_kaiju(kaiju);
-                    }
-
-                    // Force initial save with authoritative data
-                    let _ = auto_save.force_save(state);
-                    stack.apply(PhaseTransition::to_laboratory());
-                }
-                Err(e) => {
-                    eprintln!("Failed to login to server: {}", e);
-                    // TODO: Show error UI
-                }
-            }
+            *state = GameState::new_local_game(&choice, &game_data.traits.traits);
+            let _ = auto_save.force_save(state);
+            stack.apply(PhaseTransition::to_laboratory());
         }
         UiAction::ContinueGame => {
             match persistence::load_game() {
@@ -333,7 +187,10 @@ async fn handle_ui_action(
             if let Err(e) = persistence::save_game(state) {
                 eprintln!("Failed to save game on exit: {}", e);
             }
+            #[cfg(not(target_arch = "wasm32"))]
             std::process::exit(0);
+            #[cfg(target_arch = "wasm32")]
+            stack.apply(PhaseTransition::to_menu());
         }
 
         // Kaiju Interaction
@@ -343,118 +200,243 @@ async fn handle_ui_action(
         UiAction::ViewKaijuDetails(id) => {
             stack.apply(PhaseTransition::show_kaiju_detail(id));
         }
+        UiAction::TrainKaiju { kaiju_id, focus } => {
+            train_kaiju(state, kaiju_id, focus, game_data, auto_save);
+        }
 
         // Breeding
         UiAction::ConfirmBreeding => {
-            if let (Some(id_a), Some(id_b)) = (breeding_state.parent_a, breeding_state.parent_b) {
-                // Check cost
-                let cost = 100;
-                if state.player.gold < cost {
-                    state.notify("Insufficient gold!".to_string(), NotificationType::Error);
-                    return;
-                }
+            breed_selected_kaiju(state, breeding_state, game_data, auto_save);
+            *breeding_state = BreedingState::default();
+            stack.apply(PhaseTransition::to_laboratory());
+        }
 
-                if state.get_kaiju(id_a).is_some() && state.get_kaiju(id_b).is_some() {
-                    // Use server bridge for authoritative breeding
-                    let seed = macroquad::rand::rand() as u64;
-
-                    // Start async breeding job (non-blocking)
-                    match server_bridge::start_breeding(id_a, id_b, seed) {
-                        Ok(response) => {
-                            // Charge gold
-                            state.player.spend_gold(cost);
-
-                            // Track job and lock parents
-                            pending_breeding_jobs.push(response.job_id);
-                            for id in &response.locked_kaiju {
-                                locked_kaiju_ids.insert(*id);
-                            }
-
-                            state.notify(response.message, NotificationType::Info);
-
-                            // Reset breeding state and go back
-                            *breeding_state = BreedingState::default();
-                            stack.apply(PhaseTransition::to_laboratory());
-                        }
-                        Err(e) => {
-                            state.notify(format!("Server Error: {}", e), NotificationType::Error);
-                            eprintln!("Breeding failed: {}", e);
-                        }
-                    }
-                } else {
-                    state.notify("Parent not found!".to_string(), NotificationType::Error);
-                }
-            } else {
-                state.notify(
-                    "Select two parents first!".to_string(),
-                    NotificationType::Warning,
-                );
+        UiAction::StartBattle(kaiju_id) => {
+            if run_local_battle(state, kaiju_id, game_data, auto_save) {
+                stack.apply(PhaseTransition::to_results());
             }
         }
-
-        // Marketplace
-        UiAction::GoToMarketplace => {
-            *marketplace_state = MarketplaceState::default(); // Reset to fetch fresh data
-            stack.apply(PhaseTransition::Replace(GamePhase::Marketplace));
-        }
-        UiAction::PurchaseKaiju(item_id) => {
-            let user_id = uuid::Uuid::parse_str(&state.player.player_id).unwrap_or_default();
-            println!(
-                "[CLIENT] Attempting purchase for user {} item {}",
-                user_id, item_id
-            );
-
-            match server_bridge::purchase_kaiju(user_id, &item_id) {
-                Ok(response) => {
-                    println!(
-                        "[CLIENT] Purchase response received: Success={}",
-                        response.success
-                    );
-                    if response.success {
-                        if let Some(kaiju) = response.kaiju {
-                            println!("[CLIENT] Added new Kaiju: {}", kaiju.name);
-                            // Cache Image
-                            if let Some(url) = &kaiju.image_uri {
-                                if let Some(path) = assets.download_if_missing(url) {
-                                    let key = assets.get_filename_from_url(url);
-                                    assets.load_texture(&key, &path).await;
-                                }
-                            }
-
-                            state.add_kaiju(kaiju);
-                            state.player.gold = response.new_gold as i64;
-                            state.notify(response.message, NotificationType::Success);
-
-                            // Navigate to Roster to show the new Kaiju
-                            stack.apply(PhaseTransition::Replace(GamePhase::Roster));
-                        } else {
-                            println!("[CLIENT] Success but no Kaiju in response?");
-                        }
-                    } else {
-                        println!(
-                            "[CLIENT] Server returned success=false: {}",
-                            response.message
-                        );
-                        state.notify(response.message, NotificationType::Error);
-                    }
-                }
-                Err(e) => {
-                    println!("[CLIENT] Purchase error: {}", e);
-                    state.notify(format!("Purchase failed: {}", e), NotificationType::Error);
-
-                    // Auto-Recover: If purchase failed (e.g. out of sync), re-sync with server
-                    // Auto-Recover: If purchase failed (e.g. out of sync), re-sync with server
-                    println!("[CLIENT] Attempting to re-sync state after failure...");
-                    state::session::force_resync(state, assets).await;
-                }
-            }
-        }
+        UiAction::GoToMarketplace => stack.apply(PhaseTransition::Replace(GamePhase::Marketplace)),
 
         // Catch-all
         _ => {
             println!("Action not yet handled: {:?}", action);
         }
     }
+}
+
+fn train_kaiju(
+    state: &mut GameState,
+    kaiju_id: uuid::Uuid,
+    focus: TrainingFocus,
+    game_data: &GameData,
+    auto_save: &mut AutoSaveManager,
+) {
+    let outcome = mvp::roll_training(focus, next_seed(state), &game_data.balance.mvp.training);
+
+    if state.get_kaiju(kaiju_id).is_none() {
+        state.notify(
+            "Training target not found.".to_string(),
+            NotificationType::Error,
+        );
+        return;
+    }
+
+    if !state.player.spend_gold(outcome.cost) {
+        state.notify(
+            format!("Training requires {} gold.", outcome.cost),
+            NotificationType::Warning,
+        );
+        return;
+    }
+
+    let kaiju = state
+        .get_kaiju_mut(kaiju_id)
+        .expect("training target was checked before spending");
+
+    match outcome.focus {
+        TrainingFocus::Endurance => kaiju.stats.hp += outcome.stat_gain * 5,
+        TrainingFocus::Power => kaiju.stats.attack += outcome.stat_gain,
+        TrainingFocus::Guard => kaiju.stats.defense += outcome.stat_gain,
+        TrainingFocus::Reflex => kaiju.stats.speed += outcome.stat_gain,
+    }
+    kaiju.experience += outcome.xp_gain;
+    let kaiju_name = kaiju.name.clone();
+
+    state.player.add_experience(outcome.xp_gain as u64);
+    state.notify(
+        format!(
+            "{} completed {} training: +{} {}, +{} XP.",
+            kaiju_name,
+            outcome.focus.label(),
+            if matches!(outcome.focus, TrainingFocus::Endurance) {
+                outcome.stat_gain * 5
+            } else {
+                outcome.stat_gain
+            },
+            outcome.focus.stat_label(),
+            outcome.xp_gain
+        ),
+        NotificationType::Success,
+    );
+    let _ = auto_save.force_save(state);
+}
+
+fn breed_selected_kaiju(
+    state: &mut GameState,
+    breeding_state: &BreedingState,
+    game_data: &GameData,
+    auto_save: &mut AutoSaveManager,
+) {
+    let (Some(id_a), Some(id_b)) = (breeding_state.parent_a, breeding_state.parent_b) else {
+        state.notify(
+            "Select two parents before breeding.".to_string(),
+            NotificationType::Warning,
+        );
+        return;
+    };
+
+    let Some(parent_a) = state.get_kaiju(id_a).cloned() else {
+        state.notify("Parent A not found.".to_string(), NotificationType::Error);
+        return;
+    };
+    let Some(parent_b) = state.get_kaiju(id_b).cloned() else {
+        state.notify("Parent B not found.".to_string(), NotificationType::Error);
+        return;
+    };
+
+    let cost = game_data.balance.mvp.breeding.cost;
+    if !state.player.spend_gold(cost) {
+        state.notify(
+            format!("Breeding requires {} gold.", cost),
+            NotificationType::Warning,
+        );
+        return;
+    }
+
+    let config = mvp::breeding_config_from_balance(&game_data.balance.breeding);
+    match breed_kaiju(&parent_a, &parent_b, next_seed(state), &config) {
+        Ok(result) => {
+            let token_id = state.next_token_id();
+            let mut offspring = result.offspring;
+            offspring.token_id = token_id;
+            offspring.parent_ids = Some((parent_a.token_id, parent_b.token_id));
+            offspring.name = mvp::offspring_name(&parent_a, &parent_b, token_id);
+            offspring.current_owner = state.player.player_id.clone();
+            offspring.original_breeder = state.player.player_id.clone();
+            offspring.image_uri = Some(mvp::image_for_kaiju(&offspring));
+
+            state.player.stats.total_kaiju_bred += 1;
+            state.player.stats.highest_generation = state
+                .player
+                .stats
+                .highest_generation
+                .max(offspring.generation);
+            let offspring_name = offspring.name.clone();
+            state.add_kaiju(offspring);
+            state.notify(
+                format!(
+                    "{} hatched from {} and {}.",
+                    offspring_name, parent_a.name, parent_b.name
+                ),
+                NotificationType::Success,
+            );
+            let _ = auto_save.force_save(state);
+        }
+        Err(err) => {
+            state.player.add_gold(cost);
+            state.notify(format!("Breeding failed: {}", err), NotificationType::Error);
+        }
+    }
+}
+
+fn run_local_battle(
+    state: &mut GameState,
+    kaiju_id: uuid::Uuid,
+    game_data: &GameData,
+    auto_save: &mut AutoSaveManager,
+) -> bool {
+    let entry_fee = game_data.balance.mvp.battle.entry_fee;
+    if !state.player.spend_gold(entry_fee) {
+        state.notify(
+            format!("Arena entry requires {} gold.", entry_fee),
+            NotificationType::Warning,
+        );
+        return false;
+    }
+
+    let Some(player_kaiju) = state.get_kaiju(kaiju_id).cloned() else {
+        state.player.add_gold(entry_fee);
+        state.notify("Fighter not found.".to_string(), NotificationType::Error);
+        return false;
+    };
+
+    let seed = next_seed(state);
+    let environment = environment_for_seed(seed);
+    let opponent = mvp::generate_opponent(&player_kaiju, seed ^ 0xA51CE, &game_data.traits.traits);
+    let simulator =
+        BattleSimulator::new(mvp::combat_config_from_balance(&game_data.balance.combat));
+    let result = simulator.simulate(player_kaiju.clone(), opponent.clone(), environment, seed);
+    let won = result.winner == player_kaiju.name;
+
+    let gold_reward = if won {
+        game_data.balance.mvp.battle.win_gold
+    } else {
+        game_data.balance.mvp.battle.loss_gold
+    };
+    let xp_reward = if won {
+        game_data.balance.mvp.battle.win_xp
+    } else {
+        game_data.balance.mvp.battle.loss_xp
+    };
+
+    state.player.add_gold(gold_reward);
+    state.player.add_experience(xp_reward as u64);
+    state.player.stats.total_battles_fought += 1;
+    if won {
+        state.player.stats.total_battles_won += 1;
+    }
+
+    if let Some(kaiju) = state.get_kaiju_mut(kaiju_id) {
+        kaiju.experience += xp_reward;
+        if won {
+            kaiju.tournaments_won += 1;
+        }
+    }
+
+    state.last_battle = Some(LastBattleReport {
+        player_kaiju_id: kaiju_id,
+        opponent,
+        result,
+        won,
+        gold_reward,
+        xp_reward,
+    });
+
+    let message = if won {
+        format!("{} won the arena bout.", player_kaiju.name)
+    } else {
+        format!("{} lost the arena bout.", player_kaiju.name)
+    };
+    state.notify(
+        message,
+        if won {
+            NotificationType::Success
+        } else {
+            NotificationType::Warning
+        },
+    );
+    let _ = auto_save.force_save(state);
+    true
+}
+
+fn environment_for_seed(seed: u64) -> Environment {
+    let environments = Environment::all();
+    environments[(seed as usize) % environments.len()].clone()
+}
+
+fn next_seed(state: &GameState) -> u64 {
+    ((macroquad::rand::rand() as u64) << 32) ^ state.game_time.total_ticks
 }
 
 fn draw_placeholder(title: &str, _state: &GameState) {

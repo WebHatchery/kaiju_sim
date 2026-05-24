@@ -56,19 +56,19 @@ pub fn draw_laboratory(state: &GameState) -> Option<UiAction> {
         start_x + btn_size + gap,
         start_y,
         btn_size,
-        "BREEDING",
-        "Create offspring",
+        "TRAINING",
+        "Improve stats",
         dark::POSITIVE,
     ) {
-        result = Some(UiAction::GoToBreeding);
+        result = Some(UiAction::GoToTraining);
     }
 
     if draw_hub_button(
         start_x + (btn_size + gap) * 2.0,
         start_y,
         btn_size,
-        "TOURNAMENT",
-        "Enter battles",
+        "ARENA",
+        "Fight rivals",
         dark::WARNING,
     ) {
         result = Some(UiAction::GoToTournament);
@@ -92,11 +92,11 @@ pub fn draw_laboratory(state: &GameState) -> Option<UiAction> {
         start_x + btn_size + gap,
         row2_y,
         btn_size,
-        "SHOP",
-        "Buy kaiju",
-        dark::ACCENT,
+        "BREEDING",
+        "Create offspring",
+        dark::POSITIVE,
     ) {
-        result = Some(UiAction::GoToMarketplace);
+        result = Some(UiAction::GoToBreeding);
     }
 
     if draw_hub_button(

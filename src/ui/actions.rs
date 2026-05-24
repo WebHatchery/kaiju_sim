@@ -2,6 +2,8 @@
 
 use uuid::Uuid;
 
+use crate::data::TrainingFocus;
+
 /// Master UI action enum
 #[derive(Debug, Clone)]
 pub enum UiAction {
@@ -9,6 +11,7 @@ pub enum UiAction {
     GoToMenu,
     GoToLaboratory,
     GoToRoster,
+    GoToTraining,
     GoToBreeding,
     GoToTournament,
     GoToLeaderboard,
@@ -19,6 +22,10 @@ pub enum UiAction {
     SelectKaiju(Uuid),
     DeselectKaiju,
     ViewKaijuDetails(Uuid),
+    TrainKaiju {
+        kaiju_id: Uuid,
+        focus: TrainingFocus,
+    },
 
     // Breeding
     SelectParentA(Uuid),
@@ -28,11 +35,15 @@ pub enum UiAction {
     CancelBreeding,
 
     // Tournament
-    EnterTournament { tournament_id: Uuid, kaiju_id: Uuid },
+    EnterTournament {
+        tournament_id: Uuid,
+        kaiju_id: Uuid,
+    },
     WatchTournament(Uuid),
     ViewBracket(Uuid),
 
     // Battle
+    StartBattle(Uuid),
     SkipBattle,
     PauseBattle,
     ResumeBattle,

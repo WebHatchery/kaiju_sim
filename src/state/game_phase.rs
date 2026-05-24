@@ -14,6 +14,8 @@ pub enum GamePhase {
     Laboratory,
     /// Roster view
     Roster,
+    /// Targeted kaiju training
+    Training,
     /// Breeding interface
     Breeding,
     /// Tournament lobby
@@ -58,6 +60,7 @@ impl GamePhase {
             Self::MainMenu => "Main Menu",
             Self::Laboratory => "Laboratory",
             Self::Roster => "Roster",
+            Self::Training => "Training",
             Self::Breeding => "Breeding",
             Self::TournamentLobby => "Tournament Lobby",
             Self::Battle => "Battle",
@@ -97,6 +100,10 @@ impl PhaseTransition {
 
     pub fn to_breeding() -> Self {
         Self::Replace(GamePhase::Breeding)
+    }
+
+    pub fn to_training() -> Self {
+        Self::Replace(GamePhase::Training)
     }
 
     pub fn to_tournament_lobby() -> Self {

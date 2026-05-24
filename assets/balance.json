@@ -87,5 +87,23 @@
             2000
         ],
         "battles_required_for_layer_2": 10
+    },
+    "mvp": {
+        "training": {
+            "cost": 50,
+            "xp_gain": 18,
+            "stat_gain_min": 3,
+            "stat_gain_max": 7
+        },
+        "battle": {
+            "entry_fee": 20,
+            "win_gold": 140,
+            "loss_gold": 30,
+            "win_xp": 65,
+            "loss_xp": 25
+        },
+        "breeding": {
+            "cost": 150
+        }
     }
 }

@@ -5,6 +5,7 @@ use uuid::Uuid;
 
 use crate::data::types::KaijuId;
 use crate::data::{Kaiju, KaijuStats, Trait};
+use crate::state::battle_state::BattleResult;
 use crate::state::player_data::PlayerData;
 
 /// Main game state - owns all mutable game data
@@ -33,6 +34,9 @@ pub struct GameState {
     /// Last fetched tournament status (UI state)
     #[serde(skip)]
     pub tournament_status: Option<crate::server_bridge::TournamentStatusDto>,
+    /// Last local battle result for the results screen
+    #[serde(skip)]
+    pub last_battle: Option<LastBattleReport>,
 }
 
 impl Default for GameState {
@@ -60,7 +64,41 @@ impl GameState {
             selected_kaiju: None,
             notifications: Vec::new(),
             tournament_status: None,
+            last_battle: None,
         }
+    }
+
+    /// Create a local MVP game with the chosen starter plus a second breeder.
+    pub fn new_local_game(starter_choice: &str, traits: &[Trait]) -> Self {
+        let companion_choice = match starter_choice {
+            "Fire" => "Ice",
+            "Ice" => "Electric",
+            "Electric" => "Fire",
+            _ => "Ice",
+        };
+
+        let mut state = Self {
+            save_version: 1,
+            player: PlayerData::default(),
+            roster: vec![
+                create_elemental_starter(starter_choice, traits, 1),
+                create_elemental_starter(companion_choice, traits, 2),
+            ],
+            pending_breeding: None,
+            unlocked_facilities: vec!["laboratory_lv1".into(), "training_ring".into()],
+            research_progress: ResearchProgress::default(),
+            game_time: GameTime::default(),
+            selected_kaiju: None,
+            notifications: Vec::new(),
+            tournament_status: None,
+            last_battle: None,
+        };
+
+        state.notify(
+            "Facility online. Train, fight, and breed your first bloodline.".to_string(),
+            NotificationType::Info,
+        );
+        state
     }
 
     /// Find kaiju by ID
@@ -139,6 +177,16 @@ impl GameState {
     pub fn living_count(&self) -> usize {
         self.roster.iter().filter(|k| k.alive).count()
     }
+
+    /// Generate the next local token identity for off-chain MVP kaiju.
+    pub fn next_token_id(&self) -> u64 {
+        self.roster
+            .iter()
+            .map(|k| k.token_id)
+            .max()
+            .unwrap_or(0)
+            .saturating_add(1)
+    }
 }
 
 /// Create a starter kaiju
@@ -148,7 +196,7 @@ fn create_starter_kaiju(name: &str, seed: u64) -> Kaiju {
 
     Kaiju {
         id: Uuid::new_v4(),
-        token_id: 0,
+        token_id: seed + 1,
         name: name.to_string(),
         generation: 0,
         created_at: chrono::Utc::now().timestamp(),
@@ -167,6 +215,58 @@ fn create_starter_kaiju(name: &str, seed: u64) -> Kaiju {
         } else {
             Some("assets/sprites/kaiju/kaiju_ice_elemental_1768091156648.png".to_string())
         },
+        metadata_uri: String::new(),
+        tournaments_won: 0,
+    }
+}
+
+fn create_elemental_starter(choice: &str, traits: &[Trait], token_id: u64) -> Kaiju {
+    let (name, stats, trait_ids, image_uri, seed) = match choice {
+        "Fire" => (
+            "Ignis",
+            KaijuStats::new(220, 58, 28, 34, 100),
+            vec!["fire_core"],
+            "assets/sprites/kaiju/kaiju_fire_elemental_1768091138860.png",
+            11,
+        ),
+        "Electric" => (
+            "Volt",
+            KaijuStats::new(205, 45, 27, 54, 110),
+            vec!["electric_breath", "swift_reflexes"],
+            "assets/sprites/kaiju/kaiju_electric_elemental_1768091175509.png",
+            13,
+        ),
+        _ => (
+            "Glacies",
+            KaijuStats::new(245, 42, 52, 24, 95),
+            vec!["thick_armor"],
+            "assets/sprites/kaiju/kaiju_ice_elemental_1768091156648.png",
+            12,
+        ),
+    };
+
+    let visible_traits = trait_ids
+        .iter()
+        .filter_map(|id| traits.iter().find(|trait_def| trait_def.id == *id).cloned())
+        .collect();
+
+    Kaiju {
+        id: Uuid::new_v4(),
+        token_id,
+        name: name.to_string(),
+        generation: 0,
+        created_at: chrono::Utc::now().timestamp(),
+        original_breeder: "player".to_string(),
+        parent_ids: None,
+        visual_seed: seed,
+        genome_hash: format!("starter_{}_{}", choice.to_lowercase(), seed),
+        stats,
+        traits: visible_traits,
+        hidden_traits: Vec::new(),
+        experience: 0,
+        alive: true,
+        current_owner: "player".to_string(),
+        image_uri: Some(image_uri.to_string()),
         metadata_uri: String::new(),
         tournaments_won: 0,
     }
@@ -230,6 +330,17 @@ pub enum NotificationType {
     Success,
     Warning,
     Error,
+}
+
+/// Battle outcome cached for the post-fight results screen.
+#[derive(Clone, Debug)]
+pub struct LastBattleReport {
+    pub player_kaiju_id: KaijuId,
+    pub opponent: Kaiju,
+    pub result: BattleResult,
+    pub won: bool,
+    pub gold_reward: i64,
+    pub xp_reward: u32,
 }
 
 #[cfg(test)]

@@ -41,6 +41,7 @@ pub struct BalanceConfig {
     pub combat: CombatConfig,
     pub tournaments: TournamentRewardsConfig,
     pub research: ResearchConfig,
+    pub mvp: MvpConfig,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -90,6 +91,35 @@ pub struct ResearchConfig {
     pub facility_levels: u32,
     pub decoding_costs: Vec<u32>,
     pub battles_required_for_layer_2: u32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MvpConfig {
+    pub training: TrainingMvpConfig,
+    pub battle: BattleMvpConfig,
+    pub breeding: BreedingMvpConfig,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TrainingMvpConfig {
+    pub cost: i64,
+    pub xp_gain: u32,
+    pub stat_gain_min: i32,
+    pub stat_gain_max: i32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BattleMvpConfig {
+    pub entry_fee: i64,
+    pub win_gold: i64,
+    pub loss_gold: i64,
+    pub win_xp: u32,
+    pub loss_xp: u32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BreedingMvpConfig {
+    pub cost: i64,
 }
 
 /// Tournament database from tournaments.json
