@@ -6,6 +6,7 @@ use std::path::PathBuf;
 use crate::state::game_state::GameState;
 
 const SAVE_FILE: &str = "kaiju_sim_save.json";
+const SAVE_GAME: &str = "kaiju_sim";
 const SAVE_VERSION: u32 = 1;
 
 /// Save data wrapper with versioning
@@ -34,29 +35,92 @@ pub fn save_game(state: &GameState) -> Result<(), PersistenceError> {
         },
     };
 
-    let path = get_save_path()?;
-    macroquad_toolkit::persistence::save_json_atomic(&path, &save_data)
-        .map_err(PersistenceError::WriteFailed)?;
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        let path = get_save_path()?;
+        macroquad_toolkit::persistence::save_json_atomic(&path, &save_data)
+            .map_err(PersistenceError::WriteFailed)?;
 
-    eprintln!("Game saved to: {}", path.display());
+        eprintln!("Game saved to: {}", path.display());
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    {
+        macroquad_toolkit::persistence::save_json_key(SAVE_GAME, SAVE_FILE, &save_data)
+            .map_err(PersistenceError::WriteFailed)?;
+    }
+
     Ok(())
 }
 
 /// Load game state from JSON file
 pub fn load_game() -> Result<GameState, PersistenceError> {
-    let path = get_save_path()?;
+    #[cfg(target_arch = "wasm32")]
+    {
+        let save_data: SaveData =
+            macroquad_toolkit::persistence::load_json_key(SAVE_GAME, SAVE_FILE).map_err(|e| {
+                if e.contains("No data found") {
+                    PersistenceError::SaveNotFound
+                } else {
+                    PersistenceError::ReadFailed(e)
+                }
+            })?;
 
-    if !path.exists() {
-        return Err(PersistenceError::SaveNotFound);
+        return Ok(validate_loaded_save(save_data));
     }
 
-    let json =
-        std::fs::read_to_string(&path).map_err(|e| PersistenceError::ReadFailed(e.to_string()))?;
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        let path = get_save_path()?;
 
-    let save_data: SaveData = serde_json::from_str(&json)
-        .map_err(|e| PersistenceError::DeserializationFailed(e.to_string()))?;
+        if !path.exists() {
+            return Err(PersistenceError::SaveNotFound);
+        }
 
-    // Version migration placeholder
+        let json = std::fs::read_to_string(&path)
+            .map_err(|e| PersistenceError::ReadFailed(e.to_string()))?;
+
+        let save_data: SaveData = serde_json::from_str(&json)
+            .map_err(|e| PersistenceError::DeserializationFailed(e.to_string()))?;
+
+        eprintln!("Game loaded from: {}", path.display());
+        Ok(validate_loaded_save(save_data))
+    }
+}
+
+/// Check if save file exists
+pub fn save_exists() -> bool {
+    #[cfg(target_arch = "wasm32")]
+    {
+        return macroquad_toolkit::persistence::json_key_exists(SAVE_GAME, SAVE_FILE);
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        get_save_path().map(|p| p.exists()).unwrap_or(false)
+    }
+}
+
+/// Delete save file
+pub fn delete_save() -> Result<(), PersistenceError> {
+    #[cfg(target_arch = "wasm32")]
+    {
+        return macroquad_toolkit::persistence::delete_json_key(SAVE_GAME, SAVE_FILE)
+            .map_err(PersistenceError::DeleteFailed);
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        let path = get_save_path()?;
+        if path.exists() {
+            std::fs::remove_file(&path)
+                .map_err(|e| PersistenceError::DeleteFailed(e.to_string()))?;
+        }
+        Ok(())
+    }
+}
+
+fn validate_loaded_save(save_data: SaveData) -> GameState {
     if save_data.version < SAVE_VERSION {
         eprintln!(
             "Migrating save from version {} to {}",
@@ -64,22 +128,7 @@ pub fn load_game() -> Result<GameState, PersistenceError> {
         );
     }
 
-    eprintln!("Game loaded from: {}", path.display());
-    Ok(save_data.game_state)
-}
-
-/// Check if save file exists
-pub fn save_exists() -> bool {
-    get_save_path().map(|p| p.exists()).unwrap_or(false)
-}
-
-/// Delete save file
-pub fn delete_save() -> Result<(), PersistenceError> {
-    let path = get_save_path()?;
-    if path.exists() {
-        std::fs::remove_file(&path).map_err(|e| PersistenceError::DeleteFailed(e.to_string()))?;
-    }
-    Ok(())
+    save_data.game_state
 }
 
 /// Get platform-specific save file path
