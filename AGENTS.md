@@ -4,7 +4,7 @@ This file provides guidance to Codex when working in this repository.
 
 ## Project Overview
 
-**Kaiju Breeding Simulator** is a Rust/Macroquad strategic management and auto-battle game. Players breed, train, and fight persistent kaiju whose stats, traits, lineage, and battle history define their legacy.
+**Kaiju Breeding Simulator** is a Rust/Macroquad strategic management and auto-battle game. Players breed, train, and fight persistent kaiju whose stats, traits, lineage, and documented history define their legacy.
 
 The current client has a playable local MVP:
 - start a new game and choose a starter
@@ -12,7 +12,7 @@ The current client has a playable local MVP:
 - fight seeded AI arena battles
 - breed two living kaiju into a new offspring
 - save/load local progress
-- view roster, kaiju details, battle results, and local leaderboard
+- view roster, kaiju details, battle results, event history, and local leaderboard
 
 ## Technology
 
@@ -20,7 +20,7 @@ The current client has a playable local MVP:
 - Language: Rust 2021
 - Targets: native Windows and `wasm32-unknown-unknown`
 - Data: JSON files under `assets/`
-- Future services: `kaiju_server/` and `contracts/` exist for server/NFT work, but the MVP core loop is local and must not require the server.
+- Future services: `kaiju_server/` and `contracts/` are not required for the V1 local MVP.
 
 ## Core Documents
 
@@ -28,12 +28,12 @@ Keep documentation lean. The retained docs are:
 - `kaiju_sim.md`: core game design document
 - `IMPLEMENTATION_GUIDE.md`: high-level implementation roadmap
 - `GAMEPLAY_WALKTHROUGH.md`: short player-facing flow
+- `KAIJU_HISTORY_DESIGN.md`: V1 kaiju history/event-record design
 - `CODE_STANDARDS.md`: Rust/Macroquad coding standards
 - `MACROQUAD_TOOLKIT.md`: local UI toolkit reference
-- `nft_design.md`: future NFT ownership/provenance design
 - `AGENTS.md`: working instructions for agents
 
-Do not recreate deleted phase plans or deep subsystem specs unless the user explicitly asks for a new focused document.
+Do not recreate deleted phase plans, external ownership specs, or deep subsystem specs unless the user explicitly asks for a new focused document.
 
 ## Commands
 
@@ -105,16 +105,18 @@ Training:
 - training consumes gold, grants XP, and improves a targeted stat
 - tuning belongs in `assets/balance.json`
 
-NFT philosophy:
-- NFT ownership/provenance is future-facing and should not drive local MVP gameplay logic
-- gameplay remains off-chain; blockchain state is only for ownership/provenance/death status when that layer is implemented
+History:
+- each kaiju stores a chronological event log
+- events should record creation, roster joins, training, battles, breeding, offspring, transfers, research, and death where applicable
+- local V1 history is the source of truth for kaiju legacy
+- future multiplayer can sync or compare these records, but should not be required for V1
 
 ## Testing Focus
 
 Prioritize tests for:
 - breeding validation and stat inheritance
 - combat determinism and damage formulas
-- save/load round trips
+- save/load round trips including `Kaiju.history`
 - local MVP action handling
 - WebGL compile compatibility
 

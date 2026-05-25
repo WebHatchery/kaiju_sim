@@ -4,6 +4,7 @@ use crate::state::GameState;
 use crate::ui::actions::UiAction;
 use crate::ui::assets::AssetManager;
 use crate::ui::colors::dark;
+use crate::ui::shell::*;
 use crate::ui::typography::*;
 use macroquad::prelude::*;
 
@@ -12,53 +13,76 @@ pub fn draw_arena_screen(
     assets: &AssetManager,
     entry_fee: i64,
 ) -> Option<UiAction> {
-    let sw = screen_width();
-    clear_background(dark::BACKGROUND);
-
-    draw_rectangle(0.0, 0.0, sw, 60.0, dark::SURFACE);
-    draw_text("ARENA", 20.0, 40.0, FONT_LARGE, dark::TEXT_PRIMARY);
-
-    if draw_button(sw - 105.0, 15.0, 85.0, 30.0, "< Back", dark::BUTTON_BG) {
-        return Some(UiAction::GoToLaboratory);
+    let frame = draw_app_shell(state, AppSection::Arena);
+    if frame.nav_action.is_some() {
+        return frame.nav_action;
     }
+
+    let c = frame.content;
+    let list_w = c.w * 0.66;
+    let list_panel = Rect::new(c.x, c.y, list_w, c.h);
+    let info_panel = Rect::new(c.x + list_w + PANEL_GAP, c.y, c.w - list_w - PANEL_GAP, c.h);
+    draw_panel(list_panel, "ARENA FIGHTERS");
+    draw_panel(info_panel, "NEXT ARENA FIGHT");
 
     draw_text(
         &format!(
-            "Pick a kaiju for an instant seeded fight. Entry {} gold. Wins pay out and grant more XP.",
+            "Entry fee: {} gold | Battles are seeded and recorded.",
             entry_fee
         ),
-        24.0,
-        86.0,
-        FONT_NORMAL,
+        list_panel.x + 14.0,
+        list_panel.y + 52.0,
+        FONT_SMALL,
         dark::TEXT_SECONDARY,
     );
 
-    let mut y = 120.0;
+    let can_pay = state.player.gold >= entry_fee;
+    let mut y = list_panel.y + 78.0;
     for kaiju in state.roster.iter().filter(|k| k.alive) {
-        if let Some(action) = draw_fighter_row(24.0, y, sw - 48.0, kaiju, assets) {
+        if let Some(action) = draw_fighter_row(
+            Rect::new(list_panel.x + 14.0, y, list_panel.w - 28.0, 92.0),
+            kaiju,
+            assets,
+            can_pay,
+        ) {
             return Some(action);
         }
-        y += 104.0;
+        y += 106.0;
     }
 
+    draw_arena_info(info_panel, entry_fee);
     None
 }
 
 fn draw_fighter_row(
-    x: f32,
-    y: f32,
-    w: f32,
+    rect: Rect,
     kaiju: &crate::data::Kaiju,
     assets: &AssetManager,
+    can_pay: bool,
 ) -> Option<UiAction> {
-    draw_rectangle(x, y, w, 86.0, dark::SURFACE);
-    draw_rectangle_lines(x, y, w, 86.0, 1.0, dark::BORDER);
-
-    draw_portrait(x + 12.0, y + 10.0, 66.0, kaiju, assets);
-    draw_text(&kaiju.name, x + 92.0, y + 30.0, FONT_MEDIUM, WHITE);
+    draw_rectangle(
+        rect.x,
+        rect.y,
+        rect.w,
+        rect.h,
+        Color::new(0.035, 0.060, 0.082, 0.94),
+    );
+    draw_rectangle_lines(rect.x, rect.y, rect.w, rect.h, 1.0, dark::BORDER);
+    draw_portrait(
+        Rect::new(rect.x + 10.0, rect.y + 10.0, 72.0, 72.0),
+        kaiju,
+        assets,
+    );
+    draw_text(
+        &kaiju.name,
+        rect.x + 98.0,
+        rect.y + 30.0,
+        FONT_MEDIUM,
+        dark::ACCENT,
+    );
     draw_text(
         &format!(
-            "Rating {} | Wins {} | HP {} ATK {} DEF {} SPD {}",
+            "RATING {} | WINS {} | HP {} ATK {} DEF {} SPD {}",
             kaiju.battle_rating(),
             kaiju.tournaments_won,
             kaiju.stats.hp,
@@ -66,49 +90,57 @@ fn draw_fighter_row(
             kaiju.stats.defense,
             kaiju.stats.speed
         ),
-        x + 92.0,
-        y + 58.0,
-        FONT_SMALL,
+        rect.x + 98.0,
+        rect.y + 58.0,
+        FONT_TINY,
         dark::TEXT_SECONDARY,
     );
 
-    if draw_button(x + w - 140.0, y + 24.0, 112.0, 38.0, "Fight", dark::WARNING) {
+    if draw_button(
+        Rect::new(rect.x + rect.w - 112.0, rect.y + 29.0, 92.0, 34.0),
+        "FIGHT",
+        dark::WARNING,
+        can_pay,
+    ) {
         return Some(UiAction::StartBattle(kaiju.id));
     }
-
     None
 }
 
-fn draw_portrait(x: f32, y: f32, size: f32, kaiju: &crate::data::Kaiju, assets: &AssetManager) {
-    let mut drawn = false;
-    if let Some(uri) = &kaiju.image_uri {
-        let key = assets.get_filename_from_url(uri);
-        if let Some(tex) = assets.get_texture(&key) {
-            draw_texture_ex(
-                tex,
-                x,
-                y,
-                WHITE,
-                DrawTextureParams {
-                    dest_size: Some(vec2(size, size)),
-                    ..Default::default()
-                },
-            );
-            drawn = true;
-        }
-    }
-
-    if !drawn {
-        draw_rectangle(x, y, size, size, dark::PANEL);
-        draw_text_centered("?", x + size / 2.0, y + size / 2.0 + 8.0, FONT_LARGE, GRAY);
-    }
-}
-
-fn draw_button(x: f32, y: f32, w: f32, h: f32, text: &str, accent: Color) -> bool {
-    let mouse = mouse_position();
-    let hovered = mouse.0 >= x && mouse.0 <= x + w && mouse.1 >= y && mouse.1 <= y + h;
-    draw_rectangle(x, y, w, h, if hovered { accent } else { dark::BUTTON_BG });
-    draw_rectangle_lines(x, y, w, h, 1.0, if hovered { WHITE } else { dark::BORDER });
-    draw_text_centered(text, x + w / 2.0, y + h / 2.0 + 6.0, FONT_NORMAL, WHITE);
-    hovered && is_mouse_button_pressed(MouseButton::Left)
+fn draw_arena_info(rect: Rect, entry_fee: i64) {
+    draw_text(
+        "FRIDAY COLOSSEUM",
+        rect.x + 16.0,
+        rect.y + 64.0,
+        FONT_MEDIUM,
+        dark::WARNING,
+    );
+    draw_text(
+        "A rotating AI challenge bracket for V1 local play.",
+        rect.x + 16.0,
+        rect.y + 94.0,
+        FONT_SMALL,
+        dark::TEXT_SECONDARY,
+    );
+    draw_text(
+        &format!("ENTRY: {} gold", entry_fee),
+        rect.x + 16.0,
+        rect.y + 146.0,
+        FONT_SMALL,
+        dark::TEXT_PRIMARY,
+    );
+    draw_text(
+        "REWARD: gold, XP, and a battle history entry",
+        rect.x + 16.0,
+        rect.y + 176.0,
+        FONT_SMALL,
+        dark::TEXT_PRIMARY,
+    );
+    draw_text(
+        "V2: real player kaiju matchmaking",
+        rect.x + 16.0,
+        rect.y + 226.0,
+        FONT_SMALL,
+        dark::ACCENT,
+    );
 }

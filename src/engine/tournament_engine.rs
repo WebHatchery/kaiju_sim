@@ -312,16 +312,15 @@ pub fn calculate_xp_reward(
 mod tests {
     use super::*;
     use crate::data::tournament::{BracketSystem, TournamentType};
-    use crate::data::KaijuStats;
-    use chrono::Utc;
+    use crate::data::{new_kaiju_id, now_timestamp, KaijuStats};
 
     fn create_test_kaiju(name: &str, hp: i32, atk: i32) -> Kaiju {
         Kaiju {
-            id: Uuid::new_v4(),
+            id: new_kaiju_id(),
             token_id: 0,
             name: name.to_string(),
             generation: 1,
-            created_at: Utc::now().timestamp(),
+            created_at: now_timestamp(),
             original_breeder: "test".to_string(),
             parent_ids: None,
             visual_seed: 0,
@@ -335,6 +334,7 @@ mod tests {
             image_uri: None,
             metadata_uri: String::new(),
             tournaments_won: 0,
+            history: Vec::new(),
         }
     }
 
@@ -349,7 +349,7 @@ mod tests {
 
         // Register 4 participants
         for _ in 0..4 {
-            tournament.register(Uuid::new_v4()).unwrap();
+            tournament.register(new_kaiju_id()).unwrap();
         }
 
         let engine = TournamentEngine::default();
@@ -370,7 +370,7 @@ mod tests {
         let kaiju_b = create_test_kaiju("Beta", 280, 55);
 
         let mut match_obj = Match::new(
-            Uuid::new_v4(),
+            new_kaiju_id(),
             1,
             kaiju_a.id,
             kaiju_b.id,

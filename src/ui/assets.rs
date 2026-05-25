@@ -37,6 +37,9 @@ impl AssetManager {
 
     /// Load all kaiju sprites from the assets directory
     pub async fn load_all_assets(&mut self) {
+        self.load_texture("title_page", "assets/title/title_page.png")
+            .await;
+
         // Hardcoded generic loading for now based on known files (or scan if possible)
         // Since we can't easily glob async in macroquad without other crates,
         // we'll rely on specific known paths or the filesystem crate if available.

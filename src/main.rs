@@ -9,7 +9,7 @@ mod server_bridge;
 mod state;
 mod ui;
 
-use data::{Environment, GameData, TrainingFocus};
+use data::{Environment, GameData, KaijuEvent, KaijuEventKind, TrainingFocus};
 use engine::mvp;
 use engine::{breed_kaiju, BattleSimulator};
 use screens::*;
@@ -19,6 +19,8 @@ use state::{GameState, LastBattleReport, NotificationType};
 use ui::actions::UiAction;
 use ui::assets::AssetManager;
 use ui::colors::dark;
+use ui::shell::{draw_app_shell, draw_button, draw_panel, AppSection};
+use ui::{FONT_MEDIUM, FONT_SMALL};
 
 fn window_conf() -> Conf {
     Conf {
@@ -68,8 +70,8 @@ async fn main() {
 
         let action = match phase_stack.current() {
             GamePhase::Loading => None,
-            GamePhase::MainMenu => draw_main_menu(),
-            GamePhase::Laboratory => draw_laboratory(&state),
+            GamePhase::MainMenu => draw_main_menu(&assets),
+            GamePhase::Laboratory => draw_laboratory(&state, &assets),
             GamePhase::Roster => draw_roster_view(&state, &assets),
             GamePhase::Training => {
                 draw_training_screen(&state, &assets, game_data.balance.mvp.training.cost)
@@ -92,25 +94,18 @@ async fn main() {
                 }
             }
             GamePhase::StarterSelection => draw_starter_selection(&assets).await,
-            GamePhase::Marketplace => {
-                draw_placeholder("Marketplace is outside the local MVP", &state);
-                if is_key_pressed(KeyCode::Escape) {
-                    Some(UiAction::GoToLaboratory)
-                } else {
-                    None
-                }
-            }
-            _ => {
-                draw_placeholder(
-                    &format!("Unknown Phase: {:?}", phase_stack.current()),
-                    &state,
-                );
-                if is_key_pressed(KeyCode::Escape) {
-                    Some(UiAction::Back)
-                } else {
-                    None
-                }
-            }
+            GamePhase::Marketplace => draw_placeholder(
+                "Marketplace is outside the local MVP",
+                &state,
+                AppSection::Marketplace,
+                UiAction::GoToLaboratory,
+            ),
+            _ => draw_placeholder(
+                &format!("Unknown Phase: {:?}", phase_stack.current()),
+                &state,
+                AppSection::Laboratory,
+                UiAction::Back,
+            ),
         };
 
         if let Some(act) = action {
@@ -262,6 +257,20 @@ fn train_kaiju(
     }
     kaiju.experience += outcome.xp_gain;
     let kaiju_name = kaiju.name.clone();
+    kaiju.record_event(KaijuEvent::new(
+        KaijuEventKind::Training,
+        format!("{} training complete", outcome.focus.label()),
+        format!(
+            "+{} {} and +{} XP.",
+            if matches!(outcome.focus, TrainingFocus::Endurance) {
+                outcome.stat_gain * 5
+            } else {
+                outcome.stat_gain
+            },
+            outcome.focus.stat_label(),
+            outcome.xp_gain
+        ),
+    ));
 
     state.player.add_experience(outcome.xp_gain as u64);
     state.notify(
@@ -325,6 +334,14 @@ fn breed_selected_kaiju(
             offspring.current_owner = state.player.player_id.clone();
             offspring.original_breeder = state.player.player_id.clone();
             offspring.image_uri = Some(mvp::image_for_kaiju(&offspring));
+            offspring.record_event(
+                KaijuEvent::new(
+                    KaijuEventKind::Created,
+                    "Hatched in breeding chamber",
+                    format!("Offspring of {} and {}.", parent_a.name, parent_b.name),
+                )
+                .with_related(vec![parent_a.id, parent_b.id]),
+            );
 
             state.player.stats.total_kaiju_bred += 1;
             state.player.stats.highest_generation = state
@@ -333,6 +350,32 @@ fn breed_selected_kaiju(
                 .highest_generation
                 .max(offspring.generation);
             let offspring_name = offspring.name.clone();
+            if let Some(parent) = state.get_kaiju_mut(parent_a.id) {
+                parent.record_event(
+                    KaijuEvent::new(
+                        KaijuEventKind::Breeding,
+                        "Produced offspring",
+                        format!(
+                            "Bred with {} and produced {}.",
+                            parent_b.name, offspring_name
+                        ),
+                    )
+                    .with_related(vec![parent_b.id]),
+                );
+            }
+            if let Some(parent) = state.get_kaiju_mut(parent_b.id) {
+                parent.record_event(
+                    KaijuEvent::new(
+                        KaijuEventKind::Breeding,
+                        "Produced offspring",
+                        format!(
+                            "Bred with {} and produced {}.",
+                            parent_a.name, offspring_name
+                        ),
+                    )
+                    .with_related(vec![parent_a.id]),
+                );
+            }
             state.add_kaiju(offspring);
             state.notify(
                 format!(
@@ -402,6 +445,21 @@ fn run_local_battle(
         if won {
             kaiju.tournaments_won += 1;
         }
+        kaiju.record_event(
+            KaijuEvent::new(
+                KaijuEventKind::Battle,
+                if won { "Arena victory" } else { "Arena defeat" },
+                format!(
+                    "{} against {} in {} turns. Reward: {} gold, {} XP.",
+                    if won { "Won" } else { "Lost" },
+                    opponent.name,
+                    result.turns_elapsed,
+                    gold_reward,
+                    xp_reward
+                ),
+            )
+            .with_seed(seed),
+        );
     }
 
     state.last_battle = Some(LastBattleReport {
@@ -439,25 +497,48 @@ fn next_seed(state: &GameState) -> u64 {
     ((macroquad::rand::rand() as u64) << 32) ^ state.game_time.total_ticks
 }
 
-fn draw_placeholder(title: &str, _state: &GameState) {
-    clear_background(dark::BACKGROUND);
-    let text = format!("{}", title);
-    let size = measure_text(&text, None, 40, 1.0);
+fn draw_placeholder(
+    title: &str,
+    state: &GameState,
+    section: AppSection,
+    back_action: UiAction,
+) -> Option<UiAction> {
+    let frame = draw_app_shell(state, section);
+    if let Some(action) = frame.nav_action {
+        return Some(action);
+    }
+
+    let panel = Rect::new(
+        frame.content.x + frame.content.w * 0.22,
+        frame.content.y + frame.content.h * 0.22,
+        frame.content.w * 0.56,
+        220.0,
+    );
+    draw_panel(panel, "SYSTEM NOTICE");
     draw_text(
-        &text,
-        screen_width() / 2.0 - size.width / 2.0,
-        screen_height() / 2.0,
-        40.0,
-        WHITE,
+        title,
+        panel.x + 24.0,
+        panel.y + 76.0,
+        FONT_MEDIUM,
+        dark::TEXT_PRIMARY,
+    );
+    draw_text(
+        "This route is reserved for later work and is not required for V1 play.",
+        panel.x + 24.0,
+        panel.y + 112.0,
+        FONT_SMALL,
+        dark::TEXT_SECONDARY,
     );
 
-    let sub = "Press ESC to return";
-    let sub_size = measure_text(sub, None, 20, 1.0);
-    draw_text(
-        sub,
-        screen_width() / 2.0 - sub_size.width / 2.0,
-        screen_height() / 2.0 + 50.0,
-        20.0,
-        GRAY,
-    );
+    if draw_button(
+        Rect::new(panel.x + 24.0, panel.y + panel.h - 58.0, 160.0, 36.0),
+        "RETURN",
+        dark::ACCENT,
+        true,
+    ) || is_key_pressed(KeyCode::Escape)
+    {
+        return Some(back_action);
+    }
+
+    None
 }

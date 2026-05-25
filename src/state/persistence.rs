@@ -30,7 +30,7 @@ pub fn save_game(state: &GameState) -> Result<(), PersistenceError> {
         version: SAVE_VERSION,
         game_state: state.clone(),
         metadata: SaveMetadata {
-            saved_at: chrono::Utc::now().to_rfc3339(),
+            saved_at: crate::data::now_timestamp_string(),
             play_time_seconds: state.game_time.total_ticks / 60,
         },
     };

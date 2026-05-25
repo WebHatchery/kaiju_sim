@@ -2,15 +2,11 @@
 //!
 //! Supports Single Elimination, Double Elimination, and Swiss systems.
 
-use rand::seq::SliceRandom;
-use rand::Rng;
-use uuid::Uuid;
-
 use crate::data::environments::Environment;
 use crate::data::tournament::{
     Bracket, BracketSystem, Match, MatchId, Round, RoundStatus, TournamentId,
 };
-use crate::data::types::KaijuId;
+use crate::data::types::{random_index, shuffle_slice, KaijuId};
 
 /// Bracket generator interface
 pub trait BracketGenerator {
@@ -108,8 +104,7 @@ impl SwissGenerator {
         mut participants: Vec<KaijuId>,
         environment: Environment,
     ) -> Vec<Match> {
-        let mut rng = rand::thread_rng();
-        participants.shuffle(&mut rng);
+        shuffle_slice(&mut participants);
 
         let mut matches = Vec::new();
         for chunk in participants.chunks(2) {
@@ -191,10 +186,8 @@ pub fn generate_swiss_next_round(
 
     // Pair within groups
     let mut matches = Vec::new();
-    let mut rng = rand::thread_rng();
-
     for ((_wins, _losses), mut kaiju_list) in groups {
-        kaiju_list.shuffle(&mut rng);
+        shuffle_slice(&mut kaiju_list);
 
         for chunk in kaiju_list.chunks(2) {
             if chunk.len() == 2 {
@@ -221,8 +214,7 @@ pub fn select_environment(
         crate::data::tournament::EnvironmentMode::Fixed(env) => env.clone(),
         crate::data::tournament::EnvironmentMode::Random => {
             let environments = Environment::all();
-            let mut rng = rand::thread_rng();
-            environments[rng.gen_range(0..environments.len())].clone()
+            environments[random_index(environments.len())].clone()
         }
         crate::data::tournament::EnvironmentMode::RotatingPerRound => {
             let environments = Environment::all();
@@ -254,11 +246,12 @@ impl std::error::Error for BracketError {}
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::data::new_kaiju_id;
 
     #[test]
     fn test_single_elimination_8_participants() {
-        let tournament_id = Uuid::new_v4();
-        let participants: Vec<KaijuId> = (0..8).map(|_| Uuid::new_v4()).collect();
+        let tournament_id = new_kaiju_id();
+        let participants: Vec<KaijuId> = (0..8).map(|_| new_kaiju_id()).collect();
 
         let generator = SingleEliminationGenerator;
         let bracket = generator
@@ -272,7 +265,7 @@ mod tests {
 
     #[test]
     fn test_seeded_pairings() {
-        let participants: Vec<KaijuId> = (0..8).map(|_| Uuid::new_v4()).collect();
+        let participants: Vec<KaijuId> = (0..8).map(|_| new_kaiju_id()).collect();
         let pairings = SingleEliminationGenerator::create_seeded_pairings(&participants);
 
         assert_eq!(pairings.len(), 4);
@@ -283,8 +276,8 @@ mod tests {
 
     #[test]
     fn test_swiss_first_round() {
-        let tournament_id = Uuid::new_v4();
-        let participants: Vec<KaijuId> = (0..8).map(|_| Uuid::new_v4()).collect();
+        let tournament_id = new_kaiju_id();
+        let participants: Vec<KaijuId> = (0..8).map(|_| new_kaiju_id()).collect();
 
         let generator = SwissGenerator { total_rounds: 3 };
         let bracket = generator
@@ -297,8 +290,8 @@ mod tests {
 
     #[test]
     fn test_insufficient_participants() {
-        let tournament_id = Uuid::new_v4();
-        let participants = vec![Uuid::new_v4()]; // Only 1
+        let tournament_id = new_kaiju_id();
+        let participants = vec![new_kaiju_id()]; // Only 1
 
         let generator = SingleEliminationGenerator;
         let result = generator.generate(tournament_id, participants, Environment::Neutral);

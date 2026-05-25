@@ -365,17 +365,15 @@ pub fn generate_battle_seed() -> u64 {
 mod tests {
     use super::*;
     use crate::data::traits::{Trait, TraitCondition, TraitInheritance};
-    use crate::data::KaijuStats;
-    use chrono::Utc;
-    use uuid::Uuid;
+    use crate::data::{new_kaiju_id, now_timestamp, KaijuStats};
 
     fn create_test_kaiju(name: &str, hp: i32, atk: i32, def: i32, spd: i32) -> Kaiju {
         Kaiju {
-            id: Uuid::new_v4(),
+            id: new_kaiju_id(),
             token_id: 0,
             name: name.to_string(),
             generation: 1,
-            created_at: Utc::now().timestamp(),
+            created_at: now_timestamp(),
             original_breeder: "test".to_string(),
             parent_ids: None,
             visual_seed: 0,
@@ -389,6 +387,7 @@ mod tests {
             image_uri: None,
             metadata_uri: String::new(),
             tournaments_won: 0,
+            history: Vec::new(),
         }
     }
 

@@ -1,662 +1,152 @@
-Alright. Below is a **formalized Game Design Document (GDD)** that locks in the rules you’ve defined so far, removes ambiguity, and leaves deliberate extension points for future systems. This is written as a *living document* style GDD: concrete enough to implement, flexible enough to evolve.
+# Kaiju Breeding Simulator
 
-I’ll avoid NFT hype language and focus on systems, because that’s what actually survives contact with players.
+Game Design Document, V1 local MVP.
 
----
+## High Concept
 
-# **Kaiju Breeding Simulator**
+Kaiju Breeding Simulator is a strategic management and auto-battle game where players act as private kaiju breeders. Players train, fight, and breed persistent kaiju to build stronger bloodlines and lasting records.
 
-**Game Design Document (v1.0)**
+Every kaiju is unique, persistent, and documented. Its value comes from stats, traits, lineage, battle record, training record, breeding record, and the story those events create over time.
 
----
-
-## 1. High Concept
-
-**Kaiju Breeding Simulator** is a strategic management and auto-battle game where players act as **private kaiju breeders** in a competitive global ecosystem. Players collect, breed, train, and enter kaiju into tournaments to build reputation, dominate leaderboards, and leave a lasting genetic legacy.
-
-Every kaiju is **unique, persistent, and publicly documented**, with a complete history of battles, breeding, ownership, and death. Power is temporary. Legacy is permanent.
-
-The ultimate goal is not to win forever, but to **be remembered**.
-
----
-
-## 2. Player Fantasy
+## Player Fantasy
 
 The player is:
+- a breeder and genetic planner
+- a trainer preparing kaiju for combat
+- a caretaker of long-running bloodlines
+- a competitor trying to climb local and future global rankings
 
-* A private breeder and genetic architect
-* Competing against other breeders globally
-* Making long-term genetic and reputational decisions
-* Balancing risk, prestige, and legacy
+The core fantasy is legacy. A kaiju may win, lose, breed, or die, but its history remains visible.
 
-The fantasy pillars:
+## V1 Scope
 
-* **Creation**: Designing never-before-seen kaiju
-* **Domination**: Reaching the top of global rankings
-* **Legacy**: Leaving behind legendary bloodlines
+V1 is a local, offline-first game loop:
+- choose a starter
+- train kaiju
+- fight seeded AI arena battles
+- breed two eligible living kaiju
+- save/load local progress
+- inspect each kaiju's documented history
+- compare roster performance on a local leaderboard
 
----
+V1 does not require accounts, server sync, real-player matchmaking, real-player breeding, or external ownership systems.
 
-## 3. Core Gameplay Loop
+## Core Gameplay Loop
 
-1. **Acquire Kaiju**
+1. Choose or load a roster.
+2. Train kaiju to improve targeted stats.
+3. Fight AI arena battles for gold, XP, and records.
+4. Breed two eligible kaiju to produce offspring.
+5. Review the resulting kaiju history and lineage.
+6. Repeat to refine stronger bloodlines.
 
-   * Purchase, breed, or acquire kaiju NFTs
-2. **Research & Prepare**
+## Kaiju Entity
 
-   * Analyze traits, logs, and hidden genetics
-3. **Breed**
+Each kaiju has:
+- unique local ID
+- legacy ID
+- name
+- generation
+- parent IDs
+- original breeder
+- current owner or keeper
+- current stats
+- visible traits
+- hidden traits
+- visual seed or image URI
+- experience
+- win counts
+- alive/dead status
+- chronological event history
 
-   * Combine genetics to produce offspring
-4. **Train & Grow**
+## Event History
 
-   * Improve stats and unlock growth potential
-5. **Compete**
+History is a first-class V1 system. Each kaiju stores a chronological event log that can be saved, loaded, and displayed in the kaiju record screen.
 
-   * Enter tournaments (lethal or non-lethal)
-6. **Resolve**
+History events should cover:
+- creation
+- joining the roster
+- training
+- battles
+- breeding as a parent
+- hatching as offspring
+- research discoveries
+- transfer, if future systems add it
+- death, if lethal systems add it
 
-   * Kaiju gain experience, reputation, or die
-7. **Legacy**
+Events should include enough detail to be useful later: title, detail text, event kind, timestamp, related kaiju IDs, and battle seed when applicable.
 
-   * History is permanently recorded and visible
-
-Loop repeats indefinitely.
-
----
-
-## 4. Kaiju Entity Definition
-
-Each Kaiju is a **single persistent entity** with the following immutable and mutable properties.
-
-### 4.1 Immutable Properties
-
-* Unique ID
-* Creation timestamp
-* Generation number
-* Original breeder
-* Name (non-unique globally, unique by ID)
-* Visual genome seed
-* Base genetic blueprint
-
-### 4.2 Mutable Properties
-
-* Current stats
-* Traits (visible and hidden)
-* Abilities
-* Experience level
-* Tournament history
-* Breeding history
-* Ownership
-* Alive / Dead status
-
-Once dead, a kaiju can never return to play.
-
----
-
-## 5. Genetics System
-
-### 5.1 Trait Types
+## Genetics
 
 Traits are inherited through breeding and divided into:
+- visible traits, such as elemental affinities and physical features
+- hidden traits, such as conditional bonuses and long-term growth modifiers
 
-* **Visible Traits**
+Breeding rules:
+- generation is `max(parent_a.generation, parent_b.generation) + 1`
+- stats blend from parents with narrow variance
+- later generations may have gentle power growth
+- traits inherit probabilistically
+- mutations may occur
+- direct self-breeding and direct parent-child breeding are blocked
 
-  * Elemental affinities
-  * Obvious abilities
-  * Physical characteristics
-* **Hidden Traits**
+## Training
 
-  * Conditional bonuses
-  * Synergies
-  * Mutation flags
-  * Long-term growth modifiers
+Training consumes gold and grants XP plus a targeted stat improvement.
 
-Hidden traits are not fully revealed without research or data accumulation.
+Training focus areas:
+- Endurance: HP
+- Power: attack
+- Guard: defense
+- Reflex: speed
 
----
+Training results are recorded in the kaiju history.
 
-### 5.2 Inheritance Rules
+## Combat
 
-* Traits may be:
+Combat is simulated automatically.
 
-  * Dominant
-  * Recessive
-  * Polygenic
-  * Conditional
-* Offspring inherit a subset of parental traits
-* Mutations may occur
-* Breeding outcomes are **probabilistic**, not guaranteed
+Battle rules:
+- speed determines turn order
+- damage uses attack, defense scaling, traits, environment, and narrow variance
+- battle seeds should allow audit/replay behavior
+- arena battles produce rewards and event records
 
-There is **no direct parent-to-child breeding allowed**.
+V1 combat is against generated AI opponents. Future multiplayer can compare player-owned rosters without changing the local combat core.
 
----
+## Breeding
 
-### 5.3 Genetic Progression & Power Creep
+Breeding is local in V1. The player selects two eligible living kaiju, pays the breeding cost, and receives an offspring.
 
-* Each generation has **growth potential**
-* Later generations tend to be stronger but require:
+The offspring records its creation. Both parents record their participation. This makes bloodline history readable without relying on any external service.
 
-  * More time
-  * More research
-  * More preparation
-* Growth follows **diminishing returns**, not hard caps
-* Children are not strictly better, but **more specialized or refined**
+## Death And Legacy
 
-This ensures power creep exists but remains slow and strategic.
+V1 can support alive/dead status, but lethal content should be introduced carefully. If a kaiju dies:
+- it cannot train, fight, or breed
+- its record remains visible
+- lineage links remain valid
+- the death event remains in history
 
----
+## Leaderboards
 
-## 6. Visual Generation Rules
+The local leaderboard ranks roster kaiju by performance indicators such as power, wins, generation, and documented activity. It is a local prestige screen for V1 and a bridge to future global ranking.
 
-* Kaiju visuals are generated from genetic data
-* No strict anatomical rules
-* If a trait explicitly references a feature (e.g. wings), it must appear
-* Abstract traits (e.g. “flying”) may manifest in non-traditional ways
-* Visuals do **not** affect gameplay stats
-* Kaiju may be:
+## Future Multiplayer V2
 
-  * Ugly
-  * Beautiful
-  * Grotesque
-  * Minimalist
+V2 can add optional networked systems:
+- player-vs-player arena comparisons
+- real-player tournaments
+- opt-in breeding with other players' kaiju
+- shared leaderboards
+- account sync
 
-Appearance has no mechanical advantage.
+V2 must not make local V1 play depend on a server. The local kaiju history remains the foundation for syncing, comparing, and explaining player-owned rosters.
 
----
+## Design Pillars
 
-## 7. Facility System
-
-Each player owns a **personal laboratory**.
-
-### 7.1 Facility Functions
-
-* Research kaiju traits
-* Analyze battle logs
-* Improve breeding outcomes
-* Reduce uncertainty
-
-Facilities do **not** fail catastrophically in v1.
-
-Future expansions may add specialization.
-
----
-
-## 8. Training & Growth
-
-* Kaiju gain experience through battles
-* Growth improves:
-
-  * Stats
-  * Ability effectiveness
-  * Stability
-* Kaiju have a **soft growth ceiling**
-* Refusing competitive play may:
-
-  * Reduce maximum growth
-  * Cause ranking stagnation
-
-Growth is tied to **risk participation**.
-
----
-
-## 9. Combat System
-
-### 9.1 Battle Structure
-
-* Fully simulated auto-battles
-* No player input mid-fight
-* Outcomes influenced by:
-
-  * Stats
-  * Traits
-  * Preparation
-  * Environmental effects
-
----
-
-### 9.2 Probabilistic Resolution
-
-* Damage and effects operate within narrow ranges
-* Example: 55–60 damage instead of 1–100
-* With full knowledge, winners are predictable
-* Upsets are possible but rare
-
----
-
-### 9.3 Environmental Effects
-
-* Tournaments occur in neutral territory
-* Abilities may create temporary conditions:
-
-  * Storms
-  * Radiation
-  * Terrain effects
-* Environmental effects modify abilities dynamically
-
----
-
-### 9.4 Battle Reports
-
-After battles, players receive:
-
-* Outcome summary
-* Partial analysis
-* Suggested improvement areas
-
-Reports do not reveal all hidden traits.
-
----
-
-## 10. Tournaments
-
-### 10.1 Tournament Types
-
-* Non-lethal ranked tournaments
-* Lethal “winner takes all” tournaments
-* Generation-restricted tournaments (e.g. 5th gen only)
-* Special event tournaments
-
----
-
-### 10.2 Entry Rules
-
-* Participation is optional
-* Refusing to compete may limit growth
-* Players may research odds before entry
-
----
-
-### 10.3 Death Rules
-
-* Death only occurs in lethal tournaments
-* Losing kaiju are permanently destroyed
-* All breeding rights payments are refunded upon death
-
----
-
-## 11. Ranking & Leaderboards
-
-### 11.1 Global Leaderboard
-
-* Initially NPC-dominated
-* Gradually replaced by player kaiju
-* Ranking based on performance and reputation
-
-### 11.2 Sub-Leaderboards (Future)
-
-* Seasonal
-* Territorial
-* Social groups
-
----
-
-## 12. Death & Legacy
-
-* Dead kaiju:
-
-  * Cannot be used
-  * Cannot be bred
-  * Cannot compete
-* They remain visible in:
-
-  * Halls of Fame
-  * Historical records
-  * Lineage trees
-
-Death is permanent and meaningful.
-
----
-
-## 13. Breeding Rights Economy
-
-### 13.1 Rights Model
-
-* Kaiju owners may sell breeding rights
-* Multiple rights may exist simultaneously
-* Rights allow a single breeding use
-
----
-
-### 13.2 Risk Protection
-
-* If a kaiju dies:
-
-  * All unused breeding rights are refunded
-* Rights do not outlive the kaiju
-
----
-
-### 13.3 Lineage Visibility
-
-* Offspring display notable ancestors
-* Bloodlines gain prestige organically
-
----
-
-## 14. Player Interaction
-
-* Indirect competition only
-* No direct interference
-* Reputation, rivalry, and dominance emerge from data visibility
-
-Social power is driven by **public records**, not chat mechanics.
-
----
-
-## 15. Endgame
-
-There is no final victory state.
-
-Being **#1 globally**:
-
-* Grants no mechanical advantage (v1)
-* Confers prestige only
-* Paints a target on the kaiju
-
-The ecosystem ensures:
-
-* New kaiju are born daily
-* Power decays through time and competition
-* No position is permanent
-
----
-
-## 16. Expansion Hooks (Not Implemented in v1)
-
-* Genetic exhaustion mechanics
-* Lab specialization
-* Wild tournaments
-* Cataclysm events
-* Kaiju philosophies and schools
-* Player-created tournaments
-* Sterility and genetic dead-ends
-
----
-
-## 17. Design Pillars Summary
-
-* **Public history creates drama**
-* **Risk is optional but rewarded**
-* **Power is temporary**
-* **Legacy is permanent**
-* **Systems over spectacle**
-
----
-
-If you want next, I can:
-
-* Convert this into a **technical implementation spec**
-* Design the **genome data schema**
-* Prototype **combat math**
-* Or rewrite this as a **publisher / player-facing pitch**
-
-Just point at the next piece 🧬🦖
-
-Perfect. Below is a **minimal but complete prototype** of **one breeding cycle + one auto-battle simulation**, designed to be:
-
-* Deterministic enough to reason about
-* Probabilistic in narrow bands
-* Extensible into your full system
-* Simple enough to implement in any language
-
-I’ll explain the model briefly, then give **executable-style pseudocode (Python-like)** you can directly translate to C#, Rust, etc.
-
----
-
-# 1️⃣ Core Prototype Scope
-
-This prototype includes:
-
-* Kaiju data model
-* Trait inheritance with visible + hidden traits
-* One breeding operation
-* One auto-battle simulation
-* Battle report output
-
-It deliberately excludes:
-
-* Facilities
-* NFTs
-* Persistence
-* Economy
-* UI
-
-This is your **combat lab rat** 🧪🦖
-
----
-
-# 2️⃣ Data Models
-
-## Kaiju
-
-```python
-class Kaiju:
-    def __init__(self, name, generation, stats, traits, hidden_traits):
-        self.name = name
-        self.generation = generation
-        self.stats = stats            # dict: hp, attack, defense, speed
-        self.traits = traits          # visible traits
-        self.hidden_traits = hidden_traits
-        self.experience = 0
-        self.alive = True
-```
-
----
-
-## Trait Definition
-
-```python
-class Trait:
-    def __init__(self, name, category, power, condition=None):
-        self.name = name              # e.g. "Electric Breath"
-        self.category = category      # "element", "modifier", "mutation"
-        self.power = power            # numeric influence
-        self.condition = condition    # optional battle condition
-```
-
----
-
-# 3️⃣ Breeding Prototype
-
-### Rules Implemented
-
-* Generation = max(parent) + 1
-* Stats blend with slight upward bias
-* Traits inherited probabilistically
-* Chance for mutation
-* Hidden traits may emerge or remain latent
-
----
-
-## Breeding Function
-
-```python
-import random
-
-def breed(parent_a, parent_b, child_name):
-    generation = max(parent_a.generation, parent_b.generation) + 1
-
-    # --- Stat Inheritance ---
-    stats = {}
-    for stat in parent_a.stats:
-        base = (parent_a.stats[stat] + parent_b.stats[stat]) / 2
-        creep = 1 + (generation * 0.01)        # soft power creep
-        variance = random.uniform(0.95, 1.05) # narrow band
-        stats[stat] = int(base * creep * variance)
-
-    # --- Trait Inheritance ---
-    traits = []
-    for trait in parent_a.traits + parent_b.traits:
-        if random.random() < 0.45:
-            traits.append(trait)
-
-    # --- Hidden Traits ---
-    hidden_traits = []
-    for trait in parent_a.hidden_traits + parent_b.hidden_traits:
-        if random.random() < 0.25:
-            hidden_traits.append(trait)
-
-    # --- Mutation Chance ---
-    if random.random() < 0.10:
-        mutation = Trait(
-            name="Unstable Mutation",
-            category="mutation",
-            power=random.randint(1, 3)
-        )
-        hidden_traits.append(mutation)
-
-    return Kaiju(child_name, generation, stats, traits, hidden_traits)
-```
-
----
-
-# 4️⃣ Auto-Battle Simulation
-
-### Combat Assumptions
-
-* Turn-based simulation
-* No player input
-* Small randomness
-* Traits modify damage
-* Winner predictable with knowledge
-
----
-
-## Damage Calculation
-
-```python
-def calculate_damage(attacker, defender, environment):
-    base = attacker.stats["attack"] - defender.stats["defense"] * 0.5
-    base = max(5, base)
-
-    # Trait modifiers
-    for trait in attacker.traits:
-        if trait.category == "element":
-            base += trait.power
-
-    # Environment effects
-    if environment == "storm":
-        for trait in attacker.traits:
-            if "Electric" in trait.name:
-                base *= 1.15
-
-    # Narrow randomness
-    return int(base * random.uniform(0.95, 1.05))
-```
-
----
-
-## Battle Loop
-
-```python
-def auto_battle(kaiju_a, kaiju_b, environment="neutral"):
-    hp_a = kaiju_a.stats["hp"]
-    hp_b = kaiju_b.stats["hp"]
-
-    log = []
-
-    attacker, defender = (
-        (kaiju_a, kaiju_b)
-        if kaiju_a.stats["speed"] >= kaiju_b.stats["speed"]
-        else (kaiju_b, kaiju_a)
-    )
-
-    while hp_a > 0 and hp_b > 0:
-        damage = calculate_damage(attacker, defender, environment)
-
-        if defender == kaiju_a:
-            hp_a -= damage
-        else:
-            hp_b -= damage
-
-        log.append(f"{attacker.name} hits {defender.name} for {damage}")
-
-        attacker, defender = defender, attacker
-
-    winner = kaiju_a if hp_a > 0 else kaiju_b
-    loser = kaiju_b if winner == kaiju_a else kaiju_a
-
-    return {
-        "winner": winner.name,
-        "loser": loser.name,
-        "log": log,
-        "hp_remaining": max(hp_a, hp_b)
-    }
-```
-
----
-
-# 5️⃣ Example Run
-
-```python
-electric = Trait("Electric Breath", "element", power=8)
-aqua = Trait("Aqua Hide", "element", power=6)
-
-flossy = Kaiju(
-    "Flossy",
-    generation=4,
-    stats={"hp": 300, "attack": 60, "defense": 40, "speed": 30},
-    traits=[electric],
-    hidden_traits=[]
-)
-
-reefmaw = Kaiju(
-    "Reefmaw",
-    generation=4,
-    stats={"hp": 320, "attack": 55, "defense": 45, "speed": 25},
-    traits=[aqua],
-    hidden_traits=[]
-)
-
-child = breed(flossy, reefmaw, "Stormling")
-
-result = auto_battle(child, reefmaw, environment="storm")
-```
-
----
-
-# 6️⃣ Sample Output (Conceptual)
-
-```
-Stormling hits Reefmaw for 28
-Reefmaw hits Stormling for 19
-Stormling hits Reefmaw for 31
-...
-Winner: Stormling
-HP Remaining: 42
-```
-
-Battle report hints:
-
-* Electric traits performed well in storm
-* Defense scaling mattered
-* Speed advantage determined initiative
-
----
-
-# 7️⃣ Why This Prototype Works for Your Game
-
-✔ Matches your **predictable-but-probabilistic** rule
-✔ Supports **hidden traits** naturally
-✔ Allows **power creep without runaway numbers**
-✔ Easy to extend with:
-
-* Genetic exhaustion
-* Trait slots
-* Tournament modifiers
-* Death rules
-
----
-
-## Next Logical Iterations
-
-If you want, next we can:
-
-* Convert this into **C# with deterministic seeds**
-* Add **genetic exhaustion tracking**
-* Add **tournament brackets**
-* Add **battle odds estimation**
-* Turn this into a **headless simulation server**
-
-Say which piece you want to harden next, and we’ll reinforce it like a kaiju bunker 🏗️🦖
+- Documented history creates drama.
+- Breeding decisions should matter over several generations.
+- Combat should be readable and mostly predictable.
+- Power should grow slowly enough to keep old records meaningful.
+- The local game should remain playable without network services.

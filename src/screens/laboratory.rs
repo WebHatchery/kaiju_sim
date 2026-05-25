@@ -1,171 +1,239 @@
-//! Laboratory hub screen - main gameplay hub.
+//! Laboratory dashboard screen.
 
 use crate::state::GameState;
 use crate::ui::actions::UiAction;
+use crate::ui::assets::AssetManager;
 use crate::ui::colors::dark;
+use crate::ui::components::{draw_kaiju_card, CardAction, CardState};
+use crate::ui::shell::*;
 use crate::ui::spacing::*;
 use crate::ui::typography::*;
 use macroquad::prelude::*;
 
-/// Draw laboratory hub and return action if button pressed
-pub fn draw_laboratory(state: &GameState) -> Option<UiAction> {
-    let sw = screen_width();
-    let sh = screen_height();
+pub fn draw_laboratory(state: &GameState, assets: &AssetManager) -> Option<UiAction> {
+    let frame = draw_app_shell(state, AppSection::Laboratory);
+    if frame.nav_action.is_some() {
+        return frame.nav_action;
+    }
 
-    clear_background(dark::BACKGROUND);
+    let c = frame.content;
+    let right_w = 255.0;
+    let main_w = c.w - right_w - PANEL_GAP;
+    let top_h = 380.0;
+    let queue_h = 132.0;
+    let bottom_h = (c.h - top_h - queue_h - PANEL_GAP * 2.0).max(0.0);
 
-    // Header
-    draw_rectangle(0.0, 0.0, sw, 60.0, dark::SURFACE);
-    draw_text("LABORATORY", 20.0, 40.0, FONT_LARGE, dark::TEXT_PRIMARY);
+    let active_panel = Rect::new(c.x, c.y, main_w, top_h);
+    draw_panel(active_panel, "ACTIVE KAIJU");
+    if let Some(action) = draw_active_kaiju(state, assets, active_panel) {
+        return Some(action);
+    }
 
-    // Player info
-    draw_text_right(
-        &format!(
-            "Gold: {} | Roster: {}",
-            state.player.gold,
-            state.living_count()
-        ),
-        sw - 20.0,
-        40.0,
-        FONT_NORMAL,
-        dark::TEXT_SECONDARY,
+    let status_panel = Rect::new(c.x + main_w + PANEL_GAP, c.y, right_w, top_h);
+    draw_facility_status(status_panel);
+
+    let train_panel = Rect::new(c.x, c.y + top_h + PANEL_GAP, main_w * 0.48, queue_h);
+    draw_training_summary(state, train_panel);
+
+    let breed_panel = Rect::new(
+        train_panel.x + train_panel.w + PANEL_GAP,
+        train_panel.y,
+        main_w - train_panel.w - PANEL_GAP,
+        queue_h,
     );
+    draw_breeding_summary(state, breed_panel);
 
-    // Main buttons grid
-    let btn_size = 180.0;
-    let gap = 30.0;
-    let grid_w = btn_size * 3.0 + gap * 2.0;
-    let start_x = (sw - grid_w) / 2.0;
-    let start_y = 120.0;
+    let activity_panel = Rect::new(
+        c.x,
+        train_panel.y + queue_h + PANEL_GAP,
+        main_w * 0.48,
+        bottom_h,
+    );
+    draw_notification_rows(state, activity_panel);
 
-    let mut result = None;
+    let news_panel = Rect::new(
+        activity_panel.x + activity_panel.w + PANEL_GAP,
+        activity_panel.y,
+        main_w - activity_panel.w - PANEL_GAP,
+        bottom_h,
+    );
+    draw_news_feed(news_panel);
 
-    // Row 1
-    if draw_hub_button(
-        start_x,
-        start_y,
-        btn_size,
-        "ROSTER",
-        "View your kaiju",
-        dark::ACCENT,
-    ) {
-        result = Some(UiAction::GoToRoster);
+    let top_panel = Rect::new(
+        c.x + main_w + PANEL_GAP,
+        status_panel.y + top_h + PANEL_GAP,
+        right_w,
+        c.h - top_h - PANEL_GAP,
+    );
+    draw_top_kaiju(state, top_panel);
+
+    None
+}
+
+fn draw_active_kaiju(state: &GameState, assets: &AssetManager, panel: Rect) -> Option<UiAction> {
+    let card_gap = 14.0;
+    for (index, kaiju) in state.roster.iter().take(3).enumerate() {
+        let x = panel.x + 14.0 + index as f32 * (CARD_WIDTH + card_gap);
+        let y = panel.y + 38.0;
+        let action = draw_kaiju_card(x, y, kaiju, CardState::Normal, assets);
+        if let Some(card_action) = action {
+            return Some(match card_action {
+                CardAction::Select => UiAction::SelectKaiju(kaiju.id),
+                CardAction::ViewDetails => UiAction::ViewKaijuDetails(kaiju.id),
+            });
+        }
     }
+    None
+}
 
-    if draw_hub_button(
-        start_x + btn_size + gap,
-        start_y,
-        btn_size,
-        "TRAINING",
-        "Improve stats",
-        dark::POSITIVE,
-    ) {
-        result = Some(UiAction::GoToTraining);
+fn draw_facility_status(rect: Rect) {
+    draw_panel(rect, "FACILITY STATUS");
+    let facilities = [
+        ("Hatchery", 3, 0.72, dark::ACCENT),
+        ("Training Center", 3, 0.68, dark::POSITIVE),
+        ("Research Lab", 2, 0.56, dark::WARNING),
+        ("Recovery Center", 2, 0.46, dark::POSITIVE),
+        ("Record Archive", 1, 0.30, dark::ACCENT),
+    ];
+
+    let mut y = rect.y + 58.0;
+    for (name, level, pct, color) in facilities {
+        draw_text(name, rect.x + 14.0, y, FONT_SMALL, dark::TEXT_SECONDARY);
+        draw_text_right(
+            &format!("LVL {}", level),
+            rect.x + rect.w - 14.0,
+            y,
+            FONT_TINY,
+            dark::TEXT_PRIMARY,
+        );
+        draw_rectangle(
+            rect.x + 14.0,
+            y + 8.0,
+            rect.w - 28.0,
+            4.0,
+            Color::new(0.12, 0.16, 0.20, 1.0),
+        );
+        draw_rectangle(rect.x + 14.0, y + 8.0, (rect.w - 28.0) * pct, 4.0, color);
+        y += 44.0;
     }
+}
 
-    if draw_hub_button(
-        start_x + (btn_size + gap) * 2.0,
-        start_y,
-        btn_size,
-        "ARENA",
-        "Fight rivals",
-        dark::WARNING,
-    ) {
-        result = Some(UiAction::GoToTournament);
+fn draw_training_summary(state: &GameState, rect: Rect) {
+    draw_panel(rect, "TRAINING QUEUE");
+    let mut y = rect.y + 52.0;
+    for kaiju in state.roster.iter().filter(|k| k.alive).take(2) {
+        draw_text(&kaiju.name, rect.x + 16.0, y, FONT_SMALL, dark::ACCENT);
+        draw_text(
+            &format!("LVL {}  XP {}", kaiju.generation + 1, kaiju.experience),
+            rect.x + 16.0,
+            y + 21.0,
+            FONT_TINY,
+            dark::TEXT_SECONDARY,
+        );
+        draw_rectangle(
+            rect.x + 155.0,
+            y - 8.0,
+            rect.w - 180.0,
+            6.0,
+            Color::new(0.12, 0.16, 0.20, 1.0),
+        );
+        draw_rectangle(
+            rect.x + 155.0,
+            y - 8.0,
+            (rect.w - 180.0) * 0.55,
+            6.0,
+            dark::POSITIVE,
+        );
+        y += 56.0;
     }
+}
 
-    // Row 2
-    let row2_y = start_y + btn_size + gap;
-
-    if draw_hub_button(
-        start_x,
-        row2_y,
-        btn_size,
-        "LEADERBOARD",
-        "Top kaiju",
-        dark::RANKED,
-    ) {
-        result = Some(UiAction::GoToLeaderboard);
-    }
-
-    if draw_hub_button(
-        start_x + btn_size + gap,
-        row2_y,
-        btn_size,
-        "BREEDING",
-        "Create offspring",
-        dark::POSITIVE,
-    ) {
-        result = Some(UiAction::GoToBreeding);
-    }
-
-    if draw_hub_button(
-        start_x + (btn_size + gap) * 2.0,
-        row2_y,
-        btn_size,
-        "MENU",
-        "Main menu",
-        dark::NEGATIVE,
-    ) {
-        result = Some(UiAction::GoToMenu);
-    }
-
-    // Notifications panel at bottom
-    let notif_y = sh - 100.0;
-    draw_rectangle(20.0, notif_y, sw - 40.0, 80.0, dark::SURFACE);
+fn draw_breeding_summary(state: &GameState, rect: Rect) {
+    draw_panel(rect, "BREEDING RECORDS");
+    let bred = state.player.stats.total_kaiju_bred;
     draw_text(
-        "Recent Activity",
-        30.0,
-        notif_y + 20.0,
+        &format!("OFFSPRING HATCHED: {}", bred),
+        rect.x + 16.0,
+        rect.y + 58.0,
+        FONT_SMALL,
+        dark::TEXT_PRIMARY,
+    );
+    draw_text(
+        "Every hatch is recorded in the parents' and offspring's history.",
+        rect.x + 16.0,
+        rect.y + 86.0,
         FONT_SMALL,
         dark::TEXT_SECONDARY,
     );
+    if draw_button(
+        Rect::new(rect.x + rect.w - 130.0, rect.y + rect.h - 48.0, 110.0, 30.0),
+        "ADD PAIR",
+        dark::ACCENT,
+        true,
+    ) {
+        // Navigation is handled by the sidebar; summary buttons are decorative for now.
+    }
+}
 
-    for (i, notif) in state.notifications.iter().rev().take(3).enumerate() {
+fn draw_news_feed(rect: Rect) {
+    draw_panel(rect, "NEWS FEED");
+    if rect.h < 58.0 {
+        return;
+    }
+    let story_h = (rect.h - 44.0).min(42.0).max(18.0);
+    draw_rectangle(
+        rect.x + 14.0,
+        rect.y + 32.0,
+        rect.w - 28.0,
+        story_h,
+        Color::new(0.10, 0.12, 0.13, 1.0),
+    );
+    if rect.h > 72.0 {
         draw_text(
-            &notif.message,
-            30.0,
-            notif_y + 40.0 + i as f32 * 18.0,
+            "FRIDAY COLOSSEUM IS LIVE!",
+            rect.x + 24.0,
+            rect.y + rect.h - 24.0,
             FONT_SMALL,
             dark::TEXT_PRIMARY,
         );
     }
-
-    result
 }
 
-/// Draw a hub navigation button
-fn draw_hub_button(x: f32, y: f32, size: f32, title: &str, subtitle: &str, accent: Color) -> bool {
-    let mouse = mouse_position();
-    let hovered = mouse.0 >= x && mouse.0 <= x + size && mouse.1 >= y && mouse.1 <= y + size;
-
-    let bg = if hovered { dark::PANEL } else { dark::SURFACE };
-
-    draw_rectangle(x, y, size, size, bg);
-    draw_rectangle(x, y, size, 4.0, accent); // Accent bar at top
-    draw_rectangle_lines(
-        x,
-        y,
-        size,
-        size,
-        2.0,
-        if hovered { accent } else { dark::BORDER },
+fn draw_top_kaiju(state: &GameState, rect: Rect) {
+    draw_panel(rect, "TOP KAIJU");
+    draw_table_header(
+        rect.x + 12.0,
+        rect.y + 42.0,
+        rect.w - 24.0,
+        &[("RANK", 8.0), ("NAME", 64.0), ("RATING", 176.0)],
     );
 
-    draw_text_centered(
-        title,
-        x + size / 2.0,
-        y + size / 2.0,
-        FONT_MEDIUM,
-        dark::TEXT_PRIMARY,
-    );
-    draw_text_centered(
-        subtitle,
-        x + size / 2.0,
-        y + size / 2.0 + 25.0,
-        FONT_SMALL,
-        dark::TEXT_SECONDARY,
-    );
+    let mut ranked = state.roster.iter().collect::<Vec<_>>();
+    ranked.sort_by_key(|kaiju| std::cmp::Reverse((kaiju.tournaments_won, kaiju.battle_rating())));
 
-    hovered && is_mouse_button_pressed(MouseButton::Left)
+    let mut y = rect.y + 92.0;
+    for (index, kaiju) in ranked.iter().take(6).enumerate() {
+        draw_text(
+            &(index + 1).to_string(),
+            rect.x + 24.0,
+            y,
+            FONT_SMALL,
+            dark::WARNING,
+        );
+        draw_text(
+            &kaiju.name,
+            rect.x + 76.0,
+            y,
+            FONT_SMALL,
+            dark::TEXT_PRIMARY,
+        );
+        draw_text_right(
+            &kaiju.battle_rating().to_string(),
+            rect.x + rect.w - 22.0,
+            y,
+            FONT_SMALL,
+            dark::WARNING,
+        );
+        y += 30.0;
+    }
 }

@@ -1,7 +1,6 @@
 //! Player-specific data and progression.
 
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 
 /// Player-specific persistent data
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -29,7 +28,7 @@ pub struct PlayerData {
 impl Default for PlayerData {
     fn default() -> Self {
         Self {
-            player_id: Uuid::new_v4().to_string(),
+            player_id: crate::data::new_kaiju_id().to_string(),
             display_name: "Breeder".into(),
             gold: 1000,
             premium_currency: 0,

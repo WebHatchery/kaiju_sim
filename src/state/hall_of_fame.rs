@@ -215,11 +215,11 @@ pub fn create_hall_of_fame_entry(legacy: LegacyRecord) -> HallOfFameEntry {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use chrono::Utc;
+    use crate::data::{new_kaiju_id, now_timestamp};
 
     fn create_test_legacy(name: &str, wins: u32) -> LegacyRecord {
         LegacyRecord {
-            kaiju_id: Uuid::new_v4(),
+            kaiju_id: new_kaiju_id(),
             name: name.to_string(),
             generation: 5,
             final_stats: KaijuStats::new(300, 60, 40, 30, 100),
@@ -235,7 +235,7 @@ mod tests {
             tournament_victories: vec![],
             offspring_count: 3,
             notable_descendants: vec![],
-            death_timestamp: Utc::now().timestamp(),
+            death_timestamp: now_timestamp(),
             death_context: "Defeated in Champion's Crucible".to_string(),
             achievements: vec![],
         }

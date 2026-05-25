@@ -1,20 +1,20 @@
 # Implementation Guide
 
-This guide is the high-level roadmap for Kaiju Breeding Simulator. It intentionally replaces the old phase-by-phase spec stack; keep detailed design in code, tests, JSON data, or a new focused document only when it is actively useful.
+This is the high-level roadmap for Kaiju Breeding Simulator. Keep detailed behavior in code, tests, JSON data, or a focused design document only when it is actively useful.
 
 ## Current State
 
 The Rust/Macroquad client has a playable local MVP:
-- starter selection
-- local roster and kaiju details
+- title screen, starter selection, save/load
+- local roster and kaiju detail records
 - targeted training
 - seeded AI arena fights
 - battle result logs
 - local breeding
 - local leaderboard
-- save/load
+- persistent kaiju event history
 
-The server and NFT layers still exist in the repository, but the MVP gameplay loop must remain playable without running `kaiju_server`.
+The V1 gameplay loop must remain playable without running `kaiju_server`.
 
 ## Build And Verify
 
@@ -50,9 +50,10 @@ cargo fmt
 1. Player starts a local game and chooses a starter.
 2. Player trains kaiju by spending gold for stat gains and XP.
 3. Player enters an arena fight against a generated AI opponent.
-4. Battle result pays gold/XP and records a replayable seeded log.
+4. Battle result pays gold/XP and records a seeded battle event.
 5. Player breeds two living kaiju to create offspring with inherited stats and traits.
-6. Player repeats the loop to build stronger bloodlines.
+6. Parent and offspring histories record the breeding event.
+7. Player repeats the loop to build stronger documented bloodlines.
 
 ## Data-Driven Rules
 
@@ -67,6 +68,22 @@ Current MVP tuning includes:
 
 Do not introduce Rust-side magic numbers for gameplay tuning when a JSON field is appropriate.
 
+## Kaiju History
+
+Each `Kaiju` stores a local `history: Vec<KaijuEvent>`.
+
+Record events for:
+- creation and starter selection
+- roster joins
+- training outcomes
+- arena battles and battle seeds
+- breeding as parent
+- hatching as offspring
+- research discoveries
+- death, if lethal systems are enabled later
+
+Events should be concise, serializable, and useful in the kaiju detail screen. Treat history as gameplay memory, not as a networking or ownership layer.
+
 ## Next Implementation Priorities
 
 1. Improve local MVP UX
@@ -79,6 +96,7 @@ Do not introduce Rust-side magic numbers for gameplay tuning when a JSON field i
    - save/load round trip for trained kaiju
    - save/load round trip after breeding
    - save/load round trip after battle rewards
+   - save/load round trip preserving event history
 
 3. Expand battle presentation
    - animated turn playback
@@ -90,15 +108,11 @@ Do not introduce Rust-side magic numbers for gameplay tuning when a JSON field i
    - inherited trait summary after hatching
    - lineage display from existing parent IDs
 
-5. Reintroduce server features selectively
-   - server auth/sync should be optional
-   - server outages must not block local play
-   - server APIs should mirror local engine behavior where possible
-
-6. Future NFT integration
-   - follow `nft_design.md`
-   - keep gameplay off-chain
-   - NFT state should represent ownership/provenance, not combat logic
+5. Future multiplayer V2
+   - real-player arena comparisons
+   - opt-in breeding with other players' kaiju
+   - optional account/sync services
+   - no V2 service should block V1 local play
 
 ## Testing Focus
 
@@ -107,11 +121,13 @@ Unit tests:
 - combat determinism
 - damage formula boundaries
 - training reward application
+- event history creation
 - phase/action handling where practical
 
 Integration tests:
 - create game, train, fight, breed
 - save/load after each major action
+- verify kaiju history after each major action
 - WebAssembly compile check
 
 Manual checks:
@@ -120,12 +136,13 @@ Manual checks:
 - training screen usability
 - arena fight from each starter
 - breeding two starters into offspring
+- kaiju detail history display
 - leaderboard update after wins
 
 ## Retained References
 
 - `kaiju_sim.md`: game design
 - `GAMEPLAY_WALKTHROUGH.md`: player-facing flow
+- `KAIJU_HISTORY_DESIGN.md`: history/event record design
 - `CODE_STANDARDS.md`: Rust/Macroquad standards
 - `MACROQUAD_TOOLKIT.md`: UI toolkit reference
-- `nft_design.md`: future ownership/provenance layer

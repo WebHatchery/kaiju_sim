@@ -1,12 +1,10 @@
 //! Main game state - central authority for all mutable game data.
 
-use serde::{Deserialize, Serialize};
-use uuid::Uuid;
-
 use crate::data::types::KaijuId;
-use crate::data::{Kaiju, KaijuStats, Trait};
+use crate::data::{Kaiju, KaijuEvent, KaijuEventKind, KaijuStats, Trait};
 use crate::state::battle_state::BattleResult;
 use crate::state::player_data::PlayerData;
+use serde::{Deserialize, Serialize};
 
 /// Main game state - owns all mutable game data
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -124,8 +122,13 @@ impl GameState {
     }
 
     /// Add kaiju to roster
-    pub fn add_kaiju(&mut self, kaiju: Kaiju) {
+    pub fn add_kaiju(&mut self, mut kaiju: Kaiju) {
         let name = kaiju.name.clone();
+        kaiju.record_event(KaijuEvent::new(
+            KaijuEventKind::JoinedRoster,
+            "Joined roster",
+            "Added to the active breeding facility roster.",
+        ));
         self.roster.push(kaiju);
         self.notify(
             format!("{} joined your roster!", name),
@@ -138,6 +141,11 @@ impl GameState {
         if let Some(kaiju) = self.get_kaiju_mut(kaiju_id) {
             let name = kaiju.name.clone();
             kaiju.alive = false;
+            kaiju.record_event(KaijuEvent::new(
+                KaijuEventKind::Death,
+                "Fell in competition",
+                "Marked deceased in the local legacy record.",
+            ));
             self.player.stats.kaiju_deaths += 1;
             self.notify(format!("{} has fallen.", name), NotificationType::Error);
         }
@@ -195,11 +203,11 @@ fn create_starter_kaiju(name: &str, seed: u64) -> Kaiju {
     let base_attack = 40 + (seed * 5) as i32;
 
     Kaiju {
-        id: Uuid::new_v4(),
+        id: crate::data::new_kaiju_id(),
         token_id: seed + 1,
         name: name.to_string(),
         generation: 0,
-        created_at: chrono::Utc::now().timestamp(),
+        created_at: crate::data::now_timestamp(),
         original_breeder: "system".to_string(),
         parent_ids: None,
         visual_seed: seed,
@@ -217,6 +225,18 @@ fn create_starter_kaiju(name: &str, seed: u64) -> Kaiju {
         },
         metadata_uri: String::new(),
         tournaments_won: 0,
+        history: vec![
+            KaijuEvent::new(
+                KaijuEventKind::Created,
+                "Starter kaiju registered",
+                "Created as an original facility starter.",
+            ),
+            KaijuEvent::new(
+                KaijuEventKind::JoinedRoster,
+                "Joined roster",
+                "Added to the active breeding facility roster.",
+            ),
+        ],
     }
 }
 
@@ -251,11 +271,11 @@ fn create_elemental_starter(choice: &str, traits: &[Trait], token_id: u64) -> Ka
         .collect();
 
     Kaiju {
-        id: Uuid::new_v4(),
+        id: crate::data::new_kaiju_id(),
         token_id,
         name: name.to_string(),
         generation: 0,
-        created_at: chrono::Utc::now().timestamp(),
+        created_at: crate::data::now_timestamp(),
         original_breeder: "player".to_string(),
         parent_ids: None,
         visual_seed: seed,
@@ -269,6 +289,18 @@ fn create_elemental_starter(choice: &str, traits: &[Trait], token_id: u64) -> Ka
         image_uri: Some(image_uri.to_string()),
         metadata_uri: String::new(),
         tournaments_won: 0,
+        history: vec![
+            KaijuEvent::new(
+                KaijuEventKind::Created,
+                "Starter chosen",
+                format!("Selected as a {} starter for this facility.", choice),
+            ),
+            KaijuEvent::new(
+                KaijuEventKind::JoinedRoster,
+                "Joined roster",
+                "Added to the active breeding facility roster.",
+            ),
+        ],
     }
 }
 
@@ -352,6 +384,10 @@ mod tests {
         let state = GameState::new();
         assert_eq!(state.roster.len(), 2);
         assert_eq!(state.player.gold, 1000);
+        assert!(state.roster.iter().all(|kaiju| kaiju
+            .history
+            .iter()
+            .any(|event| event.kind == KaijuEventKind::JoinedRoster)));
     }
 
     #[test]
@@ -360,7 +396,7 @@ mod tests {
         let first_id = state.roster[0].id;
 
         assert!(state.get_kaiju(first_id).is_some());
-        assert!(state.get_kaiju(Uuid::new_v4()).is_none());
+        assert!(state.get_kaiju(crate::data::new_kaiju_id()).is_none());
     }
 
     #[test]

@@ -5,6 +5,7 @@ use crate::state::GameState;
 use crate::ui::actions::UiAction;
 use crate::ui::assets::AssetManager;
 use crate::ui::colors::dark;
+use crate::ui::shell::*;
 use crate::ui::typography::*;
 use macroquad::prelude::*;
 
@@ -13,143 +14,145 @@ pub fn draw_training_screen(
     assets: &AssetManager,
     training_cost: i64,
 ) -> Option<UiAction> {
-    let sw = screen_width();
-    clear_background(dark::BACKGROUND);
-
-    draw_header("TRAINING RING", sw);
-    if draw_button(sw - 105.0, 15.0, 85.0, 30.0, "< Back", dark::BUTTON_BG) {
-        return Some(UiAction::GoToLaboratory);
+    let frame = draw_app_shell(state, AppSection::Training);
+    if frame.nav_action.is_some() {
+        return frame.nav_action;
     }
 
+    let c = frame.content;
+    let left_w = c.w * 0.68;
+    let list_panel = Rect::new(c.x, c.y, left_w, c.h);
+    let status_panel = Rect::new(c.x + left_w + PANEL_GAP, c.y, c.w - left_w - PANEL_GAP, c.h);
+    draw_panel(list_panel, "TRAINING ROSTER");
+    draw_panel(status_panel, "PROGRAM STATUS");
+
     draw_text(
-        &format!(
-            "Gold: {} | Cost: {} per session",
-            state.player.gold, training_cost
-        ),
-        24.0,
-        86.0,
-        FONT_NORMAL,
+        &format!("Training cost: {} gold per session", training_cost),
+        list_panel.x + 14.0,
+        list_panel.y + 52.0,
+        FONT_SMALL,
         dark::TEXT_SECONDARY,
     );
 
-    let mut y = 115.0;
+    let mut y = list_panel.y + 78.0;
     for kaiju in state.roster.iter().filter(|k| k.alive) {
-        if let Some(action) = draw_training_row(24.0, y, sw - 48.0, kaiju, assets) {
+        if let Some(action) = draw_training_row(
+            Rect::new(list_panel.x + 14.0, y, list_panel.w - 28.0, 96.0),
+            kaiju,
+            assets,
+            training_cost,
+            state.player.gold >= training_cost,
+        ) {
             return Some(action);
         }
-        y += 118.0;
+        y += 110.0;
     }
 
-    if state.living_count() == 0 {
-        draw_text_centered(
-            "No living kaiju available for training.",
-            sw / 2.0,
-            screen_height() / 2.0,
-            FONT_MEDIUM,
-            dark::TEXT_MUTED,
-        );
-    }
-
+    draw_program_status(status_panel);
     None
 }
 
 fn draw_training_row(
-    x: f32,
-    y: f32,
-    w: f32,
+    rect: Rect,
     kaiju: &Kaiju,
     assets: &AssetManager,
+    cost: i64,
+    can_afford: bool,
 ) -> Option<UiAction> {
-    let h = 96.0;
-    draw_rectangle(x, y, w, h, dark::SURFACE);
-    draw_rectangle_lines(x, y, w, h, 1.0, dark::BORDER);
-
-    draw_portrait(x + 12.0, y + 12.0, 72.0, kaiju, assets);
+    draw_rectangle(
+        rect.x,
+        rect.y,
+        rect.w,
+        rect.h,
+        Color::new(0.035, 0.060, 0.082, 0.94),
+    );
+    draw_rectangle_lines(rect.x, rect.y, rect.w, rect.h, 1.0, dark::BORDER);
+    draw_portrait(
+        Rect::new(rect.x + 10.0, rect.y + 10.0, 76.0, 76.0),
+        kaiju,
+        assets,
+    );
     draw_text(
         &kaiju.name,
-        x + 100.0,
-        y + 30.0,
+        rect.x + 102.0,
+        rect.y + 28.0,
         FONT_MEDIUM,
-        dark::TEXT_PRIMARY,
+        dark::ACCENT,
     );
     draw_text(
         &format!(
-            "Gen {} | XP {} | Rating {}",
+            "GEN {} | XP {} | RATING {} | COST {}",
             kaiju.generation,
             kaiju.experience,
-            kaiju.battle_rating()
+            kaiju.battle_rating(),
+            cost
         ),
-        x + 100.0,
-        y + 54.0,
-        FONT_SMALL,
+        rect.x + 102.0,
+        rect.y + 52.0,
+        FONT_TINY,
         dark::TEXT_SECONDARY,
     );
     draw_text(
         &format!(
-            "HP {}   ATK {}   DEF {}   SPD {}",
+            "HP {}  ATK {}  DEF {}  SPD {}",
             kaiju.stats.hp, kaiju.stats.attack, kaiju.stats.defense, kaiju.stats.speed
         ),
-        x + 100.0,
-        y + 76.0,
-        FONT_SMALL,
+        rect.x + 102.0,
+        rect.y + 76.0,
+        FONT_TINY,
         dark::TEXT_MUTED,
     );
 
-    let button_w = 118.0;
-    let button_gap = 10.0;
-    let start_x = x + w - (button_w * 4.0 + button_gap * 3.0) - 14.0;
+    let button_w = 86.0;
+    let start_x = rect.x + rect.w - (button_w * 4.0 + 8.0 * 3.0) - 12.0;
     for (index, focus) in TrainingFocus::all().iter().enumerate() {
-        let bx = start_x + index as f32 * (button_w + button_gap);
-        let label = format!("{} +{}", focus.label(), focus.stat_label());
-        if draw_button(bx, y + 29.0, button_w, 38.0, &label, focus_color(*focus)) {
+        let b = Rect::new(
+            start_x + index as f32 * (button_w + 8.0),
+            rect.y + 30.0,
+            button_w,
+            34.0,
+        );
+        if draw_button(b, focus.stat_label(), focus_color(*focus), can_afford) {
             return Some(UiAction::TrainKaiju {
                 kaiju_id: kaiju.id,
                 focus: *focus,
             });
         }
     }
-
     None
 }
 
-fn draw_header(title: &str, sw: f32) {
-    draw_rectangle(0.0, 0.0, sw, 60.0, dark::SURFACE);
-    draw_text(title, 20.0, 40.0, FONT_LARGE, dark::TEXT_PRIMARY);
-}
-
-fn draw_portrait(x: f32, y: f32, size: f32, kaiju: &Kaiju, assets: &AssetManager) {
-    let mut drawn = false;
-    if let Some(uri) = &kaiju.image_uri {
-        let key = assets.get_filename_from_url(uri);
-        if let Some(tex) = assets.get_texture(&key) {
-            draw_texture_ex(
-                tex,
-                x,
-                y,
-                WHITE,
-                DrawTextureParams {
-                    dest_size: Some(vec2(size, size)),
-                    ..Default::default()
-                },
-            );
-            drawn = true;
-        }
+fn draw_program_status(rect: Rect) {
+    let programs = [
+        ("ENDURANCE", "HP growth and recovery drills", dark::HP_COLOR),
+        (
+            "POWER",
+            "Attack pressure and strike output",
+            dark::ATK_COLOR,
+        ),
+        (
+            "GUARD",
+            "Defense control and armored posture",
+            dark::DEF_COLOR,
+        ),
+        (
+            "REFLEX",
+            "Speed timing and initiative work",
+            dark::SPD_COLOR,
+        ),
+    ];
+    let mut y = rect.y + 58.0;
+    for (name, desc, color) in programs {
+        draw_text(name, rect.x + 16.0, y, FONT_SMALL, color);
+        draw_text(
+            desc,
+            rect.x + 16.0,
+            y + 22.0,
+            FONT_TINY,
+            dark::TEXT_SECONDARY,
+        );
+        y += 64.0;
     }
-
-    if !drawn {
-        draw_rectangle(x, y, size, size, dark::PANEL);
-        draw_text_centered("?", x + size / 2.0, y + size / 2.0 + 8.0, FONT_LARGE, GRAY);
-    }
-}
-
-fn draw_button(x: f32, y: f32, w: f32, h: f32, text: &str, accent: Color) -> bool {
-    let mouse = mouse_position();
-    let hovered = mouse.0 >= x && mouse.0 <= x + w && mouse.1 >= y && mouse.1 <= y + h;
-    let bg = if hovered { accent } else { dark::BUTTON_BG };
-    draw_rectangle(x, y, w, h, bg);
-    draw_rectangle_lines(x, y, w, h, 1.0, if hovered { WHITE } else { dark::BORDER });
-    draw_text_centered(text, x + w / 2.0, y + h / 2.0 + 6.0, FONT_SMALL, WHITE);
-    hovered && is_mouse_button_pressed(MouseButton::Left)
 }
 
 fn focus_color(focus: TrainingFocus) -> Color {

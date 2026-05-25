@@ -14,7 +14,7 @@ pub mod types;
 // Re-export commonly used types
 pub use environments::Environment;
 pub use genome::{Genome, GenomeStats};
-pub use kaiju::{Kaiju, KaijuStats};
+pub use kaiju::{Kaiju, KaijuEvent, KaijuEventKind, KaijuStats};
 pub use lineage::{Lineage, LineageHighlight};
 pub use loader::GameData;
 pub use ranking::EloRating;

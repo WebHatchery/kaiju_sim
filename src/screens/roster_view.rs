@@ -1,60 +1,48 @@
-//! Roster view screen - kaiju collection display.
+//! Roster view screen.
 
 use crate::state::GameState;
 use crate::ui::actions::UiAction;
 use crate::ui::assets::AssetManager;
 use crate::ui::colors::dark;
 use crate::ui::components::{draw_kaiju_card, CardAction, CardState};
+use crate::ui::shell::*;
 use crate::ui::spacing::*;
 use crate::ui::typography::*;
 use macroquad::prelude::*;
 
-/// Draw roster view and return action if interaction
 pub fn draw_roster_view(state: &GameState, assets: &AssetManager) -> Option<UiAction> {
-    let sw = screen_width();
-    let sh = screen_height();
-
-    clear_background(dark::BACKGROUND);
-
-    // Header
-    draw_rectangle(0.0, 0.0, sw, 60.0, dark::SURFACE);
-    draw_text("YOUR ROSTER", 20.0, 40.0, FONT_LARGE, dark::TEXT_PRIMARY);
-
-    // Back button
-    if draw_back_button(sw - 100.0, 15.0) {
-        return Some(UiAction::GoToLaboratory);
+    let frame = draw_app_shell(state, AppSection::Roster);
+    if frame.nav_action.is_some() {
+        return frame.nav_action;
     }
 
-    // Roster count
+    let c = frame.content;
+    draw_panel(c, "ROSTER ARCHIVE");
     draw_text(
         &format!(
-            "{} Kaiju ({} alive)",
+            "{} registered kaiju | {} living | highest generation {}",
             state.roster.len(),
-            state.living_count()
+            state.living_count(),
+            state.player.stats.highest_generation
         ),
-        20.0,
-        80.0,
+        c.x + 14.0,
+        c.y + 52.0,
         FONT_SMALL,
         dark::TEXT_SECONDARY,
     );
 
-    // Kaiju cards grid
-    let (cols, start_x) = grid_cols(sw, CARD_WIDTH, SPACING_NORMAL);
-    let start_y = 100.0;
+    let cols = ((c.w - 28.0 + PANEL_GAP) / (CARD_WIDTH + PANEL_GAP))
+        .floor()
+        .max(1.0) as usize;
+    let start_x = c.x + 14.0;
+    let start_y = c.y + 74.0;
 
     for (i, kaiju) in state.roster.iter().enumerate() {
-        let (x, y) = grid_position(
-            i,
-            cols,
-            start_x,
-            start_y,
-            CARD_WIDTH,
-            CARD_HEIGHT,
-            SPACING_NORMAL,
-        );
-
-        // Don't draw if off screen
-        if y > sh + CARD_HEIGHT {
+        let row = i / cols;
+        let col = i % cols;
+        let x = start_x + col as f32 * (CARD_WIDTH + PANEL_GAP);
+        let y = start_y + row as f32 * (CARD_HEIGHT + PANEL_GAP);
+        if y > c.y + c.h {
             continue;
         }
 
@@ -65,47 +53,22 @@ pub fn draw_roster_view(state: &GameState, assets: &AssetManager) -> Option<UiAc
         };
 
         if let Some(action) = draw_kaiju_card(x, y, kaiju, card_state, assets) {
-            match action {
-                CardAction::Select => return Some(UiAction::SelectKaiju(kaiju.id)),
-                CardAction::ViewDetails => return Some(UiAction::ViewKaijuDetails(kaiju.id)),
-            }
+            return Some(match action {
+                CardAction::Select => UiAction::SelectKaiju(kaiju.id),
+                CardAction::ViewDetails => UiAction::ViewKaijuDetails(kaiju.id),
+            });
         }
     }
 
-    // Empty state
     if state.roster.is_empty() {
         draw_text_centered(
-            "No kaiju in your roster!",
-            sw / 2.0,
-            sh / 2.0,
+            "No kaiju in your roster.",
+            c.x + c.w / 2.0,
+            c.y + c.h / 2.0,
             FONT_MEDIUM,
-            dark::TEXT_SECONDARY,
+            dark::TEXT_MUTED,
         );
     }
 
     None
-}
-
-/// Draw back button
-fn draw_back_button(x: f32, y: f32) -> bool {
-    let w = 80.0;
-    let h = 30.0;
-    let mouse = mouse_position();
-    let hovered = mouse.0 >= x && mouse.0 <= x + w && mouse.1 >= y && mouse.1 <= y + h;
-
-    let bg = if hovered {
-        dark::BUTTON_HOVER
-    } else {
-        dark::BUTTON_BG
-    };
-    draw_rectangle(x, y, w, h, bg);
-    draw_text_centered(
-        "< Back",
-        x + w / 2.0,
-        y + 20.0,
-        FONT_SMALL,
-        dark::TEXT_PRIMARY,
-    );
-
-    hovered && is_mouse_button_pressed(MouseButton::Left)
 }

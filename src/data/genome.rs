@@ -1,7 +1,8 @@
 //! 256-bit genome encoding for kaiju genetic data.
 //!
 //! The genome is a compact binary representation of a kaiju's genetic makeup,
-//! enabling NFT storage and progressive information revelation.
+//! enabling deterministic breeding records and progressive information
+//! revelation.
 
 use crc::{Crc, CRC_16_IBM_SDLC};
 use serde::{Deserialize, Serialize};

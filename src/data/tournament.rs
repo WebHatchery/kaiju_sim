@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::data::environments::Environment;
-use crate::data::types::KaijuId;
+use crate::data::types::{new_kaiju_id, random_u64, KaijuId};
 
 /// Unique tournament identifier
 pub type TournamentId = Uuid;
@@ -103,7 +103,7 @@ impl Tournament {
         max_participants: u32,
     ) -> Self {
         Self {
-            id: Uuid::new_v4(),
+            id: new_kaiju_id(),
             name,
             tournament_type,
             bracket_system,
@@ -210,14 +210,14 @@ impl Match {
         environment: Environment,
     ) -> Self {
         Self {
-            id: Uuid::new_v4(),
+            id: new_kaiju_id(),
             tournament_id,
             round,
             kaiju_a,
             kaiju_b,
             environment,
             result: None,
-            battle_seed: rand::random(),
+            battle_seed: random_u64(),
         }
     }
 
@@ -357,8 +357,8 @@ mod tests {
             2,
         );
 
-        let kaiju1 = Uuid::new_v4();
-        let kaiju2 = Uuid::new_v4();
+        let kaiju1 = new_kaiju_id();
+        let kaiju2 = new_kaiju_id();
 
         assert!(tournament.register(kaiju1).is_ok());
         assert!(tournament.register(kaiju2).is_ok());
@@ -373,9 +373,9 @@ mod tests {
 
     #[test]
     fn test_match_creation() {
-        let tournament_id = Uuid::new_v4();
-        let kaiju_a = Uuid::new_v4();
-        let kaiju_b = Uuid::new_v4();
+        let tournament_id = new_kaiju_id();
+        let kaiju_a = new_kaiju_id();
+        let kaiju_b = new_kaiju_id();
 
         let match_obj = Match::new(tournament_id, 1, kaiju_a, kaiju_b, Environment::Neutral);
 

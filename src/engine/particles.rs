@@ -2,6 +2,8 @@
 
 use macroquad::prelude::*;
 
+use crate::data::random_range_f32;
+
 /// A single particle
 #[derive(Clone)]
 pub struct Particle {
@@ -109,22 +111,14 @@ impl ParticleSystem {
 
     /// Spawn particles from a burst config
     pub fn spawn_burst(&mut self, config: &EmitterConfig) {
-        let mut rng = ::rand::thread_rng();
-
         for _ in 0..config.count {
             if self.particles.len() >= self.max_particles {
                 // Recycle dead particles
                 if let Some(dead) = self.particles.iter_mut().find(|p| !p.is_alive()) {
                     dead.position = config.position;
                     dead.velocity = Vec2::new(
-                        ::rand::Rng::gen_range(
-                            &mut rng,
-                            config.velocity_min.x..config.velocity_max.x,
-                        ),
-                        ::rand::Rng::gen_range(
-                            &mut rng,
-                            config.velocity_min.y..config.velocity_max.y,
-                        ),
+                        random_range_f32(config.velocity_min.x, config.velocity_max.x),
+                        random_range_f32(config.velocity_min.y, config.velocity_max.y),
                     );
                     dead.lifetime = config.particle_lifetime;
                     dead.max_lifetime = config.particle_lifetime;
@@ -134,8 +128,8 @@ impl ParticleSystem {
                 }
             } else {
                 let velocity = Vec2::new(
-                    ::rand::Rng::gen_range(&mut rng, config.velocity_min.x..config.velocity_max.x),
-                    ::rand::Rng::gen_range(&mut rng, config.velocity_min.y..config.velocity_max.y),
+                    random_range_f32(config.velocity_min.x, config.velocity_max.x),
+                    random_range_f32(config.velocity_min.y, config.velocity_max.y),
                 );
 
                 self.particles.push(Particle::new(

@@ -3,16 +3,17 @@
 //! Implements stat inheritance, trait inheritance, mutations, and
 //! deterministic offspring generation.
 
-use chrono::Utc;
 use rand::Rng;
 use rand::SeedableRng;
 use rand_chacha::ChaCha8Rng;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
-use uuid::Uuid;
 
 use crate::data::genome::{Genome, GenomeStats, HiddenTraitData, TraitSlot};
-use crate::data::{Kaiju, KaijuStats, Trait, TraitInheritance};
+use crate::data::{
+    new_kaiju_id, now_timestamp, random_u64, Kaiju, KaijuEvent, KaijuEventKind, KaijuStats, Trait,
+    TraitInheritance,
+};
 
 /// Breeding configuration loaded from balance.json
 #[derive(Debug, Clone)]
@@ -113,7 +114,7 @@ impl std::fmt::Display for BreedingError {
 
 impl std::error::Error for BreedingError {}
 
-/// Breeding result with offspring and metadata
+/// Breeding result with offspring and inheritance details.
 #[derive(Debug)]
 pub struct BreedingResult {
     /// The offspring kaiju
@@ -191,11 +192,11 @@ pub fn breed_kaiju(
 
     // Create offspring
     let offspring = Kaiju {
-        id: Uuid::new_v4(),
+        id: new_kaiju_id(),
         token_id: 0,
         name: format!("Offspring of {} & {}", parent_a.name, parent_b.name),
         generation,
-        created_at: Utc::now().timestamp(),
+        created_at: now_timestamp(),
         original_breeder: parent_a.current_owner.clone(),
         parent_ids: Some((parent_a.token_id, parent_b.token_id)),
         visual_seed,
@@ -209,6 +210,12 @@ pub fn breed_kaiju(
         image_uri: None,
         metadata_uri: String::new(),
         tournaments_won: 0,
+        history: vec![KaijuEvent::new(
+            KaijuEventKind::Offspring,
+            "Breeding result",
+            format!("Born from {} and {}.", parent_a.name, parent_b.name),
+        )
+        .with_related(vec![parent_a.id, parent_b.id])],
     };
 
     Ok(BreedingResult {
@@ -586,15 +593,15 @@ mod tests {
 
     fn create_test_kaiju(name: &str, gen: u32, hp: i32, atk: i32) -> Kaiju {
         Kaiju {
-            id: Uuid::new_v4(),
-            token_id: rand::random(),
+            id: new_kaiju_id(),
+            token_id: random_u64(),
             name: name.to_string(),
             generation: gen,
-            created_at: Utc::now().timestamp(),
+            created_at: now_timestamp(),
             original_breeder: "test".to_string(),
             parent_ids: None,
-            visual_seed: rand::random(),
-            genome_hash: format!("{:016x}", rand::random::<u64>()),
+            visual_seed: random_u64(),
+            genome_hash: format!("{:016x}", random_u64()),
             stats: KaijuStats::new(hp, atk, 30, 25, 100),
             traits: vec![],
             hidden_traits: vec![],
@@ -604,6 +611,7 @@ mod tests {
             image_uri: None,
             metadata_uri: String::new(),
             tournaments_won: 0,
+            history: Vec::new(),
         }
     }
 

@@ -139,6 +139,7 @@ impl ServerKaiju {
             image_uri: Some(self.image_url),
             metadata_uri: String::new(),
             tournaments_won: self.tournaments_won,
+            history: Vec::new(),
         }
     }
 }

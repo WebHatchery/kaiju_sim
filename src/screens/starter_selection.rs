@@ -5,208 +5,175 @@ use crate::ui::assets::AssetManager;
 use crate::ui::*;
 use macroquad::prelude::*;
 
+struct StarterOption<'a> {
+    name: &'a str,
+    element: &'a str,
+    specialty: &'a str,
+    image: &'a str,
+    accent: Color,
+}
+
 pub async fn draw_starter_selection(assets: &AssetManager) -> Option<UiAction> {
-    let screen_w = screen_width();
-    let screen_h = screen_height();
+    let sw = screen_width();
+    let sh = screen_height();
+    draw_background(sw, sh);
 
-    // Background
-    draw_rectangle(0.0, 0.0, screen_w, screen_h, dark::BACKGROUND);
+    draw_header(sw);
 
-    // Title
-    draw_text_centered(
-        "Choose Your Starter Kaiju",
-        screen_w / 2.0,
-        80.0,
-        FONT_TITLE,
-        dark::TEXT_PRIMARY,
+    let content = Rect::new(48.0, 112.0, sw - 96.0, sh - 176.0);
+    draw_panel(content, "STARTER DOSSIERS");
+    draw_text(
+        "Choose the first kaiju in your documented lineage.",
+        content.x + 22.0,
+        content.y + 58.0,
+        FONT_SMALL,
+        dark::TEXT_SECONDARY,
     );
 
-    let card_w = 260.0; // Wider than normal cards
-    let card_h = 380.0;
-    let gap = 40.0;
-    let total_w = (card_w * 3.0) + (gap * 2.0);
-    let start_x = (screen_w - total_w) / 2.0;
-    let start_y = 150.0;
+    let options = [
+        StarterOption {
+            name: "Ignis",
+            element: "Fire",
+            specialty: "High attack pressure",
+            image: "kaiju_fire_elemental_1768091138860.png",
+            accent: dark::ATK_COLOR,
+        },
+        StarterOption {
+            name: "Glacies",
+            element: "Ice",
+            specialty: "Heavy defensive shell",
+            image: "kaiju_ice_elemental_1768091156648.png",
+            accent: dark::DEF_COLOR,
+        },
+        StarterOption {
+            name: "Volt",
+            element: "Electric",
+            specialty: "Fast first-strike tempo",
+            image: "kaiju_electric_elemental_1768091175509.png",
+            accent: dark::SPD_COLOR,
+        },
+    ];
 
-    // --- Fire Option ---
-    let fire_x = start_x;
-    if draw_starter_card(
-        fire_x,
-        start_y,
-        card_w,
-        card_h,
-        "Ignis",
-        "Fire",
-        "High Attack",
-        assets,
-        "kaiju_fire_elemental_1768091138860.png",
-        dark::ATK_COLOR,
-    )
-    .await
-    {
-        return Some(UiAction::SelectStarter("Fire".to_string()));
+    let gap = 18.0;
+    let card_w = ((content.w - 44.0 - gap * 2.0) / 3.0).clamp(210.0, 310.0);
+    let card_h = (content.h - 116.0).clamp(350.0, 440.0);
+    let total_w = card_w * 3.0 + gap * 2.0;
+    let mut x = content.x + (content.w - total_w) / 2.0;
+    let y = content.y + 86.0;
+
+    for option in options {
+        if draw_starter_card(Rect::new(x, y, card_w, card_h), &option, assets) {
+            return Some(UiAction::SelectStarter(option.element.to_string()));
+        }
+        x += card_w + gap;
     }
 
-    // --- Ice Option ---
-    let ice_x = fire_x + card_w + gap;
-    if draw_starter_card(
-        ice_x,
-        start_y,
-        card_w,
-        card_h,
-        "Glacies",
-        "Ice",
-        "High Defense",
-        assets,
-        "kaiju_ice_elemental_1768091156648.png",
-        dark::DEF_COLOR,
-    )
-    .await
-    {
-        return Some(UiAction::SelectStarter("Ice".to_string()));
-    }
-
-    // --- Electric Option ---
-    let elec_x = ice_x + card_w + gap;
-    if draw_starter_card(
-        elec_x,
-        start_y,
-        card_w,
-        card_h,
-        "Volt",
-        "Electric",
-        "High Speed",
-        assets,
-        "kaiju_electric_elemental_1768091175509.png",
-        dark::SPD_COLOR,
-    )
-    .await
-    {
-        return Some(UiAction::SelectStarter("Electric".to_string()));
-    }
-
-    // Back button
-    let btn_w = 150.0;
-    let btn_h = 40.0;
-    let btn_x = screen_w / 2.0 - btn_w / 2.0;
-    let btn_y = screen_h - 60.0;
-    let mouse = mouse_position();
-    let btn_hovered = mouse.0 >= btn_x
-        && mouse.0 <= btn_x + btn_w
-        && mouse.1 >= btn_y
-        && mouse.1 <= btn_y + btn_h;
-
-    let btn_bg = if btn_hovered {
-        dark::BUTTON_HOVER
-    } else {
-        dark::BUTTON_BG
-    };
-    draw_rectangle(btn_x, btn_y, btn_w, btn_h, btn_bg);
-    draw_text_centered(
-        "Back",
-        screen_w / 2.0,
-        btn_y + 26.0,
-        FONT_MEDIUM,
-        dark::TEXT_PRIMARY,
-    );
-
-    if btn_hovered && is_mouse_button_pressed(MouseButton::Left) {
+    let back_rect = Rect::new(sw / 2.0 - 80.0, sh - 48.0, 160.0, 36.0);
+    if draw_button(back_rect, "BACK", dark::TEXT_SECONDARY, true) {
         return Some(UiAction::GoToMenu);
     }
 
     None
 }
 
-async fn draw_starter_card(
-    x: f32,
-    y: f32,
-    w: f32,
-    h: f32,
-    name: &str,
-    element: &str,
-    desc: &str,
-    assets: &AssetManager,
-    image_name: &str,
-    color: Color,
-) -> bool {
+fn draw_header(sw: f32) {
+    draw_rectangle(0.0, 0.0, sw, 78.0, Color::new(0.025, 0.035, 0.045, 0.98));
+    draw_line(0.0, 78.0, sw, 78.0, 1.0, dark::BORDER);
+    draw_text(
+        "KAIJU BREEDING SIMULATOR",
+        34.0,
+        34.0,
+        FONT_MEDIUM,
+        dark::TEXT_PRIMARY,
+    );
+    draw_text("STARTER SELECTION", 34.0, 60.0, FONT_SMALL, dark::ACCENT);
+}
+
+fn draw_starter_card(rect: Rect, option: &StarterOption, assets: &AssetManager) -> bool {
     let mouse = mouse_position();
-    let is_hovered = mouse.0 >= x && mouse.0 <= x + w && mouse.1 >= y && mouse.1 <= y + h;
+    let hovered = rect.contains(vec2(mouse.0, mouse.1));
+    let border = if hovered { option.accent } else { dark::BORDER };
 
-    // Card Base
-    draw_rectangle(x, y, w, h, dark::SURFACE);
+    draw_rectangle(
+        rect.x,
+        rect.y,
+        rect.w,
+        rect.h,
+        Color::new(0.045, 0.070, 0.095, 0.94),
+    );
+    draw_rectangle_lines(rect.x, rect.y, rect.w, rect.h, 1.0, border);
+    draw_rectangle(
+        rect.x,
+        rect.y,
+        rect.w,
+        2.0,
+        Color::new(option.accent.r, option.accent.g, option.accent.b, 0.72),
+    );
 
-    // Border
-    let border_color = if is_hovered { color } else { dark::BORDER };
-    let border_thick = if is_hovered { 3.0 } else { 2.0 };
-    draw_rectangle_lines(x, y, w, h, border_thick, border_color);
-
-    // Image
-    let img_h = 200.0;
-    draw_rectangle(x + 10.0, y + 10.0, w - 20.0, img_h, dark::PANEL);
-
-    // Fetch image from server if needed (lazy load/cache handled by main loop largely, but here we invoke simplistic)
-    // Ideally asset manager has them. For visual consistency we assume they exist or use placeholder.
-    if let Some(tex) = assets.get_texture(image_name) {
+    let portrait = Rect::new(rect.x + 14.0, rect.y + 14.0, rect.w - 28.0, rect.h * 0.52);
+    draw_rectangle(
+        portrait.x,
+        portrait.y,
+        portrait.w,
+        portrait.h,
+        Color::new(0.02, 0.04, 0.06, 1.0),
+    );
+    if let Some(tex) = assets.get_texture(option.image) {
         draw_texture_ex(
             tex,
-            x + 10.0,
-            y + 10.0,
+            portrait.x,
+            portrait.y,
             WHITE,
             DrawTextureParams {
-                dest_size: Some(vec2(w - 20.0, img_h)),
+                dest_size: Some(vec2(portrait.w, portrait.h)),
                 ..Default::default()
             },
         );
     } else {
-        // Trigger download if not present (simple hack for this screen)
-        // In real loop, we'd pre-load. Here we just show text if missing.
         draw_text_centered(
-            "Loading...",
-            x + w / 2.0,
-            y + 100.0,
+            "NO IMAGE",
+            portrait.x + portrait.w / 2.0,
+            portrait.y + portrait.h / 2.0 + 6.0,
             FONT_SMALL,
-            dark::TEXT_SECONDARY,
+            dark::TEXT_MUTED,
         );
     }
+    draw_rectangle_lines(
+        portrait.x,
+        portrait.y,
+        portrait.w,
+        portrait.h,
+        1.0,
+        dark::BORDER,
+    );
 
-    // Info
-    let content_y = y + img_h + 30.0;
-    draw_text_centered(name, x + w / 2.0, content_y, FONT_TITLE, color);
-    draw_text_centered(
-        element,
-        x + w / 2.0,
-        content_y + 30.0,
-        FONT_MEDIUM,
+    let text_y = portrait.y + portrait.h + 36.0;
+    draw_text(
+        option.name,
+        rect.x + 18.0,
+        text_y,
+        FONT_LARGE,
         dark::TEXT_PRIMARY,
     );
-    draw_text_centered(
-        desc,
-        x + w / 2.0,
-        content_y + 60.0,
+    draw_text(
+        option.element,
+        rect.x + 18.0,
+        text_y + 28.0,
+        FONT_MEDIUM,
+        option.accent,
+    );
+    draw_text(
+        option.specialty,
+        rect.x + 18.0,
+        text_y + 56.0,
         FONT_SMALL,
         dark::TEXT_SECONDARY,
     );
 
-    // Button
-    let btn_y = y + h - 50.0;
-    let btn_hover = mouse.0 >= x + 20.0
-        && mouse.0 <= x + w - 20.0
-        && mouse.1 >= btn_y
-        && mouse.1 <= btn_y + 40.0;
-    let btn_color = if btn_hover { color } else { dark::BUTTON_BG };
-
-    draw_rectangle(x + 20.0, btn_y, w - 40.0, 40.0, btn_color);
-    draw_text_centered(
-        "Choose",
-        x + w / 2.0,
-        btn_y + 25.0,
-        FONT_MEDIUM,
-        dark::TEXT_PRIMARY,
-    );
-
-    if is_hovered && is_mouse_button_pressed(MouseButton::Left) {
+    let button = Rect::new(rect.x + 18.0, rect.y + rect.h - 50.0, rect.w - 36.0, 34.0);
+    if draw_button(button, "SELECT", option.accent, true) {
         return true;
     }
 
-    false
+    hovered && is_mouse_button_pressed(MouseButton::Left)
 }

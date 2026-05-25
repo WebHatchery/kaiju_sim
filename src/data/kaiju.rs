@@ -1,9 +1,6 @@
 //! Kaiju entity and related data structures.
 
-use chrono::Utc;
-use rand::Rng;
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 
 use super::traits::Trait;
 use super::types::*;
@@ -58,7 +55,7 @@ pub struct Kaiju {
     /// Unique identifier
     pub id: KaijuId,
 
-    /// Blockchain token ID (0 if not minted)
+    /// Persistent local legacy ID used for lineage and history references.
     pub token_id: TokenId,
 
     /// Kaiju display name (non-unique)
@@ -70,10 +67,10 @@ pub struct Kaiju {
     /// Creation timestamp (Unix epoch)
     pub created_at: Timestamp,
 
-    /// Original breeder wallet address
+    /// Original breeder or system source.
     pub original_breeder: WalletAddress,
 
-    /// Parent token IDs (None for generation 0)
+    /// Parent legacy IDs (None for generation 0)
     pub parent_ids: Option<(TokenId, TokenId)>,
 
     /// Visual seed for deterministic image generation
@@ -98,35 +95,102 @@ pub struct Kaiju {
     /// Alive status (false = permanently dead)
     pub alive: bool,
 
-    /// Current owner wallet address
+    /// Current keeper. Multiplayer ownership can map onto this later.
     pub current_owner: WalletAddress,
 
-    // === NFT METADATA ===
-    /// AI-generated portrait URI (IPFS/Arweave)
+    // === PROFILE METADATA ===
+    /// Portrait URI or local sprite path.
     pub image_uri: Option<String>,
 
-    /// Full metadata URI (IPFS/Arweave)
+    /// Optional external profile URI.
     pub metadata_uri: String,
 
     /// Number of tournaments won
     #[serde(default)]
     pub tournaments_won: i32,
+
+    /// Documented history of creation, training, battles, breeding, ownership, and future events.
+    #[serde(default)]
+    pub history: Vec<KaijuEvent>,
+}
+
+/// Historical event category for a kaiju legacy record.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub enum KaijuEventKind {
+    Created,
+    JoinedRoster,
+    Training,
+    Battle,
+    Breeding,
+    Offspring,
+    Research,
+    Transfer,
+    Death,
+}
+
+impl KaijuEventKind {
+    pub fn label(&self) -> &'static str {
+        match self {
+            Self::Created => "Created",
+            Self::JoinedRoster => "Joined Roster",
+            Self::Training => "Training",
+            Self::Battle => "Battle",
+            Self::Breeding => "Breeding",
+            Self::Offspring => "Offspring",
+            Self::Research => "Research",
+            Self::Transfer => "Transfer",
+            Self::Death => "Death",
+        }
+    }
+}
+
+/// A durable record of something meaningful in a kaiju's life.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct KaijuEvent {
+    pub timestamp: Timestamp,
+    pub kind: KaijuEventKind,
+    pub title: String,
+    pub details: String,
+    pub related_kaiju_ids: Vec<KaijuId>,
+    pub battle_seed: Option<u64>,
+}
+
+impl KaijuEvent {
+    pub fn new(kind: KaijuEventKind, title: impl Into<String>, details: impl Into<String>) -> Self {
+        Self {
+            timestamp: now_timestamp(),
+            kind,
+            title: title.into(),
+            details: details.into(),
+            related_kaiju_ids: Vec::new(),
+            battle_seed: None,
+        }
+    }
+
+    pub fn with_related(mut self, related_kaiju_ids: Vec<KaijuId>) -> Self {
+        self.related_kaiju_ids = related_kaiju_ids;
+        self
+    }
+
+    pub fn with_seed(mut self, seed: u64) -> Self {
+        self.battle_seed = Some(seed);
+        self
+    }
 }
 
 impl Kaiju {
     /// Create a new generation 0 (wild) kaiju
     pub fn new_wild(name: String, stats: KaijuStats, traits: Vec<Trait>) -> Self {
-        let mut rng = rand::thread_rng();
         Self {
-            id: Uuid::new_v4(),
+            id: new_kaiju_id(),
             token_id: 0,
             name,
             generation: 0,
-            created_at: Utc::now().timestamp(),
+            created_at: now_timestamp(),
             original_breeder: "system".to_string(),
             parent_ids: None,
-            visual_seed: rng.gen(),
-            genome_hash: format!("{:016x}", rng.gen::<u64>()),
+            visual_seed: random_u64(),
+            genome_hash: format!("{:016x}", random_u64()),
             stats,
             traits,
             hidden_traits: Vec::new(),
@@ -136,6 +200,11 @@ impl Kaiju {
             image_uri: None,
             metadata_uri: String::new(),
             tournaments_won: 0,
+            history: vec![KaijuEvent::new(
+                KaijuEventKind::Created,
+                "Wild kaiju discovered",
+                "Entered the local legacy registry as a generation 0 kaiju.",
+            )],
         }
     }
 
@@ -154,6 +223,11 @@ impl Kaiju {
         let base = self.stats.power_level();
         let trait_power: i32 = self.traits.iter().map(|t| t.power).sum();
         base + trait_power + (self.experience as i32 / 10)
+    }
+
+    /// Append a durable history entry.
+    pub fn record_event(&mut self, event: KaijuEvent) {
+        self.history.push(event);
     }
 }
 
@@ -190,6 +264,8 @@ mod tests {
         assert!(kaiju.can_breed());
         assert!(kaiju.can_compete());
         assert_eq!(kaiju.parent_ids, None);
+        assert_eq!(kaiju.history.len(), 1);
+        assert_eq!(kaiju.history[0].kind, KaijuEventKind::Created);
     }
 
     #[test]
@@ -199,5 +275,16 @@ mod tests {
 
         let rating = kaiju.battle_rating();
         assert!(rating > 0);
+    }
+
+    #[test]
+    fn test_missing_history_defaults_when_loading_old_save() {
+        let stats = KaijuStats::new(200, 50, 40, 30, 100);
+        let kaiju = Kaiju::new_wild("Legacy".to_string(), stats, vec![]);
+        let mut value = serde_json::to_value(&kaiju).unwrap();
+        value.as_object_mut().unwrap().remove("history");
+
+        let loaded: Kaiju = serde_json::from_value(value).unwrap();
+        assert!(loaded.history.is_empty());
     }
 }

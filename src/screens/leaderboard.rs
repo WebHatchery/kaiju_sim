@@ -1,66 +1,94 @@
 use crate::state::GameState;
 use crate::ui::actions::UiAction;
 use crate::ui::colors::dark;
+use crate::ui::shell::*;
 use crate::ui::typography::*;
 use macroquad::prelude::*;
 
 pub fn draw_leaderboard(state: &GameState) -> Option<UiAction> {
-    let sw = screen_width();
-    clear_background(dark::BACKGROUND);
-    draw_rectangle(0.0, 0.0, sw, 60.0, dark::SURFACE);
-    draw_text("LOCAL LEADERBOARD", 20.0, 40.0, FONT_LARGE, WHITE);
-
-    if draw_button(sw - 105.0, 15.0, 85.0, 30.0, "< Back") {
-        return Some(UiAction::GoToLaboratory);
+    let frame = draw_app_shell(state, AppSection::Leaderboard);
+    if frame.nav_action.is_some() {
+        return frame.nav_action;
     }
+
+    let c = frame.content;
+    draw_panel(c, "LOCAL LEADERBOARD");
+    draw_text(
+        "Ranked by arena wins, then battle rating. V2 will include real player kaiju.",
+        c.x + 14.0,
+        c.y + 52.0,
+        FONT_SMALL,
+        dark::TEXT_SECONDARY,
+    );
+    draw_table_header(
+        c.x + 14.0,
+        c.y + 78.0,
+        c.w - 28.0,
+        &[
+            ("RANK", 16.0),
+            ("KAIJU", 100.0),
+            ("GEN", 330.0),
+            ("WINS", 430.0),
+            ("RATING", 540.0),
+            ("EVENTS", 660.0),
+        ],
+    );
 
     let mut ranked = state.roster.iter().collect::<Vec<_>>();
     ranked.sort_by_key(|kaiju| std::cmp::Reverse((kaiju.tournaments_won, kaiju.battle_rating())));
 
-    let mut y = 100.0;
+    let mut y = c.y + 124.0;
     for (index, kaiju) in ranked.iter().enumerate() {
-        draw_rectangle(28.0, y - 26.0, sw - 56.0, 46.0, dark::SURFACE);
-        draw_text(
-            &format!(
-                "#{:<2} {:<18} Rating {:<4} Wins {:<3} Gen {}",
-                index + 1,
-                kaiju.name,
-                kaiju.battle_rating(),
-                kaiju.tournaments_won,
-                kaiju.generation
-            ),
-            44.0,
-            y,
-            FONT_MEDIUM,
-            if index == 0 {
-                dark::WARNING
-            } else {
-                dark::TEXT_PRIMARY
-            },
+        draw_rectangle(
+            c.x + 14.0,
+            y - 22.0,
+            c.w - 28.0,
+            38.0,
+            Color::new(0.035, 0.060, 0.082, 0.94),
         );
-        y += 56.0;
-    }
-
-    if is_key_pressed(KeyCode::Escape) {
-        return Some(UiAction::GoToLaboratory);
-    }
-    None
-}
-
-fn draw_button(x: f32, y: f32, w: f32, h: f32, text: &str) -> bool {
-    let mouse = mouse_position();
-    let hovered = mouse.0 >= x && mouse.0 <= x + w && mouse.1 >= y && mouse.1 <= y + h;
-    draw_rectangle(
-        x,
-        y,
-        w,
-        h,
-        if hovered {
-            dark::BUTTON_HOVER
+        let rank_color = if index == 0 {
+            dark::WARNING
         } else {
-            dark::BUTTON_BG
-        },
-    );
-    draw_text_centered(text, x + w / 2.0, y + h / 2.0 + 5.0, FONT_SMALL, WHITE);
-    hovered && is_mouse_button_pressed(MouseButton::Left)
+            dark::TEXT_PRIMARY
+        };
+        draw_text(
+            &(index + 1).to_string(),
+            c.x + 30.0,
+            y,
+            FONT_SMALL,
+            rank_color,
+        );
+        draw_text(&kaiju.name, c.x + 114.0, y, FONT_SMALL, dark::ACCENT);
+        draw_text(
+            &kaiju.generation.to_string(),
+            c.x + 344.0,
+            y,
+            FONT_SMALL,
+            dark::TEXT_PRIMARY,
+        );
+        draw_text(
+            &kaiju.tournaments_won.to_string(),
+            c.x + 448.0,
+            y,
+            FONT_SMALL,
+            dark::TEXT_PRIMARY,
+        );
+        draw_text(
+            &kaiju.battle_rating().to_string(),
+            c.x + 554.0,
+            y,
+            FONT_SMALL,
+            dark::WARNING,
+        );
+        draw_text(
+            &kaiju.history.len().to_string(),
+            c.x + 678.0,
+            y,
+            FONT_SMALL,
+            dark::TEXT_SECONDARY,
+        );
+        y += 46.0;
+    }
+
+    None
 }

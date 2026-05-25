@@ -239,12 +239,11 @@ fn generate_color_scheme(rng: &mut ChaCha8Rng, element: Element) -> ColorScheme 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::data::KaijuStats;
-    use uuid::Uuid;
+    use crate::data::{new_kaiju_id, KaijuStats};
 
     fn create_test_kaiju(seed: u64) -> Kaiju {
         Kaiju {
-            id: Uuid::new_v4(),
+            id: new_kaiju_id(),
             token_id: 0,
             name: "TestKaiju".to_string(),
             generation: 1,
@@ -262,6 +261,7 @@ mod tests {
             image_uri: None,
             metadata_uri: String::new(),
             tournaments_won: 0,
+            history: Vec::new(),
         }
     }
 

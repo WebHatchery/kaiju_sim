@@ -5,15 +5,11 @@ use crate::ui::actions::UiAction;
 use crate::ui::assets::AssetManager;
 use crate::ui::colors::dark;
 use crate::ui::components::{draw_kaiju_card, CardAction, CardState};
+use crate::ui::shell::*;
 use crate::ui::spacing::*;
 use crate::ui::typography::*;
 use macroquad::prelude::*;
 
-// ...
-
-// ... imports
-
-/// Breeding UI state
 pub struct BreedingState {
     pub parent_a: Option<uuid::Uuid>,
     pub parent_b: Option<uuid::Uuid>,
@@ -28,154 +24,112 @@ impl Default for BreedingState {
     }
 }
 
-/// Draw breeding screen
 pub fn draw_breeding_screen(
     game_state: &GameState,
     breeding_state: &mut BreedingState,
     locked_kaiju_ids: &std::collections::HashSet<uuid::Uuid>,
     assets: &AssetManager,
 ) -> Option<UiAction> {
-    let sw = screen_width();
-    let sh = screen_height();
-
-    clear_background(dark::BACKGROUND);
-
-    // Header
-    draw_rectangle(0.0, 0.0, sw, 60.0, dark::SURFACE);
-    draw_text(
-        "BREEDING CHAMBER",
-        20.0,
-        40.0,
-        FONT_LARGE,
-        dark::TEXT_PRIMARY,
-    );
-
-    // Back button
-    if draw_button(sw - 100.0, 15.0, 80.0, 30.0, "< Back") {
-        return Some(UiAction::GoToLaboratory);
+    let frame = draw_app_shell(game_state, AppSection::Breeding);
+    if frame.nav_action.is_some() {
+        return frame.nav_action;
     }
 
-    // Parent selection area (top half)
-    let parent_y = 80.0;
-    let slot_w = 200.0;
-    let slot_h = 280.0;
+    let c = frame.content;
+    let top_h = 250.0;
+    let select_panel = Rect::new(c.x, c.y, c.w, top_h);
+    draw_panel(select_panel, "BREEDING CHAMBER");
 
-    // Parent A slot
-    let parent_a_x = sw / 4.0 - slot_w / 2.0;
+    let parent_w = 280.0;
+    let parent_h = 156.0;
+    let a_rect = Rect::new(
+        select_panel.x + 20.0,
+        select_panel.y + 58.0,
+        parent_w,
+        parent_h,
+    );
+    let b_rect = Rect::new(
+        select_panel.x + parent_w + 72.0,
+        select_panel.y + 58.0,
+        parent_w,
+        parent_h,
+    );
+    let preview_rect = Rect::new(
+        b_rect.x + parent_w + 28.0,
+        select_panel.y + 58.0,
+        select_panel.w - b_rect.x - parent_w - 48.0,
+        parent_h,
+    );
+
     draw_parent_slot(
-        parent_a_x,
-        parent_y,
-        slot_w,
-        slot_h,
-        "Parent A",
+        a_rect,
+        "PARENT A",
         breeding_state
             .parent_a
             .and_then(|id| game_state.get_kaiju(id)),
+        assets,
     );
-
-    // Plus sign
-    draw_text_centered(
-        "+",
-        sw / 2.0,
-        parent_y + slot_h / 2.0,
-        FONT_HERO,
-        dark::TEXT_MUTED,
-    );
-
-    // Parent B slot
-    let parent_b_x = sw * 3.0 / 4.0 - slot_w / 2.0;
     draw_parent_slot(
-        parent_b_x,
-        parent_y,
-        slot_w,
-        slot_h,
-        "Parent B",
+        b_rect,
+        "PARENT B",
         breeding_state
             .parent_b
             .and_then(|id| game_state.get_kaiju(id)),
+        assets,
     );
+    draw_offspring_preview(preview_rect, breeding_state, game_state);
 
-    // Offspring preview area
-    let preview_y = parent_y + slot_h + 30.0;
-    draw_rectangle(sw / 3.0, preview_y, sw / 3.0, 100.0, dark::SURFACE);
-    draw_rectangle_lines(sw / 3.0, preview_y, sw / 3.0, 100.0, 2.0, dark::BORDER);
-
-    let can_breed = breeding_state.parent_a.is_some() && breeding_state.parent_b.is_some();
-
-    if can_breed {
-        draw_text_centered(
-            "Offspring Preview",
-            sw / 2.0,
-            preview_y + 30.0,
-            FONT_NORMAL,
-            dark::TEXT_PRIMARY,
-        );
-        draw_text_centered(
-            "Generation: Next Gen",
-            sw / 2.0,
-            preview_y + 55.0,
-            FONT_SMALL,
-            dark::TEXT_SECONDARY,
-        );
-
-        // Breed button
-        if draw_button(sw / 2.0 - 60.0, preview_y + 120.0, 120.0, 40.0, "BREED") {
-            return Some(UiAction::ConfirmBreeding);
-        }
-    } else {
-        draw_text_centered(
-            "Select two parents to breed",
-            sw / 2.0,
-            preview_y + 50.0,
-            FONT_NORMAL,
-            dark::TEXT_MUTED,
-        );
+    if breeding_state.parent_a.is_some()
+        && breeding_state.parent_b.is_some()
+        && draw_button(
+            Rect::new(
+                preview_rect.x + preview_rect.w - 120.0,
+                preview_rect.y + preview_rect.h - 42.0,
+                100.0,
+                30.0,
+            ),
+            "BREED",
+            dark::ACCENT,
+            true,
+        )
+    {
+        return Some(UiAction::ConfirmBreeding);
     }
 
-    // Available kaiju grid (bottom)
-    let grid_y = preview_y + 170.0;
+    let roster_panel = Rect::new(c.x, c.y + top_h + PANEL_GAP, c.w, c.h - top_h - PANEL_GAP);
+    draw_panel(roster_panel, "SELECT PARENTS");
     draw_text(
-        "Select Parents",
-        20.0,
-        grid_y,
-        FONT_MEDIUM,
+        "Choose two living kaiju. Parent and offspring history entries are created after hatching.",
+        roster_panel.x + 14.0,
+        roster_panel.y + 52.0,
+        FONT_SMALL,
         dark::TEXT_SECONDARY,
     );
-
-    let (cols, start_x) = grid_cols(sw, CARD_WIDTH, SPACING_SMALL);
-    let card_y = grid_y + 20.0;
 
     let available: Vec<_> = game_state
         .roster
         .iter()
         .filter(|k| k.alive)
-        .filter(|k| !locked_kaiju_ids.contains(&k.id)) // Filter out breeding Kaiju
+        .filter(|k| !locked_kaiju_ids.contains(&k.id))
         .filter(|k| Some(k.id) != breeding_state.parent_a && Some(k.id) != breeding_state.parent_b)
         .collect();
 
+    let cols = ((roster_panel.w - 28.0 + PANEL_GAP) / (CARD_WIDTH + PANEL_GAP))
+        .floor()
+        .max(1.0) as usize;
+    let start_x = roster_panel.x + 14.0;
+    let start_y = roster_panel.y + 74.0;
     for (i, kaiju) in available.iter().enumerate() {
-        let (x, y) = grid_position(
-            i,
-            cols,
-            start_x,
-            card_y,
-            CARD_WIDTH,
-            CARD_HEIGHT,
-            SPACING_SMALL,
-        );
-
-        if y > sh {
+        let x = start_x + (i % cols) as f32 * (CARD_WIDTH + PANEL_GAP);
+        let y = start_y + (i / cols) as f32 * (CARD_HEIGHT + PANEL_GAP);
+        if y > roster_panel.y + roster_panel.h {
             continue;
         }
-
         let action = draw_kaiju_card(x, y, kaiju, CardState::Normal, assets);
-
         let mouse = mouse_position();
-        let hovered =
-            mouse.0 >= x && mouse.0 <= x + CARD_WIDTH && mouse.1 >= y && mouse.1 <= y + CARD_HEIGHT;
-        let clicked = hovered && is_mouse_button_pressed(MouseButton::Left);
-
-        if matches!(action, Some(CardAction::Select)) || (action.is_none() && clicked) {
+        let clicked = Rect::new(x, y, CARD_WIDTH, CARD_HEIGHT).contains(vec2(mouse.0, mouse.1))
+            && is_mouse_button_pressed(MouseButton::Left);
+        if matches!(action, Some(CardAction::Select)) || clicked {
             if breeding_state.parent_a.is_none() {
                 breeding_state.parent_a = Some(kaiju.id);
             } else if breeding_state.parent_b.is_none() {
@@ -187,70 +141,111 @@ pub fn draw_breeding_screen(
     None
 }
 
-/// Draw parent selection slot
 fn draw_parent_slot(
-    x: f32,
-    y: f32,
-    w: f32,
-    h: f32,
+    rect: Rect,
     label: &str,
     kaiju: Option<&crate::data::Kaiju>,
+    assets: &AssetManager,
 ) {
-    draw_rectangle(x, y, w, h, dark::SURFACE);
-    draw_rectangle_lines(x, y, w, h, 2.0, dark::BORDER);
-
-    draw_text_centered(
+    draw_rectangle(
+        rect.x,
+        rect.y,
+        rect.w,
+        rect.h,
+        Color::new(0.035, 0.060, 0.082, 0.94),
+    );
+    draw_rectangle_lines(rect.x, rect.y, rect.w, rect.h, 1.0, dark::BORDER);
+    draw_text(
         label,
-        x + w / 2.0,
-        y + 20.0,
-        FONT_SMALL,
+        rect.x + 12.0,
+        rect.y + 24.0,
+        FONT_TINY,
         dark::TEXT_SECONDARY,
     );
-
     if let Some(k) = kaiju {
-        draw_text_centered(
-            &k.name,
-            x + w / 2.0,
-            y + h / 2.0,
-            FONT_MEDIUM,
-            dark::TEXT_PRIMARY,
+        draw_portrait(
+            Rect::new(rect.x + 12.0, rect.y + 40.0, 88.0, 88.0),
+            k,
+            assets,
         );
-        draw_text_centered(
-            &format!("Gen {}", k.generation),
-            x + w / 2.0,
-            y + h / 2.0 + 25.0,
-            FONT_SMALL,
+        draw_text(
+            &k.name,
+            rect.x + 116.0,
+            rect.y + 68.0,
+            FONT_MEDIUM,
+            dark::ACCENT,
+        );
+        draw_text(
+            &format!("GEN {} | RATING {}", k.generation, k.battle_rating()),
+            rect.x + 116.0,
+            rect.y + 96.0,
+            FONT_TINY,
             dark::TEXT_SECONDARY,
         );
     } else {
-        draw_text_centered(
-            "Click to select",
-            x + w / 2.0,
-            y + h / 2.0,
-            FONT_NORMAL,
+        draw_text(
+            "Select from roster below",
+            rect.x + 16.0,
+            rect.y + 90.0,
+            FONT_SMALL,
             dark::TEXT_MUTED,
         );
     }
 }
 
-/// Draw a button
-fn draw_button(x: f32, y: f32, w: f32, h: f32, text: &str) -> bool {
-    let mouse = mouse_position();
-    let hovered = mouse.0 >= x && mouse.0 <= x + w && mouse.1 >= y && mouse.1 <= y + h;
-
-    let bg = if hovered {
-        dark::ACCENT
-    } else {
-        dark::BUTTON_BG
-    };
-    draw_rectangle(x, y, w, h, bg);
-    draw_text_centered(
-        text,
-        x + w / 2.0,
-        y + h / 2.0 + 5.0,
-        FONT_NORMAL,
-        dark::TEXT_PRIMARY,
+fn draw_offspring_preview(rect: Rect, breeding_state: &BreedingState, game_state: &GameState) {
+    draw_rectangle(
+        rect.x,
+        rect.y,
+        rect.w,
+        rect.h,
+        Color::new(0.035, 0.060, 0.082, 0.94),
+    );
+    draw_rectangle_lines(rect.x, rect.y, rect.w, rect.h, 1.0, dark::BORDER);
+    draw_text(
+        "OFFSPRING PREVIEW",
+        rect.x + 12.0,
+        rect.y + 24.0,
+        FONT_TINY,
+        dark::TEXT_SECONDARY,
     );
 
-    hovered && is_mouse_button_pressed(MouseButton::Left)
+    if let (Some(a), Some(b)) = (
+        breeding_state
+            .parent_a
+            .and_then(|id| game_state.get_kaiju(id)),
+        breeding_state
+            .parent_b
+            .and_then(|id| game_state.get_kaiju(id)),
+    ) {
+        draw_text(
+            &format!("GEN {}", a.generation.max(b.generation) + 1),
+            rect.x + 16.0,
+            rect.y + 62.0,
+            FONT_MEDIUM,
+            dark::ACCENT,
+        );
+        draw_text(
+            &format!("{} x {}", a.name, b.name),
+            rect.x + 16.0,
+            rect.y + 92.0,
+            FONT_SMALL,
+            dark::TEXT_PRIMARY,
+        );
+        draw_text(
+            "Stats blend with narrow variance. Traits inherit probabilistically.",
+            rect.x + 16.0,
+            rect.y + 122.0,
+            FONT_TINY,
+            dark::TEXT_SECONDARY,
+        );
+    } else {
+        draw_text(
+            "Waiting for two parents.",
+            rect.x + 16.0,
+            rect.y + 82.0,
+            FONT_SMALL,
+            dark::TEXT_MUTED,
+        );
+    }
 }
