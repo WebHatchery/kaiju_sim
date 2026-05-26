@@ -1,111 +1,57 @@
 //! Asset manager for loading and caching textures.
 
 use macroquad::prelude::*;
-use std::collections::HashMap;
+use macroquad_toolkit::assets::{AssetManager as ToolkitAssetManager, TextureConfig};
 
-const STATIC_TEXTURES: &[(&str, &str)] = &[
-    ("title_page", "assets/title/title_page.png"),
-    (
-        "kaiju_bipedal_neutral_1768091093175.png",
-        "assets/sprites/kaiju/kaiju_bipedal_neutral_1768091093175.png",
-    ),
-    (
-        "kaiju_electric_elemental_1768091175509.png",
-        "assets/sprites/kaiju/kaiju_electric_elemental_1768091175509.png",
-    ),
-    (
-        "kaiju_fire_elemental_1768091138860.png",
-        "assets/sprites/kaiju/kaiju_fire_elemental_1768091138860.png",
-    ),
-    (
-        "kaiju_ice_elemental_1768091156648.png",
-        "assets/sprites/kaiju/kaiju_ice_elemental_1768091156648.png",
-    ),
-    (
-        "kaiju_quadruped_neutral_1768091073894.png",
-        "assets/sprites/kaiju/kaiju_quadruped_neutral_1768091073894.png",
-    ),
-    (
-        "kaiju_serpentine_neutral_1768091108255.png",
-        "assets/sprites/kaiju/kaiju_serpentine_neutral_1768091108255.png",
-    ),
-    (
-        "1cc214d8-d89d-4771-b201-95e46e8be9f6.png",
-        "assets/cache/1cc214d8-d89d-4771-b201-95e46e8be9f6.png",
-    ),
-    (
-        "642f1b93-e520-4862-ad7e-d36437f10e81.png",
-        "assets/cache/642f1b93-e520-4862-ad7e-d36437f10e81.png",
-    ),
-    (
-        "e0bd86e8-6a58-48f6-8fe7-b9d9a039e236.png",
-        "assets/cache/e0bd86e8-6a58-48f6-8fe7-b9d9a039e236.png",
-    ),
-    ("kaiju_bred_3.png", "assets/cache/kaiju_bred_3.png"),
-];
+const TEXTURE_MANIFEST_JSON: &str = include_str!("../../assets/data/texture_manifest.json");
 
 pub struct AssetManager {
-    textures: HashMap<String, Texture2D>,
-    placeholder: Option<Texture2D>,
+    inner: ToolkitAssetManager,
 }
 
 impl AssetManager {
     pub fn new() -> Self {
-        Self {
-            textures: HashMap::new(),
-            placeholder: None,
-        }
+        let mut inner = ToolkitAssetManager::new();
+        inner.set_default_filter(FilterMode::Linear);
+        Self { inner }
     }
 
     /// Load a texture from file asynchronously
     pub async fn load_texture(&mut self, key: &str, path: &str) {
-        match load_texture(path).await {
-            Ok(tex) => {
-                tex.set_filter(FilterMode::Linear);
-                self.textures.insert(key.to_string(), tex);
-                println!("Loaded texture: {}", key);
-            }
+        match self
+            .inner
+            .load_texture_with_filter(key, path, FilterMode::Linear)
+            .await
+        {
+            Ok(()) => println!("Loaded texture: {}", key),
             Err(e) => {
-                eprintln!("Failed to load texture {}: {}", path, e);
+                eprintln!("{}", e);
             }
         }
     }
 
     /// Get a texture by key
     pub fn get_texture(&self, key: &str) -> Option<&Texture2D> {
-        self.textures.get(key).or(self.placeholder.as_ref())
+        self.inner.get_texture(key)
     }
 
-    /// Load all kaiju sprites from the assets directory
+    /// Load all static textures from the toolkit texture manifest.
     pub async fn load_all_assets(&mut self) {
-        for (key, path) in STATIC_TEXTURES {
-            self.load_texture_if_missing(key, path).await;
-        }
-
-        #[cfg(not(target_arch = "wasm32"))]
-        {
-            self.load_local_image_dir("assets/sprites/kaiju").await;
-            self.load_local_image_dir("assets/cache").await;
-        }
-    }
-
-    async fn load_texture_if_missing(&mut self, key: &str, path: &str) {
-        if !self.textures.contains_key(key) {
-            self.load_texture(key, path).await;
-        }
-    }
-
-    #[cfg(not(target_arch = "wasm32"))]
-    async fn load_local_image_dir(&mut self, image_dir: &str) {
-        if let Ok(entries) = std::fs::read_dir(image_dir) {
-            for entry in entries.flatten() {
-                if let Ok(path) = entry.path().into_os_string().into_string() {
-                    if path.ends_with(".png") {
-                        let key = entry.file_name().to_string_lossy().to_string();
-                        self.load_texture_if_missing(&key, &path).await;
-                    }
-                }
+        let textures = match TextureConfig::from_json(TEXTURE_MANIFEST_JSON) {
+            Ok(textures) => textures,
+            Err(e) => {
+                eprintln!("Failed to parse texture manifest: {}", e);
+                return;
             }
+        };
+
+        let expected = textures.len();
+        let loaded = self.inner.load_texture_configs(&textures).await;
+        if loaded != expected {
+            eprintln!(
+                "Loaded {}/{} textures from texture manifest",
+                loaded, expected
+            );
         }
     }
 

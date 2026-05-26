@@ -1,0 +1,57 @@
+[
+  {
+    "key": "title_page",
+    "path": "assets/title/title_page.png",
+    "filter": "linear"
+  },
+  {
+    "key": "kaiju_bipedal_neutral_1768091093175.png",
+    "path": "assets/sprites/kaiju/kaiju_bipedal_neutral_1768091093175.png",
+    "filter": "linear"
+  },
+  {
+    "key": "kaiju_electric_elemental_1768091175509.png",
+    "path": "assets/sprites/kaiju/kaiju_electric_elemental_1768091175509.png",
+    "filter": "linear"
+  },
+  {
+    "key": "kaiju_fire_elemental_1768091138860.png",
+    "path": "assets/sprites/kaiju/kaiju_fire_elemental_1768091138860.png",
+    "filter": "linear"
+  },
+  {
+    "key": "kaiju_ice_elemental_1768091156648.png",
+    "path": "assets/sprites/kaiju/kaiju_ice_elemental_1768091156648.png",
+    "filter": "linear"
+  },
+  {
+    "key": "kaiju_quadruped_neutral_1768091073894.png",
+    "path": "assets/sprites/kaiju/kaiju_quadruped_neutral_1768091073894.png",
+    "filter": "linear"
+  },
+  {
+    "key": "kaiju_serpentine_neutral_1768091108255.png",
+    "path": "assets/sprites/kaiju/kaiju_serpentine_neutral_1768091108255.png",
+    "filter": "linear"
+  },
+  {
+    "key": "1cc214d8-d89d-4771-b201-95e46e8be9f6.png",
+    "path": "assets/cache/1cc214d8-d89d-4771-b201-95e46e8be9f6.png",
+    "filter": "linear"
+  },
+  {
+    "key": "642f1b93-e520-4862-ad7e-d36437f10e81.png",
+    "path": "assets/cache/642f1b93-e520-4862-ad7e-d36437f10e81.png",
+    "filter": "linear"
+  },
+  {
+    "key": "e0bd86e8-6a58-48f6-8fe7-b9d9a039e236.png",
+    "path": "assets/cache/e0bd86e8-6a58-48f6-8fe7-b9d9a039e236.png",
+    "filter": "linear"
+  },
+  {
+    "key": "kaiju_bred_3.png",
+    "path": "assets/cache/kaiju_bred_3.png",
+    "filter": "linear"
+  }
+]
