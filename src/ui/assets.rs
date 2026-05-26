@@ -3,6 +3,47 @@
 use macroquad::prelude::*;
 use std::collections::HashMap;
 
+const STATIC_TEXTURES: &[(&str, &str)] = &[
+    ("title_page", "assets/title/title_page.png"),
+    (
+        "kaiju_bipedal_neutral_1768091093175.png",
+        "assets/sprites/kaiju/kaiju_bipedal_neutral_1768091093175.png",
+    ),
+    (
+        "kaiju_electric_elemental_1768091175509.png",
+        "assets/sprites/kaiju/kaiju_electric_elemental_1768091175509.png",
+    ),
+    (
+        "kaiju_fire_elemental_1768091138860.png",
+        "assets/sprites/kaiju/kaiju_fire_elemental_1768091138860.png",
+    ),
+    (
+        "kaiju_ice_elemental_1768091156648.png",
+        "assets/sprites/kaiju/kaiju_ice_elemental_1768091156648.png",
+    ),
+    (
+        "kaiju_quadruped_neutral_1768091073894.png",
+        "assets/sprites/kaiju/kaiju_quadruped_neutral_1768091073894.png",
+    ),
+    (
+        "kaiju_serpentine_neutral_1768091108255.png",
+        "assets/sprites/kaiju/kaiju_serpentine_neutral_1768091108255.png",
+    ),
+    (
+        "1cc214d8-d89d-4771-b201-95e46e8be9f6.png",
+        "assets/cache/1cc214d8-d89d-4771-b201-95e46e8be9f6.png",
+    ),
+    (
+        "642f1b93-e520-4862-ad7e-d36437f10e81.png",
+        "assets/cache/642f1b93-e520-4862-ad7e-d36437f10e81.png",
+    ),
+    (
+        "e0bd86e8-6a58-48f6-8fe7-b9d9a039e236.png",
+        "assets/cache/e0bd86e8-6a58-48f6-8fe7-b9d9a039e236.png",
+    ),
+    ("kaiju_bred_3.png", "assets/cache/kaiju_bred_3.png"),
+];
+
 pub struct AssetManager {
     textures: HashMap<String, Texture2D>,
     placeholder: Option<Texture2D>,
@@ -37,24 +78,31 @@ impl AssetManager {
 
     /// Load all kaiju sprites from the assets directory
     pub async fn load_all_assets(&mut self) {
-        self.load_texture("title_page", "assets/title/title_page.png")
-            .await;
+        for (key, path) in STATIC_TEXTURES {
+            self.load_texture_if_missing(key, path).await;
+        }
 
-        // Hardcoded generic loading for now based on known files (or scan if possible)
-        // Since we can't easily glob async in macroquad without other crates,
-        // we'll rely on specific known paths or the filesystem crate if available.
-        // We can use std::fs::read_dir since this is a desktop app (not web).
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            self.load_local_image_dir("assets/sprites/kaiju").await;
+            self.load_local_image_dir("assets/cache").await;
+        }
+    }
 
-        for image_dir in ["assets/sprites/kaiju", "assets/cache"] {
-            if let Ok(entries) = std::fs::read_dir(image_dir) {
-                for entry in entries.flatten() {
-                    if let Ok(path) = entry.path().into_os_string().into_string() {
-                        if path.ends_with(".png") {
-                            // Use filename as key
-                            let filename = entry.file_name().to_string_lossy().to_string();
-                            let key = filename.clone();
-                            self.load_texture(&key, &path).await;
-                        }
+    async fn load_texture_if_missing(&mut self, key: &str, path: &str) {
+        if !self.textures.contains_key(key) {
+            self.load_texture(key, path).await;
+        }
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    async fn load_local_image_dir(&mut self, image_dir: &str) {
+        if let Ok(entries) = std::fs::read_dir(image_dir) {
+            for entry in entries.flatten() {
+                if let Ok(path) = entry.path().into_os_string().into_string() {
+                    if path.ends_with(".png") {
+                        let key = entry.file_name().to_string_lossy().to_string();
+                        self.load_texture_if_missing(&key, &path).await;
                     }
                 }
             }
@@ -132,7 +180,14 @@ impl AssetManager {
     }
 
     pub fn get_filename_from_url(&self, url: &str) -> String {
-        let name = url.split('/').last().unwrap_or("");
+        let clean = url
+            .split('?')
+            .next()
+            .unwrap_or(url)
+            .split('#')
+            .next()
+            .unwrap_or(url);
+        let name = clean.rsplit(['/', '\\']).next().unwrap_or("");
         if name.is_empty() {
             "unknown.png".to_string()
         } else {
