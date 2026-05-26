@@ -1,9 +1,10 @@
 //! Kaiju detail and legacy record screen.
 
+use crate::data::{Kaiju, KaijuEventKind};
 use crate::state::GameState;
 use crate::ui::actions::UiAction;
 use crate::ui::assets::AssetManager;
-use crate::ui::colors::dark;
+use crate::ui::colors::{dark, trait_color};
 use crate::ui::shell::*;
 use crate::ui::typography::*;
 use macroquad::prelude::*;
@@ -25,74 +26,142 @@ pub fn draw_kaiju_detail(
     }
 
     let c = frame.content;
-    let left_w = c.w * 0.36;
+    let left_w = (c.w * 0.38).clamp(360.0, 440.0);
     let profile = Rect::new(c.x, c.y, left_w, c.h);
     let right_x = c.x + left_w + PANEL_GAP;
-    let stats = Rect::new(right_x, c.y, c.w - left_w - PANEL_GAP, 220.0);
+    let right_w = c.w - left_w - PANEL_GAP;
+    let top_h = 252.0;
+    let profile_stats = Rect::new(right_x, c.y, right_w, top_h);
+    let lineage = Rect::new(right_x, c.y + top_h + PANEL_GAP, right_w, 142.0);
     let history = Rect::new(
         right_x,
-        c.y + 220.0 + PANEL_GAP,
-        c.w - left_w - PANEL_GAP,
-        c.h - 220.0 - PANEL_GAP,
+        lineage.y + lineage.h + PANEL_GAP,
+        right_w,
+        c.h - top_h - lineage.h - PANEL_GAP * 2.0,
     );
 
-    draw_profile(profile, kaiju, assets);
-    draw_stats_and_traits(stats, kaiju);
+    if let Some(action) = draw_profile(profile, kaiju, assets) {
+        return Some(action);
+    }
+    draw_stats_and_traits(profile_stats, kaiju);
+    draw_lineage_and_mutations(lineage, kaiju);
     draw_history(history, kaiju);
     None
 }
 
-fn draw_profile(rect: Rect, kaiju: &crate::data::Kaiju, assets: &AssetManager) {
-    draw_panel(rect, "KAIJU RECORD");
+fn draw_profile(rect: Rect, kaiju: &Kaiju, assets: &AssetManager) -> Option<UiAction> {
+    draw_panel_with_accent(rect, "SUBJECT RECORD", dark::ACCENT);
+    if draw_button(
+        Rect::new(rect.x + 16.0, rect.y + 48.0, 82.0, 28.0),
+        "BACK",
+        dark::TEXT_SECONDARY,
+        true,
+    ) {
+        return Some(UiAction::Back);
+    }
+
     draw_text(
-        &kaiju.name,
+        &ellipsize(&kaiju.name, rect.w - 32.0, FONT_LARGE),
         rect.x + 16.0,
-        rect.y + 58.0,
+        rect.y + 116.0,
         FONT_LARGE,
-        dark::ACCENT,
+        dark::TEXT_PRIMARY,
     );
     draw_text(
-        &format!("GEN {} | LEGACY ID {}", kaiju.generation, kaiju.token_id),
+        &format!(
+            "LEGACY ID {} | GENOME {}",
+            kaiju.token_id,
+            ellipsize(&kaiju.genome_hash, 130.0, FONT_TINY)
+        ),
         rect.x + 16.0,
-        rect.y + 88.0,
-        FONT_SMALL,
+        rect.y + 142.0,
+        FONT_TINY,
         dark::TEXT_SECONDARY,
     );
-    let img_size = (rect.w - 32.0).min(330.0);
+
+    let img_size = (rect.w - 32.0).min(rect.h - 302.0).max(220.0);
     draw_portrait(
-        Rect::new(rect.x + 16.0, rect.y + 112.0, img_size, img_size),
+        Rect::new(rect.x + 16.0, rect.y + 164.0, img_size, img_size),
         kaiju,
         assets,
     );
-    let status = if kaiju.alive { "ACTIVE" } else { "DECEASED" };
-    draw_text(
-        status,
-        rect.x + 16.0,
-        rect.y + 136.0 + img_size,
-        FONT_MEDIUM,
+
+    let y = rect.y + 190.0 + img_size;
+    draw_status_pill(
+        Rect::new(rect.x + 16.0, y, 96.0, 28.0),
+        if kaiju.alive { "ACTIVE" } else { "DECEASED" },
         if kaiju.alive {
             dark::POSITIVE
         } else {
             dark::NEGATIVE
         },
     );
+    draw_status_pill(
+        Rect::new(rect.x + 124.0, y, 78.0, 28.0),
+        &format!("GEN {}", kaiju.generation),
+        dark::ACCENT,
+    );
+    draw_status_pill(
+        Rect::new(rect.x + 214.0, y, 112.0, 28.0),
+        &format!("RATING {}", kaiju.battle_rating()),
+        dark::WARNING,
+    );
+
+    let battle_events = kaiju
+        .history
+        .iter()
+        .filter(|event| event.kind == KaijuEventKind::Battle)
+        .count();
+    let breeding_events = kaiju
+        .history
+        .iter()
+        .filter(|event| {
+            event.kind == KaijuEventKind::Breeding || event.kind == KaijuEventKind::Offspring
+        })
+        .count();
+
+    draw_metric_tile(
+        Rect::new(
+            rect.x + 16.0,
+            rect.y + rect.h - 126.0,
+            (rect.w - 48.0) / 2.0,
+            72.0,
+        ),
+        "BATTLE FILES",
+        &battle_events.to_string(),
+        dark::WARNING,
+    );
+    draw_metric_tile(
+        Rect::new(
+            rect.x + 32.0 + (rect.w - 48.0) / 2.0,
+            rect.y + rect.h - 126.0,
+            (rect.w - 48.0) / 2.0,
+            72.0,
+        ),
+        "LINEAGE FILES",
+        &breeding_events.to_string(),
+        dark::ACCENT,
+    );
     draw_text(
-        &format!("History entries: {}", kaiju.history.len()),
+        &format!("{} total history entries", kaiju.history.len()),
         rect.x + 16.0,
-        rect.y + 166.0 + img_size,
+        rect.y + rect.h - 24.0,
         FONT_SMALL,
         dark::TEXT_SECONDARY,
     );
+
+    None
 }
 
-fn draw_stats_and_traits(rect: Rect, kaiju: &crate::data::Kaiju) {
-    draw_panel(rect, "STATS AND TRAITS");
+fn draw_stats_and_traits(rect: Rect, kaiju: &Kaiju) {
+    draw_panel_with_accent(rect, "COMBAT AND TRAITS", dark::POSITIVE);
     let stat_x = rect.x + 16.0;
-    let stat_y = rect.y + 56.0;
+    let stat_y = rect.y + 60.0;
+    let stat_w = (rect.w * 0.48).max(300.0);
     draw_stat_meter(
         stat_x,
         stat_y,
-        280.0,
+        stat_w,
         "HP",
         kaiju.stats.hp,
         2500,
@@ -100,8 +169,8 @@ fn draw_stats_and_traits(rect: Rect, kaiju: &crate::data::Kaiju) {
     );
     draw_stat_meter(
         stat_x,
-        stat_y + 28.0,
-        280.0,
+        stat_y + 30.0,
+        stat_w,
         "ATK",
         kaiju.stats.attack,
         300,
@@ -109,8 +178,8 @@ fn draw_stats_and_traits(rect: Rect, kaiju: &crate::data::Kaiju) {
     );
     draw_stat_meter(
         stat_x,
-        stat_y + 56.0,
-        280.0,
+        stat_y + 60.0,
+        stat_w,
         "DEF",
         kaiju.stats.defense,
         300,
@@ -118,8 +187,8 @@ fn draw_stats_and_traits(rect: Rect, kaiju: &crate::data::Kaiju) {
     );
     draw_stat_meter(
         stat_x,
-        stat_y + 84.0,
-        280.0,
+        stat_y + 90.0,
+        stat_w,
         "SPD",
         kaiju.stats.speed,
         300,
@@ -127,71 +196,168 @@ fn draw_stats_and_traits(rect: Rect, kaiju: &crate::data::Kaiju) {
     );
     draw_stat_meter(
         stat_x,
-        stat_y + 112.0,
-        280.0,
+        stat_y + 120.0,
+        stat_w,
         "ENG",
         kaiju.stats.energy,
         250,
         dark::ACCENT,
     );
 
-    let trait_x = rect.x + 340.0;
+    let trait_x = rect.x + rect.w * 0.54;
     draw_text(
         "VISIBLE TRAITS",
         trait_x,
-        rect.y + 56.0,
-        FONT_SMALL,
-        dark::TEXT_SECONDARY,
+        rect.y + 60.0,
+        FONT_TINY,
+        dark::TEXT_MUTED,
     );
     let mut x = trait_x;
-    let mut y = rect.y + 88.0;
+    let mut y = rect.y + 82.0;
     if kaiju.traits.is_empty() {
-        draw_text("No traits discovered.", x, y, FONT_SMALL, dark::TEXT_MUTED);
+        draw_trait_chip(x, y, "No traits revealed", dark::HIDDEN);
     }
     for trait_def in &kaiju.traits {
-        draw_rectangle(x, y - 18.0, 132.0, 26.0, Color::new(0.06, 0.10, 0.14, 0.96));
-        draw_rectangle_lines(x, y - 18.0, 132.0, 26.0, 1.0, dark::ACCENT);
-        draw_text(&trait_def.name, x + 8.0, y, FONT_TINY, dark::ACCENT);
-        x += 144.0;
-        if x + 132.0 > rect.x + rect.w - 12.0 {
+        let w = draw_trait_chip(x, y, &trait_def.name, trait_color(&trait_def.category));
+        x += w + 8.0;
+        if x + 90.0 > rect.x + rect.w - 14.0 {
             x = trait_x;
-            y += 36.0;
+            y += 32.0;
+        }
+        if y > rect.y + rect.h - 34.0 {
+            break;
         }
     }
 }
 
-fn draw_history(rect: Rect, kaiju: &crate::data::Kaiju) {
-    draw_panel(rect, "DOCUMENTED HISTORY");
-    let mut y = rect.y + 54.0;
-    for event in kaiju.history.iter().rev().take(12) {
-        draw_rectangle(
-            rect.x + 14.0,
-            y - 22.0,
-            rect.w - 28.0,
-            48.0,
-            Color::new(0.035, 0.060, 0.082, 0.94),
-        );
+fn draw_lineage_and_mutations(rect: Rect, kaiju: &Kaiju) {
+    draw_panel_with_accent(rect, "LINEAGE AND MUTATIONS", dark::WARNING);
+    let left_x = rect.x + 16.0;
+    draw_text(
+        "PARENT RECORDS",
+        left_x,
+        rect.y + 58.0,
+        FONT_TINY,
+        dark::TEXT_MUTED,
+    );
+    if let Some((parent_a, parent_b)) = kaiju.parent_ids {
         draw_text(
-            event.kind.label(),
-            rect.x + 28.0,
-            y,
-            FONT_TINY,
-            dark::ACCENT,
-        );
-        draw_text(
-            &event.title,
-            rect.x + 150.0,
-            y,
+            &format!("PARENT A  #{}", parent_a),
+            left_x,
+            rect.y + 86.0,
             FONT_SMALL,
             dark::TEXT_PRIMARY,
         );
         draw_text(
-            &event.details,
-            rect.x + 150.0,
-            y + 20.0,
-            FONT_TINY,
+            &format!("PARENT B  #{}", parent_b),
+            left_x,
+            rect.y + 114.0,
+            FONT_SMALL,
+            dark::TEXT_PRIMARY,
+        );
+    } else {
+        draw_text(
+            "Original facility starter or wild registry source.",
+            left_x,
+            rect.y + 88.0,
+            FONT_SMALL,
             dark::TEXT_SECONDARY,
         );
+    }
+
+    let right_x = rect.x + rect.w * 0.52;
+    draw_text(
+        "MUTATION WATCH",
+        right_x,
+        rect.y + 58.0,
+        FONT_TINY,
+        dark::TEXT_MUTED,
+    );
+    let mutation_count = kaiju
+        .traits
+        .iter()
+        .filter(|trait_def| matches!(trait_def.category, crate::data::TraitCategory::Mutation))
+        .count();
+    draw_text(
+        &format!(
+            "{} visible mutations | {} hidden markers",
+            mutation_count,
+            kaiju.hidden_traits.len()
+        ),
+        right_x,
+        rect.y + 88.0,
+        FONT_SMALL,
+        dark::TEXT_PRIMARY,
+    );
+    draw_text(
+        inheritance_label(kaiju),
+        right_x,
+        rect.y + 116.0,
+        FONT_SMALL,
+        dark::TEXT_SECONDARY,
+    );
+}
+
+fn draw_history(rect: Rect, kaiju: &Kaiju) {
+    draw_panel_with_accent(rect, "CHRONOLOGICAL EVENT LOG", dark::ACCENT);
+    let mut y = rect.y + 58.0;
+    for event in kaiju.history.iter().rev().take(4) {
+        if y + 54.0 > rect.y + rect.h {
+            break;
+        }
+        let color = event_color(&event.kind);
+        draw_circle(rect.x + 24.0, y - 5.0, 4.0, color);
+        draw_line(
+            rect.x + 24.0,
+            y,
+            rect.x + 24.0,
+            y + 44.0,
+            1.0,
+            Color::new(color.r, color.g, color.b, 0.22),
+        );
+        draw_text(event.kind.label(), rect.x + 40.0, y, FONT_TINY, color);
+        draw_text(
+            &ellipsize(&event.title, rect.w - 220.0, FONT_SMALL),
+            rect.x + 166.0,
+            y,
+            FONT_SMALL,
+            dark::TEXT_PRIMARY,
+        );
+        draw_text_wrapped(
+            &event.details,
+            rect.x + 166.0,
+            y + 20.0,
+            rect.w - 184.0,
+            16.0,
+            FONT_TINY,
+            dark::TEXT_SECONDARY,
+            1,
+        );
         y += 58.0;
+    }
+
+    if kaiju.history.is_empty() {
+        draw_empty_state(rect, "No events recorded", "No entries filed yet.");
+    }
+}
+
+fn inheritance_label(kaiju: &Kaiju) -> &'static str {
+    if kaiju.generation >= 3 {
+        "Stabilized deep-lineage inheritance profile."
+    } else if kaiju.traits.len() >= 2 {
+        "Trait expression is active and worth preserving."
+    } else {
+        "Baseline inheritance profile, low volatility."
+    }
+}
+
+fn event_color(kind: &KaijuEventKind) -> Color {
+    match kind {
+        KaijuEventKind::Battle => dark::WARNING,
+        KaijuEventKind::Breeding | KaijuEventKind::Offspring => dark::ACCENT,
+        KaijuEventKind::Training => dark::POSITIVE,
+        KaijuEventKind::Death => dark::NEGATIVE,
+        KaijuEventKind::Research => dark::SYNERGY,
+        _ => dark::TEXT_SECONDARY,
     }
 }

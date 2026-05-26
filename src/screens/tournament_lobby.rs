@@ -1,8 +1,4 @@
-//! Future multiplayer tournament lobby.
-//!
-//! The local MVP uses the arena screen for deterministic solo battles. This
-//! screen remains as a V2 placeholder so server-backed real-player brackets can
-//! be added without diluting the offline loop.
+//! Network tournament lobby placeholder.
 
 use crate::state::GameState;
 use crate::ui::*;
@@ -27,23 +23,16 @@ pub fn draw_tournament_lobby(state: &mut GameState) -> Option<UiAction> {
 
     draw_panel(left, "MULTIPLAYER LOBBY");
     draw_text(
-        "V2 REAL-PLAYER FEATURE",
+        "NETWORK SEALED",
         left.x + 20.0,
         left.y + 66.0,
         FONT_MEDIUM,
         dark::ACCENT,
     );
     draw_text(
-        "Player-vs-player brackets and cross-roster breeding are planned after the V1 local game is stable.",
+        "Use the arena channel.",
         left.x + 20.0,
         left.y + 104.0,
-        FONT_SMALL,
-        dark::TEXT_SECONDARY,
-    );
-    draw_text(
-        "For V1, use Arena for seeded solo fights that record battle history on each kaiju.",
-        left.x + 20.0,
-        left.y + 134.0,
         FONT_SMALL,
         dark::TEXT_SECONDARY,
     );

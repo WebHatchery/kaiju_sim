@@ -14,6 +14,22 @@ Kaiju Breeding Simulator is a Rust/Macroquad monster breeding and auto-battler a
 
 V1 is offline-first and does not require a server.
 
+## Screenshots
+
+![Fresh UI screenshot contact sheet](screenshots/latest/_contact_sheet.png)
+
+- [Title](screenshots/latest/01_title.png)
+- [Starter selection](screenshots/latest/02_starter_selection.png)
+- [Laboratory](screenshots/latest/03_laboratory.png)
+- [Kaiju record](screenshots/latest/04_kaiju_record.png)
+- [Roster](screenshots/latest/05_roster.png)
+- [Training](screenshots/latest/06_training.png)
+- [Arena](screenshots/latest/07_arena.png)
+- [Battle results](screenshots/latest/08_battle_results.png)
+- [Breeding](screenshots/latest/09_breeding.png)
+- [Records](screenshots/latest/10_records.png)
+- [Settings](screenshots/latest/11_settings.png)
+
 ## Run
 
 ```bash

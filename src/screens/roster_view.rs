@@ -17,32 +17,31 @@ pub fn draw_roster_view(state: &GameState, assets: &AssetManager) -> Option<UiAc
     }
 
     let c = frame.content;
-    draw_panel(c, "ROSTER ARCHIVE");
-    draw_text(
-        &format!(
-            "{} registered kaiju | {} living | highest generation {}",
-            state.roster.len(),
-            state.living_count(),
-            state.player.stats.highest_generation
-        ),
-        c.x + 14.0,
-        c.y + 52.0,
-        FONT_SMALL,
-        dark::TEXT_SECONDARY,
-    );
+    draw_panel_with_accent(c, "KAIJU ARCHIVE", dark::ACCENT);
+    draw_roster_header(state, c);
 
-    let cols = ((c.w - 28.0 + PANEL_GAP) / (CARD_WIDTH + PANEL_GAP))
+    let mut roster = state.roster.iter().collect::<Vec<_>>();
+    roster.sort_by_key(|kaiju| {
+        std::cmp::Reverse((
+            state.selected_kaiju == Some(kaiju.id),
+            kaiju.alive,
+            kaiju.generation,
+            kaiju.battle_rating(),
+        ))
+    });
+
+    let cols = ((c.w - 32.0 + PANEL_GAP) / (CARD_WIDTH + PANEL_GAP))
         .floor()
         .max(1.0) as usize;
-    let start_x = c.x + 14.0;
-    let start_y = c.y + 74.0;
+    let start_x = c.x + 16.0;
+    let start_y = c.y + 116.0;
 
-    for (i, kaiju) in state.roster.iter().enumerate() {
+    for (i, kaiju) in roster.iter().enumerate() {
         let row = i / cols;
         let col = i % cols;
         let x = start_x + col as f32 * (CARD_WIDTH + PANEL_GAP);
         let y = start_y + row as f32 * (CARD_HEIGHT + PANEL_GAP);
-        if y > c.y + c.h {
+        if y + 42.0 > c.y + c.h {
             continue;
         }
 
@@ -61,14 +60,73 @@ pub fn draw_roster_view(state: &GameState, assets: &AssetManager) -> Option<UiAc
     }
 
     if state.roster.is_empty() {
-        draw_text_centered(
-            "No kaiju in your roster.",
-            c.x + c.w / 2.0,
-            c.y + c.h / 2.0,
-            FONT_MEDIUM,
-            dark::TEXT_MUTED,
+        draw_empty_state(
+            c,
+            "No kaiju in archive",
+            "Start a new game to register a starter.",
         );
     }
 
     None
+}
+
+fn draw_roster_header(state: &GameState, rect: Rect) {
+    let summary = format!(
+        "{} registered | {} living | highest generation {}",
+        state.roster.len(),
+        state.living_count(),
+        state.player.stats.highest_generation
+    );
+    draw_text(
+        &summary,
+        rect.x + 16.0,
+        rect.y + 56.0,
+        FONT_SMALL,
+        dark::TEXT_SECONDARY,
+    );
+
+    let y = rect.y + 72.0;
+    draw_status_pill(
+        Rect::new(rect.x + 16.0, y, 118.0, 28.0),
+        "ALL SPECIMENS",
+        dark::ACCENT,
+    );
+    draw_status_pill(
+        Rect::new(rect.x + 144.0, y, 104.0, 28.0),
+        "LIVING FIRST",
+        dark::POSITIVE,
+    );
+    draw_status_pill(
+        Rect::new(rect.x + 258.0, y, 104.0, 28.0),
+        "RATING SORT",
+        dark::WARNING,
+    );
+    draw_status_pill(
+        Rect::new(rect.x + 372.0, y, 98.0, 28.0),
+        "EXPANDED",
+        dark::TEXT_SECONDARY,
+    );
+
+    if let Some(selected) = state.selected_kaiju.and_then(|id| state.get_kaiju(id)) {
+        draw_text_right(
+            &format!(
+                "Selected: {} | GEN {} | rating {}",
+                selected.name,
+                selected.generation,
+                selected.battle_rating()
+            ),
+            rect.x + rect.w - 16.0,
+            rect.y + 91.0,
+            FONT_TINY,
+            dark::TEXT_SECONDARY,
+        );
+    } else {
+        draw_text_right(
+            "Select a kaiju to assign training, arena, or breeding work.",
+            rect.x + rect.w - 16.0,
+            rect.y + 91.0,
+            FONT_TINY,
+            dark::TEXT_MUTED,
+        );
+    }
 }

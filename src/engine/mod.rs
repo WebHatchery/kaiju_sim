@@ -6,6 +6,7 @@ pub mod battle_animations;
 pub mod bracket_generator;
 pub mod breeding;
 pub mod combat;
+pub mod comfy_image;
 pub mod mvp;
 pub mod particles;
 pub mod research;

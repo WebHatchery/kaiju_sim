@@ -9,6 +9,7 @@ pub mod leaderboard;
 pub mod main_menu;
 pub mod marketplace;
 pub mod roster_view;
+pub mod settings;
 pub mod starter_selection; // Added
 pub mod tournament_lobby;
 pub mod training; // Added
@@ -22,6 +23,7 @@ pub use leaderboard::draw_leaderboard;
 pub use main_menu::draw_main_menu;
 pub use marketplace::{draw_marketplace, MarketplaceState};
 pub use roster_view::draw_roster_view;
+pub use settings::draw_settings_screen;
 pub use starter_selection::draw_starter_selection;
 pub use tournament_lobby::draw_tournament_lobby;
 pub use training::draw_training_screen;

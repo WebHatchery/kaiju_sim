@@ -34,6 +34,8 @@ pub enum GamePhase {
     StarterSelection,
     /// Marketplace
     Marketplace,
+    /// Local settings and system status
+    Settings,
 }
 
 impl Default for GamePhase {
@@ -70,6 +72,7 @@ impl GamePhase {
             Self::KaijuDetail(_) => "Kaiju Detail",
             Self::StarterSelection => "Choose Starter",
             Self::Marketplace => "Marketplace",
+            Self::Settings => "Settings",
         }
     }
 }

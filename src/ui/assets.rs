@@ -45,20 +45,19 @@ impl AssetManager {
         // we'll rely on specific known paths or the filesystem crate if available.
         // We can use std::fs::read_dir since this is a desktop app (not web).
 
-        let sprite_dir = "assets/sprites/kaiju";
-        if let Ok(entries) = std::fs::read_dir(sprite_dir) {
-            for entry in entries.flatten() {
-                if let Ok(path) = entry.path().into_os_string().into_string() {
-                    if path.ends_with(".png") {
-                        // Use filename as key
-                        let filename = entry.file_name().to_string_lossy().to_string();
-                        let key = filename.clone();
-                        self.load_texture(&key, &path).await;
+        for image_dir in ["assets/sprites/kaiju", "assets/cache"] {
+            if let Ok(entries) = std::fs::read_dir(image_dir) {
+                for entry in entries.flatten() {
+                    if let Ok(path) = entry.path().into_os_string().into_string() {
+                        if path.ends_with(".png") {
+                            // Use filename as key
+                            let filename = entry.file_name().to_string_lossy().to_string();
+                            let key = filename.clone();
+                            self.load_texture(&key, &path).await;
+                        }
                     }
                 }
             }
-        } else {
-            eprintln!("Failed to read sprite directory: {}", sprite_dir);
         }
     }
 

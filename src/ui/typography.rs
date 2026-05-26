@@ -58,3 +58,69 @@ pub fn draw_text_right(text: &str, right_x: f32, y: f32, font_size: f32, color: 
         macroquad_toolkit::ui::TextStyle::new(font_size, color),
     );
 }
+
+pub fn draw_text_wrapped(
+    text: &str,
+    x: f32,
+    mut y: f32,
+    max_width: f32,
+    line_height: f32,
+    font_size: f32,
+    color: Color,
+    max_lines: usize,
+) -> f32 {
+    if max_lines == 0 {
+        return y;
+    }
+
+    let mut line = String::new();
+    let mut lines_drawn = 0;
+
+    for word in text.split_whitespace() {
+        let candidate = if line.is_empty() {
+            word.to_string()
+        } else {
+            format!("{} {}", line, word)
+        };
+
+        if measure_text_size(&candidate, font_size).0 <= max_width {
+            line = candidate;
+            continue;
+        }
+
+        if !line.is_empty() {
+            draw_text(&line, x, y, font_size, color);
+            lines_drawn += 1;
+            y += line_height;
+            if lines_drawn >= max_lines {
+                return y;
+            }
+        }
+
+        line = word.to_string();
+    }
+
+    if !line.is_empty() && lines_drawn < max_lines {
+        draw_text(&line, x, y, font_size, color);
+        y += line_height;
+    }
+
+    y
+}
+
+pub fn ellipsize(text: &str, max_width: f32, font_size: f32) -> String {
+    if measure_text_size(text, font_size).0 <= max_width {
+        return text.to_string();
+    }
+
+    let suffix = "...";
+    let mut output = String::new();
+    for ch in text.chars() {
+        let candidate = format!("{}{}{}", output, ch, suffix);
+        if measure_text_size(&candidate, font_size).0 > max_width {
+            break;
+        }
+        output.push(ch);
+    }
+    format!("{}{}", output, suffix)
+}

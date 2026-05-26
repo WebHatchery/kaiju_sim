@@ -83,7 +83,8 @@ async fn main() {
             GamePhase::TournamentLobby => {
                 draw_arena_screen(&state, &assets, game_data.balance.mvp.battle.entry_fee)
             }
-            GamePhase::Leaderboard => draw_leaderboard(&state),
+            GamePhase::Leaderboard => draw_leaderboard(&state, &assets),
+            GamePhase::Settings => draw_settings_screen(&state),
             GamePhase::Battle | GamePhase::Results => draw_battle_results(&state, &assets),
             GamePhase::KaijuDetail(id) => {
                 let action = draw_kaiju_detail(&state, *id, &assets);
@@ -95,7 +96,7 @@ async fn main() {
             }
             GamePhase::StarterSelection => draw_starter_selection(&assets).await,
             GamePhase::Marketplace => draw_placeholder(
-                "Marketplace is outside the local MVP",
+                "Exchange access is locked",
                 &state,
                 AppSection::Marketplace,
                 UiAction::GoToLaboratory,
@@ -154,7 +155,7 @@ async fn handle_ui_action(
             stack.apply(PhaseTransition::Replace(GamePhase::TournamentLobby))
         }
         UiAction::GoToLeaderboard => stack.apply(PhaseTransition::Replace(GamePhase::Leaderboard)),
-        UiAction::GoToSettings => println!("Settings clicked"),
+        UiAction::GoToSettings => stack.apply(PhaseTransition::Replace(GamePhase::Settings)),
         UiAction::Back => stack.apply(PhaseTransition::Pop),
 
         // System
@@ -187,6 +188,13 @@ async fn handle_ui_action(
             #[cfg(target_arch = "wasm32")]
             stack.apply(PhaseTransition::to_menu());
         }
+        UiAction::SaveGame => match auto_save.force_save(state) {
+            Ok(()) => state.notify(
+                "Facility save complete.".to_string(),
+                NotificationType::Success,
+            ),
+            Err(e) => state.notify(format!("Save failed: {}", e), NotificationType::Error),
+        },
 
         // Kaiju Interaction
         UiAction::SelectKaiju(id) => {
@@ -201,7 +209,7 @@ async fn handle_ui_action(
 
         // Breeding
         UiAction::ConfirmBreeding => {
-            breed_selected_kaiju(state, breeding_state, game_data, auto_save);
+            breed_selected_kaiju(state, breeding_state, game_data, auto_save, assets).await;
             *breeding_state = BreedingState::default();
             stack.apply(PhaseTransition::to_laboratory());
         }
@@ -291,11 +299,12 @@ fn train_kaiju(
     let _ = auto_save.force_save(state);
 }
 
-fn breed_selected_kaiju(
+async fn breed_selected_kaiju(
     state: &mut GameState,
     breeding_state: &BreedingState,
     game_data: &GameData,
     auto_save: &mut AutoSaveManager,
+    assets: &mut AssetManager,
 ) {
     let (Some(id_a), Some(id_b)) = (breeding_state.parent_a, breeding_state.parent_b) else {
         state.notify(
@@ -333,7 +342,30 @@ fn breed_selected_kaiju(
             offspring.name = mvp::offspring_name(&parent_a, &parent_b, token_id);
             offspring.current_owner = state.player.player_id.clone();
             offspring.original_breeder = state.player.player_id.clone();
-            offspring.image_uri = Some(mvp::image_for_kaiju(&offspring));
+
+            let fallback_image = mvp::image_for_kaiju(&offspring);
+            let generated_image = format!("assets/cache/kaiju_bred_{}.png", offspring.token_id);
+            match engine::comfy_image::try_generate_bred_kaiju_image(
+                &offspring,
+                &parent_a,
+                &parent_b,
+                &generated_image,
+            ) {
+                Ok(()) => {
+                    offspring.image_uri = Some(generated_image.clone());
+                    let key = assets.get_filename_from_url(&generated_image);
+                    assets.load_texture(&key, &generated_image).await;
+                    state.notify(
+                        "Incubator image rendered.".to_string(),
+                        NotificationType::Success,
+                    );
+                }
+                Err(err) => {
+                    eprintln!("ComfyUI breeding image skipped: {}", err);
+                    offspring.image_uri = Some(fallback_image);
+                }
+            }
+
             offspring.record_event(
                 KaijuEvent::new(
                     KaijuEventKind::Created,
@@ -523,7 +555,7 @@ fn draw_placeholder(
         dark::TEXT_PRIMARY,
     );
     draw_text(
-        "This route is reserved for later work and is not required for V1 play.",
+        "Access denied.",
         panel.x + 24.0,
         panel.y + 112.0,
         FONT_SMALL,

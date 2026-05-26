@@ -1,5 +1,4 @@
-//! Marketplace Screen
-//! V2-facing exchange screen. The local MVP remains fully playable without it.
+//! Marketplace screen.
 
 use crate::server_bridge::{self, MarketplaceItem};
 use crate::ui::assets::AssetManager;
@@ -65,23 +64,16 @@ pub fn draw_marketplace(
 
     draw_panel(left, "EXCHANGE STATUS");
     draw_text(
-        "V2 NETWORK FEATURE",
+        "NETWORK SEALED",
         left.x + 20.0,
         left.y + 66.0,
         FONT_MEDIUM,
         dark::ACCENT,
     );
     draw_text(
-        "Real-player trading and external breeding access are intentionally kept out of the V1 local loop.",
+        "External exchange access is locked.",
         left.x + 20.0,
         left.y + 104.0,
-        FONT_SMALL,
-        dark::TEXT_SECONDARY,
-    );
-    draw_text(
-        "Local play already supports training, arena battles, breeding, and permanent kaiju history records.",
-        left.x + 20.0,
-        left.y + 136.0,
         FONT_SMALL,
         dark::TEXT_SECONDARY,
     );
@@ -98,14 +90,14 @@ pub fn draw_marketplace(
     draw_panel(right, "CATALOG PREVIEW");
     if !state.loaded {
         draw_text(
-            "Catalog connection is dormant for the MVP build.",
+            "Catalog link dormant.",
             right.x + 20.0,
             right.y + 62.0,
             FONT_SMALL,
             dark::TEXT_SECONDARY,
         );
         draw_text(
-            "The saved kaiju roster is the source of truth for V1.",
+            "Use facility roster.",
             right.x + 20.0,
             right.y + 90.0,
             FONT_SMALL,
