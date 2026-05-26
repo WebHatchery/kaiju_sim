@@ -35,7 +35,7 @@ fn window_conf() -> Conf {
 
 #[macroquad::main(window_conf)]
 async fn main() {
-    let game_data = match GameData::load() {
+    let game_data = match GameData::load_async().await {
         Ok(data) => {
             println!("Loaded {} traits", data.traits.traits.len());
             data

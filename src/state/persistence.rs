@@ -178,8 +178,14 @@ impl std::error::Error for PersistenceError {}
 
 /// Auto-save manager
 pub struct AutoSaveManager {
+    #[cfg(not(target_arch = "wasm32"))]
     last_save: std::time::Instant,
+    #[cfg(target_arch = "wasm32")]
+    last_save: f64,
+    #[cfg(not(target_arch = "wasm32"))]
     save_interval: std::time::Duration,
+    #[cfg(target_arch = "wasm32")]
+    save_interval: f64,
     enabled: bool,
 }
 
@@ -192,8 +198,14 @@ impl Default for AutoSaveManager {
 impl AutoSaveManager {
     pub fn new() -> Self {
         Self {
+            #[cfg(not(target_arch = "wasm32"))]
             last_save: std::time::Instant::now(),
+            #[cfg(target_arch = "wasm32")]
+            last_save: macroquad::time::get_time(),
+            #[cfg(not(target_arch = "wasm32"))]
             save_interval: std::time::Duration::from_secs(60),
+            #[cfg(target_arch = "wasm32")]
+            save_interval: 60.0,
             enabled: true,
         }
     }
@@ -204,10 +216,22 @@ impl AutoSaveManager {
             return false;
         }
 
-        if self.last_save.elapsed() >= self.save_interval {
+        let interval_elapsed = {
+            #[cfg(not(target_arch = "wasm32"))]
+            {
+                self.last_save.elapsed() >= self.save_interval
+            }
+
+            #[cfg(target_arch = "wasm32")]
+            {
+                macroquad::time::get_time() - self.last_save >= self.save_interval
+            }
+        };
+
+        if interval_elapsed {
             match save_game(state) {
                 Ok(_) => {
-                    self.last_save = std::time::Instant::now();
+                    self.mark_saved();
                     eprintln!("Auto-save complete");
                     true
                 }
@@ -224,12 +248,24 @@ impl AutoSaveManager {
     /// Force immediate save
     pub fn force_save(&mut self, state: &GameState) -> Result<(), PersistenceError> {
         save_game(state)?;
-        self.last_save = std::time::Instant::now();
+        self.mark_saved();
         Ok(())
     }
 
     pub fn set_enabled(&mut self, enabled: bool) {
         self.enabled = enabled;
+    }
+
+    fn mark_saved(&mut self) {
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            self.last_save = std::time::Instant::now();
+        }
+
+        #[cfg(target_arch = "wasm32")]
+        {
+            self.last_save = macroquad::time::get_time();
+        }
     }
 }
 

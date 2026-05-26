@@ -5,6 +5,13 @@ use std::collections::HashMap;
 
 use super::traits::Trait;
 
+#[cfg(target_arch = "wasm32")]
+use macroquad::prelude::load_string;
+
+const TRAITS_JSON: &str = include_str!("../../assets/traits.json");
+const BALANCE_JSON: &str = include_str!("../../assets/balance.json");
+const TOURNAMENTS_JSON: &str = include_str!("../../assets/tournaments.json");
+
 /// Complete game data loaded from JSON files
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GameData {
@@ -144,11 +151,46 @@ pub struct TournamentDefinition {
 
 impl GameData {
     /// Load all game data from assets folder
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn load() -> Result<Self, Box<dyn std::error::Error>> {
-        let traits_json = std::fs::read_to_string("assets/traits.json")?;
-        let balance_json = std::fs::read_to_string("assets/balance.json")?;
-        let tournaments_json = std::fs::read_to_string("assets/tournaments.json")?;
+        let traits_json = std::fs::read_to_string("assets/traits.json")
+            .unwrap_or_else(|_| TRAITS_JSON.to_string());
+        let balance_json = std::fs::read_to_string("assets/balance.json")
+            .unwrap_or_else(|_| BALANCE_JSON.to_string());
+        let tournaments_json = std::fs::read_to_string("assets/tournaments.json")
+            .unwrap_or_else(|_| TOURNAMENTS_JSON.to_string());
 
+        Self::from_json_strings(&traits_json, &balance_json, &tournaments_json)
+    }
+
+    /// Load all game data using the runtime loader that is available on each target.
+    pub async fn load_async() -> Result<Self, Box<dyn std::error::Error>> {
+        #[cfg(target_arch = "wasm32")]
+        {
+            let traits_json = load_string("assets/traits.json")
+                .await
+                .unwrap_or_else(|_| TRAITS_JSON.to_string());
+            let balance_json = load_string("assets/balance.json")
+                .await
+                .unwrap_or_else(|_| BALANCE_JSON.to_string());
+            let tournaments_json = load_string("assets/tournaments.json")
+                .await
+                .unwrap_or_else(|_| TOURNAMENTS_JSON.to_string());
+
+            return Self::from_json_strings(&traits_json, &balance_json, &tournaments_json);
+        }
+
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            Self::load()
+        }
+    }
+
+    fn from_json_strings(
+        traits_json: &str,
+        balance_json: &str,
+        tournaments_json: &str,
+    ) -> Result<Self, Box<dyn std::error::Error>> {
         let traits: TraitDatabase = serde_json::from_str(&traits_json)?;
         let balance: BalanceConfig = serde_json::from_str(&balance_json)?;
         let tournaments: TournamentDatabase = serde_json::from_str(&tournaments_json)?;
