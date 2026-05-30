@@ -2,6 +2,8 @@
 
 This file provides guidance to Codex when working in this repository.
 
+This project uses the shared RustGames agent instructions in [`../AGENTS.md`](../AGENTS.md). Codex should read and apply that file when working here.
+
 ## Project Overview
 
 **Kaiju Breeding Simulator** is a Rust/Macroquad strategic management and auto-battle game. Players breed, train, and fight persistent kaiju whose stats, traits, lineage, and documented history define their legacy.
