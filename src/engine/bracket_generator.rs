@@ -6,7 +6,7 @@ use crate::data::environments::Environment;
 use crate::data::tournament::{
     Bracket, BracketSystem, Match, MatchId, Round, RoundStatus, TournamentId,
 };
-use crate::data::types::{random_index, shuffle_slice, KaijuId};
+use crate::data::types::KaijuId;
 
 /// Bracket generator interface
 pub trait BracketGenerator {
@@ -104,7 +104,7 @@ impl SwissGenerator {
         mut participants: Vec<KaijuId>,
         environment: Environment,
     ) -> Vec<Match> {
-        shuffle_slice(&mut participants);
+        macroquad_toolkit::rng::shuffle(&mut participants);
 
         let mut matches = Vec::new();
         for chunk in participants.chunks(2) {
@@ -187,7 +187,7 @@ pub fn generate_swiss_next_round(
     // Pair within groups
     let mut matches = Vec::new();
     for ((_wins, _losses), mut kaiju_list) in groups {
-        shuffle_slice(&mut kaiju_list);
+        macroquad_toolkit::rng::shuffle(&mut kaiju_list);
 
         for chunk in kaiju_list.chunks(2) {
             if chunk.len() == 2 {
@@ -214,7 +214,9 @@ pub fn select_environment(
         crate::data::tournament::EnvironmentMode::Fixed(env) => env.clone(),
         crate::data::tournament::EnvironmentMode::Random => {
             let environments = Environment::all();
-            environments[random_index(environments.len())].clone()
+            macroquad_toolkit::rng::choose(&environments)
+                .cloned()
+                .unwrap_or_default()
         }
         crate::data::tournament::EnvironmentMode::RotatingPerRound => {
             let environments = Environment::all();

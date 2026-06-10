@@ -526,7 +526,7 @@ fn environment_for_seed(seed: u64) -> Environment {
 }
 
 fn next_seed(state: &GameState) -> u64 {
-    ((macroquad::rand::rand() as u64) << 32) ^ state.game_time.total_ticks
+    macroquad_toolkit::rng::random_u64() ^ state.game_time.total_ticks
 }
 
 fn draw_placeholder(

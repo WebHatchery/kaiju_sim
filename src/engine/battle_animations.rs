@@ -2,8 +2,6 @@
 
 use macroquad::prelude::*;
 
-use crate::data::random_range_f32;
-
 /// Animation state for battle turns
 #[derive(Debug, Clone, PartialEq)]
 pub enum AnimationState {
@@ -157,8 +155,8 @@ impl BattleAnimator {
         if let AnimationState::Impact { progress } = self.state {
             let intensity = 10.0 * (1.0 - progress);
             Vec2::new(
-                random_range_f32(-intensity, intensity),
-                random_range_f32(-intensity, intensity),
+                macroquad_toolkit::rng::gen_range(-intensity, intensity),
+                macroquad_toolkit::rng::gen_range(-intensity, intensity),
             )
         } else {
             Vec2::ZERO

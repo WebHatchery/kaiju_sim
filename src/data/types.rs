@@ -23,45 +23,10 @@ pub type VisualSeed = u64;
 /// Generation number (0 = wild/original, 1+ = bred)
 pub type Generation = u32;
 
-/// Runtime-compatible random u32. Uses Macroquad's RNG so WebGL builds do not
-/// pull in wasm-bindgen random imports.
-pub fn random_u32() -> u32 {
-    macroquad::rand::rand()
-}
-
-pub fn random_u64() -> u64 {
-    ((random_u32() as u64) << 32) ^ random_u32() as u64
-}
-
-pub fn random_u128() -> u128 {
-    ((random_u64() as u128) << 64) ^ random_u64() as u128
-}
-
-pub fn random_unit_f32() -> f32 {
-    random_u32() as f32 / u32::MAX as f32
-}
-
-pub fn random_range_f32(min: f32, max: f32) -> f32 {
-    min + (max - min) * random_unit_f32()
-}
-
-pub fn random_index(len: usize) -> usize {
-    if len == 0 {
-        0
-    } else {
-        (random_u64() as usize) % len
-    }
-}
-
-pub fn shuffle_slice<T>(items: &mut [T]) {
-    for i in (1..items.len()).rev() {
-        let j = random_index(i + 1);
-        items.swap(i, j);
-    }
-}
-
 pub fn new_kaiju_id() -> Uuid {
-    Uuid::from_u128(random_u128())
+    let high = macroquad_toolkit::rng::random_u64() as u128;
+    let low = macroquad_toolkit::rng::random_u64() as u128;
+    Uuid::from_u128((high << 64) ^ low)
 }
 
 pub fn now_timestamp() -> i64 {

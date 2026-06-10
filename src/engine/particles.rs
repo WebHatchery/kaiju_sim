@@ -2,8 +2,6 @@
 
 use macroquad::prelude::*;
 
-use crate::data::random_range_f32;
-
 /// A single particle
 #[derive(Clone)]
 pub struct Particle {
@@ -117,8 +115,14 @@ impl ParticleSystem {
                 if let Some(dead) = self.particles.iter_mut().find(|p| !p.is_alive()) {
                     dead.position = config.position;
                     dead.velocity = Vec2::new(
-                        random_range_f32(config.velocity_min.x, config.velocity_max.x),
-                        random_range_f32(config.velocity_min.y, config.velocity_max.y),
+                        macroquad_toolkit::rng::gen_range(
+                            config.velocity_min.x,
+                            config.velocity_max.x,
+                        ),
+                        macroquad_toolkit::rng::gen_range(
+                            config.velocity_min.y,
+                            config.velocity_max.y,
+                        ),
                     );
                     dead.lifetime = config.particle_lifetime;
                     dead.max_lifetime = config.particle_lifetime;
@@ -128,8 +132,8 @@ impl ParticleSystem {
                 }
             } else {
                 let velocity = Vec2::new(
-                    random_range_f32(config.velocity_min.x, config.velocity_max.x),
-                    random_range_f32(config.velocity_min.y, config.velocity_max.y),
+                    macroquad_toolkit::rng::gen_range(config.velocity_min.x, config.velocity_max.x),
+                    macroquad_toolkit::rng::gen_range(config.velocity_min.y, config.velocity_max.y),
                 );
 
                 self.particles.push(Particle::new(

@@ -11,7 +11,7 @@ use std::hash::{Hash, Hasher};
 
 use crate::data::genome::{Genome, GenomeStats, HiddenTraitData, TraitSlot};
 use crate::data::{
-    new_kaiju_id, now_timestamp, random_u64, Kaiju, KaijuEvent, KaijuEventKind, KaijuStats, Trait,
+    new_kaiju_id, now_timestamp, Kaiju, KaijuEvent, KaijuEventKind, KaijuStats, Trait,
     TraitInheritance,
 };
 
@@ -594,14 +594,14 @@ mod tests {
     fn create_test_kaiju(name: &str, gen: u32, hp: i32, atk: i32) -> Kaiju {
         Kaiju {
             id: new_kaiju_id(),
-            token_id: random_u64(),
+            token_id: macroquad_toolkit::rng::random_u64(),
             name: name.to_string(),
             generation: gen,
             created_at: now_timestamp(),
             original_breeder: "test".to_string(),
             parent_ids: None,
-            visual_seed: random_u64(),
-            genome_hash: format!("{:016x}", random_u64()),
+            visual_seed: macroquad_toolkit::rng::random_u64(),
+            genome_hash: format!("{:016x}", macroquad_toolkit::rng::random_u64()),
             stats: KaijuStats::new(hp, atk, 30, 25, 100),
             traits: vec![],
             hidden_traits: vec![],

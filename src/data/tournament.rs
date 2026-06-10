@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::data::environments::Environment;
-use crate::data::types::{new_kaiju_id, random_u64, KaijuId};
+use crate::data::types::{new_kaiju_id, KaijuId};
 
 /// Unique tournament identifier
 pub type TournamentId = Uuid;
@@ -217,7 +217,7 @@ impl Match {
             kaiju_b,
             environment,
             result: None,
-            battle_seed: random_u64(),
+            battle_seed: macroquad_toolkit::rng::random_u64(),
         }
     }
 

@@ -130,7 +130,7 @@ fn is_text_to_image_checkpoint(name: &str) -> bool {
 fn queue_prompt(client: &Client, workflow: Value) -> Result<String, ComfyImageError> {
     let payload = serde_json::json!({
         "prompt": workflow,
-        "client_id": format!("kaiju-sim-{}", macroquad::rand::rand())
+        "client_id": format!("kaiju-sim-{}", macroquad_toolkit::rng::random_u64())
     });
 
     let response: Value = client
