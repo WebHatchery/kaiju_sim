@@ -4,6 +4,7 @@ use macroquad::prelude::*;
 use macroquad_toolkit::assets::{AssetManager as ToolkitAssetManager, TextureConfig};
 
 const TEXTURE_MANIFEST_JSON: &str = include_str!("../../assets/data/texture_manifest.json");
+const ASSET_PACK_PATH: &str = "assets.zip";
 
 pub struct AssetManager {
     inner: ToolkitAssetManager,
@@ -37,6 +38,7 @@ impl AssetManager {
 
     /// Load all static textures from the toolkit texture manifest.
     pub async fn load_all_assets(&mut self) {
+        let _ = self.inner.load_asset_pack(ASSET_PACK_PATH).await;
         let textures = match TextureConfig::from_json(TEXTURE_MANIFEST_JSON) {
             Ok(textures) => textures,
             Err(e) => {
