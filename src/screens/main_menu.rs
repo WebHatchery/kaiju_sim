@@ -6,6 +6,7 @@ use crate::ui::assets::AssetManager;
 use crate::ui::colors::dark;
 use crate::ui::typography::*;
 use macroquad::prelude::*;
+use macroquad_toolkit::ui::draw_ui_text;
 
 /// Draw main menu and return action if button pressed.
 pub fn draw_main_menu(assets: &AssetManager) -> Option<UiAction> {
@@ -58,7 +59,7 @@ pub fn draw_main_menu(assets: &AssetManager) -> Option<UiAction> {
         return Some(UiAction::ExitGame);
     }
 
-    draw_text(
+    draw_ui_text(
         "v0.1.0",
         16.0,
         sh - 16.0,

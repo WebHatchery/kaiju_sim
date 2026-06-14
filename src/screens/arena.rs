@@ -8,6 +8,7 @@ use crate::ui::colors::dark;
 use crate::ui::shell::*;
 use crate::ui::typography::*;
 use macroquad::prelude::*;
+use macroquad_toolkit::ui::draw_ui_text;
 
 pub fn draw_arena_screen(
     state: &GameState,
@@ -54,14 +55,14 @@ pub fn draw_arena_screen(
 
 fn draw_arena_banner(rect: Rect, state: &GameState, entry_fee: i64) {
     draw_panel_with_accent(rect, "ARENA EVENT", dark::WARNING);
-    draw_text(
+    draw_ui_text(
         "FRIDAY COLOSSEUM",
         rect.x + 22.0,
         rect.y + 72.0,
         FONT_TITLE,
         dark::WARNING,
     );
-    draw_text(
+    draw_ui_text(
         "Fight. Record. Improve.",
         rect.x + 24.0,
         rect.y + 106.0,
@@ -107,14 +108,14 @@ fn draw_active_fighter(
     let portrait = Rect::new(rect.x + 18.0, rect.y + 56.0, 178.0, 178.0);
     draw_portrait(portrait, kaiju, assets);
     let info_x = portrait.x + portrait.w + 24.0;
-    draw_text(
+    draw_ui_text(
         &ellipsize(&kaiju.name, rect.w - 250.0, FONT_LARGE),
         info_x,
         rect.y + 78.0,
         FONT_LARGE,
         dark::TEXT_PRIMARY,
     );
-    draw_text(
+    draw_ui_text(
         &format!(
             "GEN {} | wins {} | rating {}",
             kaiju.generation,
@@ -154,14 +155,14 @@ fn draw_active_fighter(
         dark::SPD_COLOR,
     );
 
-    draw_text(
+    draw_ui_text(
         "ARENA NOTICE",
         rect.x + 18.0,
         rect.y + rect.h - 66.0,
         FONT_TINY,
         dark::TEXT_MUTED,
     );
-    draw_text(
+    draw_ui_text(
         "Environment locks on entry.",
         rect.x + 18.0,
         rect.y + rect.h - 40.0,
@@ -183,14 +184,14 @@ fn draw_active_fighter(
 
 fn draw_event_panel(rect: Rect, entry_fee: i64) {
     draw_panel_with_accent(rect, "RIVAL BRIEFING", dark::ACCENT);
-    draw_text(
+    draw_ui_text(
         "UNKNOWN AI CONTENDER",
         rect.x + 16.0,
         rect.y + 62.0,
         FONT_MEDIUM,
         dark::TEXT_PRIMARY,
     );
-    draw_text(
+    draw_ui_text(
         "Rival profile follows fighter rating.",
         rect.x + 16.0,
         rect.y + 92.0,
@@ -199,7 +200,7 @@ fn draw_event_panel(rect: Rect, entry_fee: i64) {
     );
 
     let y = rect.y + 174.0;
-    draw_text("MODIFIERS", rect.x + 16.0, y, FONT_TINY, dark::TEXT_MUTED);
+    draw_ui_text("MODIFIERS", rect.x + 16.0, y, FONT_TINY, dark::TEXT_MUTED);
     draw_status_pill(
         Rect::new(rect.x + 16.0, y + 18.0, 108.0, 26.0),
         "SEEDED ARENA",
@@ -210,7 +211,7 @@ fn draw_event_panel(rect: Rect, entry_fee: i64) {
         "RECORDED",
         dark::POSITIVE,
     );
-    draw_text(
+    draw_ui_text(
         &format!("Entry: {} gold.", entry_fee),
         rect.x + 16.0,
         rect.y + rect.h - 28.0,
@@ -283,14 +284,14 @@ fn draw_fighter_chip(
         kaiju,
         assets,
     );
-    draw_text(
+    draw_ui_text(
         &ellipsize(&kaiju.name, 128.0, FONT_SMALL),
         rect.x + 80.0,
         rect.y + 30.0,
         FONT_SMALL,
         dark::TEXT_PRIMARY,
     );
-    draw_text(
+    draw_ui_text(
         &format!("W{} | R{}", kaiju.tournaments_won, kaiju.battle_rating()),
         rect.x + 80.0,
         rect.y + 54.0,

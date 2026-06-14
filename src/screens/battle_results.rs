@@ -7,6 +7,7 @@ use crate::ui::colors::dark;
 use crate::ui::shell::*;
 use crate::ui::typography::*;
 use macroquad::prelude::*;
+use macroquad_toolkit::ui::draw_ui_text;
 
 pub fn draw_battle_results(state: &GameState, assets: &AssetManager) -> Option<UiAction> {
     let frame = draw_app_shell(state, AppSection::Results);
@@ -57,21 +58,21 @@ fn draw_result_header(rect: Rect, report: &LastBattleReport) -> Option<UiAction>
         dark::NEGATIVE
     };
     draw_panel_with_accent(rect, "RESULT SUMMARY", color);
-    draw_text(
+    draw_ui_text(
         if report.won { "VICTORY" } else { "DEFEAT" },
         rect.x + 20.0,
         rect.y + 86.0,
         FONT_HERO,
         color,
     );
-    draw_text(
+    draw_ui_text(
         &format!("{} defeated {}", report.result.winner, report.result.loser),
         rect.x + 330.0,
         rect.y + 56.0,
         FONT_MEDIUM,
         dark::TEXT_PRIMARY,
     );
-    draw_text(
+    draw_ui_text(
         &format!(
             "{} turns | {} | seed {}",
             report.result.turns_elapsed, report.result.environment, report.result.seed
@@ -139,7 +140,7 @@ fn draw_fighter_panel(
     );
 
     let y = rect.y + 374.0;
-    draw_text(
+    draw_ui_text(
         "POST-FIGHT NOTES",
         rect.x + 16.0,
         y,
@@ -161,7 +162,7 @@ fn draw_fighter_panel(
         note_y += 38.0;
     }
     if report.result.insights.is_empty() {
-        draw_text(
+        draw_ui_text(
             "No notes filed.",
             rect.x + 16.0,
             note_y,
@@ -224,14 +225,14 @@ fn draw_log_panel(rect: Rect, report: &LastBattleReport) {
         } else {
             dark::TEXT_SECONDARY
         };
-        draw_text(
+        draw_ui_text(
             &format!("T{:02}", entry.turn),
             rect.x + 16.0,
             y,
             FONT_TINY,
             color,
         );
-        draw_text(
+        draw_ui_text(
             &ellipsize(
                 &format!(
                     "{} -> {}  dmg {}  hp {}",
@@ -247,7 +248,7 @@ fn draw_log_panel(rect: Rect, report: &LastBattleReport) {
         );
         y += 26.0;
         for effect in entry.special_effects.iter().take(2) {
-            draw_text(
+            draw_ui_text(
                 &ellipsize(effect, rect.w - 96.0, FONT_TINY),
                 rect.x + 58.0,
                 y,
@@ -267,16 +268,16 @@ fn draw_fighter(
     kaiju: &crate::data::Kaiju,
     assets: &AssetManager,
 ) {
-    draw_text(label, x, y, FONT_TINY, dark::TEXT_MUTED);
+    draw_ui_text(label, x, y, FONT_TINY, dark::TEXT_MUTED);
     draw_portrait(Rect::new(x, y + 16.0, 104.0, 104.0), kaiju, assets);
-    draw_text(
+    draw_ui_text(
         &ellipsize(&kaiju.name, w - 128.0, FONT_MEDIUM),
         x + 122.0,
         y + 48.0,
         FONT_MEDIUM,
         dark::TEXT_PRIMARY,
     );
-    draw_text(
+    draw_ui_text(
         &format!(
             "RATING {} | GEN {}",
             kaiju.battle_rating(),
@@ -287,7 +288,7 @@ fn draw_fighter(
         FONT_TINY,
         dark::TEXT_SECONDARY,
     );
-    draw_text(
+    draw_ui_text(
         &format!(
             "HP {}  ATK {}  DEF {}  SPD {}",
             kaiju.stats.hp, kaiju.stats.attack, kaiju.stats.defense, kaiju.stats.speed
@@ -303,8 +304,8 @@ fn draw_fighter(
 fn draw_moment_row(x: f32, y: f32, w: f32, label: &str, body: &str, color: Color) {
     draw_rectangle(x, y - 20.0, w, 36.0, Color::new(0.030, 0.055, 0.074, 0.82));
     draw_rectangle(x, y - 20.0, 2.0, 36.0, color);
-    draw_text(label, x + 12.0, y, FONT_TINY, color);
-    draw_text(
+    draw_ui_text(label, x + 12.0, y, FONT_TINY, color);
+    draw_ui_text(
         &ellipsize(body, w - 122.0, FONT_SMALL),
         x + 104.0,
         y,

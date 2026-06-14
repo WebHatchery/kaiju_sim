@@ -3,6 +3,7 @@
 use crate::state::GameState;
 use crate::ui::*;
 use macroquad::prelude::*;
+use macroquad_toolkit::ui::draw_ui_text;
 
 pub fn reset_state() {}
 
@@ -22,14 +23,14 @@ pub fn draw_tournament_lobby(state: &mut GameState) -> Option<UiAction> {
     );
 
     draw_panel(left, "MULTIPLAYER LOBBY");
-    draw_text(
+    draw_ui_text(
         "NETWORK SEALED",
         left.x + 20.0,
         left.y + 66.0,
         FONT_MEDIUM,
         dark::ACCENT,
     );
-    draw_text(
+    draw_ui_text(
         "Use the arena channel.",
         left.x + 20.0,
         left.y + 104.0,
@@ -56,7 +57,7 @@ pub fn draw_tournament_lobby(state: &mut GameState) -> Option<UiAction> {
             38.0,
             Color::new(0.04, 0.06, 0.08, 0.85),
         );
-        draw_text(
+        draw_ui_text(
             &kaiju.name,
             right.x + 28.0,
             y + 5.0,
@@ -74,7 +75,7 @@ pub fn draw_tournament_lobby(state: &mut GameState) -> Option<UiAction> {
     }
 
     if state.roster.iter().all(|k| !k.alive) {
-        draw_text(
+        draw_ui_text(
             "No living kaiju are available.",
             right.x + 20.0,
             right.y + 66.0,

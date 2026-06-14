@@ -8,6 +8,7 @@ use crate::ui::colors::{dark, trait_color};
 use crate::ui::shell::*;
 use crate::ui::typography::*;
 use macroquad::prelude::*;
+use macroquad_toolkit::ui::draw_ui_text;
 use uuid::Uuid;
 
 pub fn draw_kaiju_detail(
@@ -60,14 +61,14 @@ fn draw_profile(rect: Rect, kaiju: &Kaiju, assets: &AssetManager) -> Option<UiAc
         return Some(UiAction::Back);
     }
 
-    draw_text(
+    draw_ui_text(
         &ellipsize(&kaiju.name, rect.w - 32.0, FONT_LARGE),
         rect.x + 16.0,
         rect.y + 116.0,
         FONT_LARGE,
         dark::TEXT_PRIMARY,
     );
-    draw_text(
+    draw_ui_text(
         &format!(
             "LEGACY ID {} | GENOME {}",
             kaiju.token_id,
@@ -142,7 +143,7 @@ fn draw_profile(rect: Rect, kaiju: &Kaiju, assets: &AssetManager) -> Option<UiAc
         &breeding_events.to_string(),
         dark::ACCENT,
     );
-    draw_text(
+    draw_ui_text(
         &format!("{} total history entries", kaiju.history.len()),
         rect.x + 16.0,
         rect.y + rect.h - 24.0,
@@ -205,7 +206,7 @@ fn draw_stats_and_traits(rect: Rect, kaiju: &Kaiju) {
     );
 
     let trait_x = rect.x + rect.w * 0.54;
-    draw_text(
+    draw_ui_text(
         "VISIBLE TRAITS",
         trait_x,
         rect.y + 60.0,
@@ -233,7 +234,7 @@ fn draw_stats_and_traits(rect: Rect, kaiju: &Kaiju) {
 fn draw_lineage_and_mutations(rect: Rect, kaiju: &Kaiju) {
     draw_panel_with_accent(rect, "LINEAGE AND MUTATIONS", dark::WARNING);
     let left_x = rect.x + 16.0;
-    draw_text(
+    draw_ui_text(
         "PARENT RECORDS",
         left_x,
         rect.y + 58.0,
@@ -241,14 +242,14 @@ fn draw_lineage_and_mutations(rect: Rect, kaiju: &Kaiju) {
         dark::TEXT_MUTED,
     );
     if let Some((parent_a, parent_b)) = kaiju.parent_ids {
-        draw_text(
+        draw_ui_text(
             &format!("PARENT A  #{}", parent_a),
             left_x,
             rect.y + 86.0,
             FONT_SMALL,
             dark::TEXT_PRIMARY,
         );
-        draw_text(
+        draw_ui_text(
             &format!("PARENT B  #{}", parent_b),
             left_x,
             rect.y + 114.0,
@@ -256,7 +257,7 @@ fn draw_lineage_and_mutations(rect: Rect, kaiju: &Kaiju) {
             dark::TEXT_PRIMARY,
         );
     } else {
-        draw_text(
+        draw_ui_text(
             "Original facility starter or wild registry source.",
             left_x,
             rect.y + 88.0,
@@ -266,7 +267,7 @@ fn draw_lineage_and_mutations(rect: Rect, kaiju: &Kaiju) {
     }
 
     let right_x = rect.x + rect.w * 0.52;
-    draw_text(
+    draw_ui_text(
         "MUTATION WATCH",
         right_x,
         rect.y + 58.0,
@@ -278,7 +279,7 @@ fn draw_lineage_and_mutations(rect: Rect, kaiju: &Kaiju) {
         .iter()
         .filter(|trait_def| matches!(trait_def.category, crate::data::TraitCategory::Mutation))
         .count();
-    draw_text(
+    draw_ui_text(
         &format!(
             "{} visible mutations | {} hidden markers",
             mutation_count,
@@ -289,7 +290,7 @@ fn draw_lineage_and_mutations(rect: Rect, kaiju: &Kaiju) {
         FONT_SMALL,
         dark::TEXT_PRIMARY,
     );
-    draw_text(
+    draw_ui_text(
         inheritance_label(kaiju),
         right_x,
         rect.y + 116.0,
@@ -315,8 +316,8 @@ fn draw_history(rect: Rect, kaiju: &Kaiju) {
             1.0,
             Color::new(color.r, color.g, color.b, 0.22),
         );
-        draw_text(event.kind.label(), rect.x + 40.0, y, FONT_TINY, color);
-        draw_text(
+        draw_ui_text(event.kind.label(), rect.x + 40.0, y, FONT_TINY, color);
+        draw_ui_text(
             &ellipsize(&event.title, rect.w - 220.0, FONT_SMALL),
             rect.x + 166.0,
             y,

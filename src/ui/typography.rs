@@ -1,6 +1,7 @@
 //! Typography and text rendering helpers.
 
 use macroquad::prelude::*;
+use macroquad_toolkit::ui::draw_ui_text;
 
 /// Font size constants
 pub const FONT_TINY: f32 = 12.0;
@@ -26,8 +27,8 @@ pub fn draw_text_shadow(text: &str, x: f32, y: f32, font_size: f32, color: Color
 
 /// Draw bold text (simulated with double render)
 pub fn draw_text_bold(text: &str, x: f32, y: f32, font_size: f32, color: Color) {
-    draw_text(text, x, y, font_size, color);
-    draw_text(text, x + 1.0, y, font_size, color);
+    draw_ui_text(text, x, y, font_size, color);
+    draw_ui_text(text, x + 1.0, y, font_size, color);
 }
 
 /// Measure text dimensions
@@ -89,7 +90,7 @@ pub fn draw_text_wrapped(
         }
 
         if !line.is_empty() {
-            draw_text(&line, x, y, font_size, color);
+            draw_ui_text(&line, x, y, font_size, color);
             lines_drawn += 1;
             y += line_height;
             if lines_drawn >= max_lines {
@@ -101,7 +102,7 @@ pub fn draw_text_wrapped(
     }
 
     if !line.is_empty() && lines_drawn < max_lines {
-        draw_text(&line, x, y, font_size, color);
+        draw_ui_text(&line, x, y, font_size, color);
         y += line_height;
     }
 

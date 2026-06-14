@@ -9,6 +9,7 @@ use crate::ui::shell::{
 use crate::ui::spacing::*;
 use crate::ui::typography::*;
 use macroquad::prelude::*;
+use macroquad_toolkit::ui::draw_ui_text;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CardState {
@@ -80,7 +81,7 @@ pub fn draw_kaiju_card(
         ),
     );
 
-    draw_text(
+    draw_ui_text(
         &ellipsize(&kaiju.name, 142.0, FONT_MEDIUM),
         x + 12.0,
         y + 28.0,
@@ -97,7 +98,7 @@ pub fn draw_kaiju_card(
     draw_portrait(portrait, kaiju, assets);
 
     let rarity = rarity_label(kaiju);
-    draw_text(rarity, x + 14.0, y + 218.0, FONT_TINY, rarity_color(kaiju));
+    draw_ui_text(rarity, x + 14.0, y + 218.0, FONT_TINY, rarity_color(kaiju));
     draw_text_right(
         &format!("RATING {}", kaiju.battle_rating()),
         x + CARD_WIDTH - 14.0,
@@ -187,7 +188,7 @@ pub fn draw_kaiju_card(
 }
 
 fn draw_micro_stat(x: f32, y: f32, label: &str, value: i32, max: i32, color: Color) {
-    draw_text(label, x, y, FONT_TINY, dark::TEXT_MUTED);
+    draw_ui_text(label, x, y, FONT_TINY, dark::TEXT_MUTED);
     draw_progress_bar(
         Rect::new(x + 34.0, y - 8.0, 112.0, 5.0),
         value as f32 / max as f32,

@@ -8,6 +8,7 @@ use crate::ui::colors::dark;
 use crate::ui::shell::*;
 use crate::ui::typography::*;
 use macroquad::prelude::*;
+use macroquad_toolkit::ui::draw_ui_text;
 
 pub fn draw_training_screen(
     state: &GameState,
@@ -59,14 +60,14 @@ fn draw_training_subject(rect: Rect, kaiju: Option<&Kaiju>, assets: &AssetManage
         return;
     };
 
-    draw_text(
+    draw_ui_text(
         &ellipsize(&kaiju.name, rect.w - 32.0, FONT_LARGE),
         rect.x + 16.0,
         rect.y + 66.0,
         FONT_LARGE,
         dark::TEXT_PRIMARY,
     );
-    draw_text(
+    draw_ui_text(
         &format!(
             "GEN {} | XP {} | SESSION COST {}",
             kaiju.generation, kaiju.experience, cost
@@ -86,7 +87,7 @@ fn draw_training_subject(rect: Rect, kaiju: Option<&Kaiju>, assets: &AssetManage
 
     let stat_x = rect.x + 16.0;
     let y = rect.y + rect.h - 112.0;
-    draw_text("CURRENT LOADOUT", stat_x, y, FONT_TINY, dark::TEXT_MUTED);
+    draw_ui_text("CURRENT LOADOUT", stat_x, y, FONT_TINY, dark::TEXT_MUTED);
     draw_stat_meter(
         stat_x,
         y + 28.0,
@@ -123,7 +124,7 @@ fn draw_program_cards(
     cost: i64,
 ) -> Option<UiAction> {
     draw_panel_with_accent(rect, "GROWTH PROGRAMS", dark::ACCENT);
-    draw_text(
+    draw_ui_text(
         "Pick one controlled stress program for the active subject.",
         rect.x + 16.0,
         rect.y + 56.0,
@@ -182,21 +183,21 @@ fn draw_program_card(
         Color::new(color.r, color.g, color.b, 0.28),
     );
 
-    draw_text(
+    draw_ui_text(
         focus.label().to_uppercase().as_str(),
         rect.x + 14.0,
         rect.y + 28.0,
         FONT_MEDIUM,
         color,
     );
-    draw_text(
+    draw_ui_text(
         program_theme(focus),
         rect.x + 14.0,
         rect.y + 54.0,
         FONT_TINY,
         dark::TEXT_SECONDARY,
     );
-    draw_text(
+    draw_ui_text(
         &format!("Estimated: focused {} growth", focus.stat_label()),
         rect.x + 14.0,
         rect.y + 84.0,
@@ -208,7 +209,7 @@ fn draw_program_card(
         risk_label(focus),
         risk_color(focus),
     );
-    draw_text(
+    draw_ui_text(
         &format!("{} gold", cost),
         rect.x + 14.0,
         rect.y + rect.h - 18.0,
@@ -308,14 +309,14 @@ fn draw_subject_chip(
         kaiju,
         assets,
     );
-    draw_text(
+    draw_ui_text(
         &ellipsize(&kaiju.name, 128.0, FONT_SMALL),
         rect.x + 84.0,
         rect.y + 32.0,
         FONT_SMALL,
         dark::TEXT_PRIMARY,
     );
-    draw_text(
+    draw_ui_text(
         &format!(
             "GEN {} | rating {}",
             kaiju.generation,

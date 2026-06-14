@@ -9,6 +9,7 @@ use crate::ui::shell::*;
 use crate::ui::spacing::*;
 use crate::ui::typography::*;
 use macroquad::prelude::*;
+use macroquad_toolkit::ui::draw_ui_text;
 
 pub fn draw_roster_view(state: &GameState, assets: &AssetManager) -> Option<UiAction> {
     let frame = draw_app_shell(state, AppSection::Roster);
@@ -77,7 +78,7 @@ fn draw_roster_header(state: &GameState, rect: Rect) {
         state.living_count(),
         state.player.stats.highest_generation
     );
-    draw_text(
+    draw_ui_text(
         &summary,
         rect.x + 16.0,
         rect.y + 56.0,

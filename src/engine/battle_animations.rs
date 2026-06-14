@@ -1,6 +1,7 @@
 //! Battle animation system.
 
 use macroquad::prelude::*;
+use macroquad_toolkit::ui::draw_ui_text;
 
 /// Animation state for battle turns
 #[derive(Debug, Clone, PartialEq)]
@@ -219,14 +220,14 @@ impl DamageNumber {
         let text = self.value.to_string();
 
         // Shadow
-        draw_text(
+        draw_ui_text(
             &text,
             self.position.x + 2.0,
             self.position.y + 2.0,
             font_size,
             Color::new(0.0, 0.0, 0.0, alpha * 0.5),
         );
-        draw_text(&text, self.position.x, self.position.y, font_size, color);
+        draw_ui_text(&text, self.position.x, self.position.y, font_size, color);
     }
 
     pub fn is_alive(&self) -> bool {

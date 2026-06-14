@@ -1,6 +1,7 @@
 #![allow(unused)]
 
 use macroquad::prelude::*;
+use macroquad_toolkit::ui::draw_ui_text;
 
 mod data;
 mod engine;
@@ -547,14 +548,14 @@ fn draw_placeholder(
         220.0,
     );
     draw_panel(panel, "SYSTEM NOTICE");
-    draw_text(
+    draw_ui_text(
         title,
         panel.x + 24.0,
         panel.y + 76.0,
         FONT_MEDIUM,
         dark::TEXT_PRIMARY,
     );
-    draw_text(
+    draw_ui_text(
         "Access denied.",
         panel.x + 24.0,
         panel.y + 112.0,

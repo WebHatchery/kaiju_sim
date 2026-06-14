@@ -5,6 +5,7 @@ use crate::ui::colors::dark;
 use crate::ui::shell::*;
 use crate::ui::typography::*;
 use macroquad::prelude::*;
+use macroquad_toolkit::ui::draw_ui_text;
 
 pub fn draw_leaderboard(state: &GameState, assets: &AssetManager) -> Option<UiAction> {
     let frame = draw_app_shell(state, AppSection::Leaderboard);
@@ -35,21 +36,21 @@ fn draw_records_hero(
     assets: &AssetManager,
 ) {
     draw_panel_with_accent(rect, "LOCAL RECORDS", dark::WARNING);
-    draw_text(
+    draw_ui_text(
         "SEASON: CLASSIFIED",
         rect.x + 22.0,
         rect.y + 62.0,
         FONT_TINY,
         dark::TEXT_MUTED,
     );
-    draw_text(
+    draw_ui_text(
         "PROVEN BLOODLINES",
         rect.x + 22.0,
         rect.y + 100.0,
         FONT_TITLE,
         dark::TEXT_PRIMARY,
     );
-    draw_text(
+    draw_ui_text(
         "Ranked by arena wins, then rating.",
         rect.x + 24.0,
         rect.y + 132.0,
@@ -156,7 +157,7 @@ fn draw_record_row(
         rect.h,
         Color::new(rank_color.r, rank_color.g, rank_color.b, 0.70),
     );
-    draw_text(
+    draw_ui_text(
         &rank.to_string(),
         rect.x + 18.0,
         rect.y + 38.0,
@@ -168,14 +169,14 @@ fn draw_record_row(
         kaiju,
         assets,
     );
-    draw_text(
+    draw_ui_text(
         &ellipsize(&kaiju.name, 190.0, FONT_SMALL),
         rect.x + 132.0,
         rect.y + 28.0,
         FONT_SMALL,
         dark::TEXT_PRIMARY,
     );
-    draw_text(
+    draw_ui_text(
         &format!("Legacy #{}", kaiju.token_id),
         rect.x + 132.0,
         rect.y + 48.0,
@@ -187,28 +188,28 @@ fn draw_record_row(
         badge_label(rank, kaiju),
         badge_color(rank, kaiju),
     );
-    draw_text(
+    draw_ui_text(
         &kaiju.generation.to_string(),
         rect.x + 480.0,
         rect.y + 38.0,
         FONT_SMALL,
         dark::TEXT_PRIMARY,
     );
-    draw_text(
+    draw_ui_text(
         &kaiju.tournaments_won.to_string(),
         rect.x + 572.0,
         rect.y + 38.0,
         FONT_SMALL,
         dark::TEXT_PRIMARY,
     );
-    draw_text(
+    draw_ui_text(
         &kaiju.battle_rating().to_string(),
         rect.x + 670.0,
         rect.y + 38.0,
         FONT_SMALL,
         dark::WARNING,
     );
-    draw_text(
+    draw_ui_text(
         &kaiju.history.len().to_string(),
         rect.x + 786.0,
         rect.y + 38.0,

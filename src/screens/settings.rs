@@ -6,6 +6,7 @@ use crate::ui::colors::dark;
 use crate::ui::shell::*;
 use crate::ui::typography::*;
 use macroquad::prelude::*;
+use macroquad_toolkit::ui::draw_ui_text;
 
 pub fn draw_settings_screen(state: &GameState) -> Option<UiAction> {
     let frame = draw_app_shell(state, AppSection::Settings);
@@ -28,7 +29,7 @@ pub fn draw_settings_screen(state: &GameState) -> Option<UiAction> {
 
 fn draw_settings_panel(rect: Rect, state: &GameState) -> Option<UiAction> {
     draw_panel_with_accent(rect, "FACILITY SETTINGS", dark::ACCENT);
-    draw_text(
+    draw_ui_text(
         "Facility controls.",
         rect.x + 18.0,
         rect.y + 60.0,
@@ -140,7 +141,7 @@ fn draw_system_panel(rect: Rect, state: &GameState) {
         dark::WARNING,
     );
 
-    draw_text(
+    draw_ui_text(
         "SYSTEM",
         rect.x + 16.0,
         rect.y + 350.0,
@@ -166,7 +167,7 @@ fn draw_system_panel(rect: Rect, state: &GameState) {
 
 fn draw_setting_row(x: f32, y: f32, w: f32, label: &str, value: &str, color: Color) {
     draw_rectangle(x, y - 26.0, w, 44.0, Color::new(0.030, 0.055, 0.074, 0.82));
-    draw_text(label, x + 12.0, y, FONT_SMALL, dark::TEXT_PRIMARY);
+    draw_ui_text(label, x + 12.0, y, FONT_SMALL, dark::TEXT_PRIMARY);
     draw_status_pill(
         Rect::new(x + w - 122.0, y - 22.0, 104.0, 28.0),
         value,

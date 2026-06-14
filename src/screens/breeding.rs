@@ -8,6 +8,7 @@ use crate::ui::colors::{dark, trait_color};
 use crate::ui::shell::*;
 use crate::ui::typography::*;
 use macroquad::prelude::*;
+use macroquad_toolkit::ui::draw_ui_text;
 
 pub struct BreedingState {
     pub parent_a: Option<uuid::Uuid>,
@@ -60,7 +61,7 @@ fn draw_breeding_chamber(
     assets: &AssetManager,
 ) -> Option<UiAction> {
     draw_panel_with_accent(rect, "EXPERIMENTAL BREEDING CHAMBER", dark::ACCENT);
-    draw_text(
+    draw_ui_text(
         "Pair two living bloodlines, preview inheritance pressure, then start incubation.",
         rect.x + 18.0,
         rect.y + 56.0,
@@ -128,7 +129,7 @@ fn draw_parent_slot(
         1.0,
         Color::new(accent.r, accent.g, accent.b, 0.30),
     );
-    draw_text(
+    draw_ui_text(
         label,
         rect.x + 12.0,
         rect.y + 24.0,
@@ -142,14 +143,14 @@ fn draw_parent_slot(
             k,
             assets,
         );
-        draw_text(
+        draw_ui_text(
             &ellipsize(&k.name, rect.w - 138.0, FONT_MEDIUM),
             rect.x + 130.0,
             rect.y + 74.0,
             FONT_MEDIUM,
             dark::TEXT_PRIMARY,
         );
-        draw_text(
+        draw_ui_text(
             &format!("GEN {} | R{}", k.generation, k.battle_rating()),
             rect.x + 130.0,
             rect.y + 100.0,
@@ -164,7 +165,7 @@ fn draw_parent_slot(
                 trait_color(&trait_def.category),
             );
         }
-        draw_text(
+        draw_ui_text(
             lineage_note(k),
             rect.x + 12.0,
             rect.y + rect.h - 20.0,
@@ -172,14 +173,14 @@ fn draw_parent_slot(
             dark::TEXT_SECONDARY,
         );
     } else {
-        draw_text(
+        draw_ui_text(
             "Awaiting specimen assignment",
             rect.x + 16.0,
             rect.y + 94.0,
             FONT_SMALL,
             dark::TEXT_MUTED,
         );
-        draw_text(
+        draw_ui_text(
             "Select from eligible roster below.",
             rect.x + 16.0,
             rect.y + 122.0,
@@ -212,7 +213,7 @@ fn draw_offspring_preview(rect: Rect, parent_a: Option<&Kaiju>, parent_b: Option
         1.0,
         Color::new(dark::ACCENT.r, dark::ACCENT.g, dark::ACCENT.b, 0.30),
     );
-    draw_text(
+    draw_ui_text(
         "OFFSPRING PROJECTION",
         rect.x + 14.0,
         rect.y + 24.0,
@@ -222,14 +223,14 @@ fn draw_offspring_preview(rect: Rect, parent_a: Option<&Kaiju>, parent_b: Option
 
     if let (Some(a), Some(b)) = (parent_a, parent_b) {
         let generation = a.generation.max(b.generation) + 1;
-        draw_text(
+        draw_ui_text(
             &format!("GENERATION {}", generation),
             rect.x + 16.0,
             rect.y + 58.0,
             FONT_MEDIUM,
             dark::ACCENT,
         );
-        draw_text(
+        draw_ui_text(
             &format!("{} x {}", a.name, b.name),
             rect.x + 16.0,
             rect.y + 84.0,
@@ -277,7 +278,7 @@ fn draw_offspring_preview(rect: Rect, parent_a: Option<&Kaiju>, parent_b: Option
         );
 
         let right_x = rect.x + rect.w * 0.58;
-        draw_text("INHERITANCE", right_x, stat_y, FONT_TINY, dark::TEXT_MUTED);
+        draw_ui_text("INHERITANCE", right_x, stat_y, FONT_TINY, dark::TEXT_MUTED);
         draw_status_pill(
             Rect::new(right_x, stat_y + 18.0, 120.0, 26.0),
             mutation_window(a, b),
@@ -288,7 +289,7 @@ fn draw_offspring_preview(rect: Rect, parent_a: Option<&Kaiju>, parent_b: Option
             egg_rarity(generation, a, b),
             dark::ACCENT,
         );
-        draw_text(
+        draw_ui_text(
             "Traits may pass forward.",
             right_x,
             stat_y + 100.0,
@@ -312,7 +313,7 @@ fn draw_candidate_roster(
     assets: &AssetManager,
 ) {
     draw_panel_with_accent(rect, "ELIGIBLE BLOODLINES", dark::TEXT_SECONDARY);
-    draw_text(
+    draw_ui_text(
         "Click a specimen to fill the next open parent slot.",
         rect.x + 16.0,
         rect.y + 52.0,
@@ -394,14 +395,14 @@ fn draw_candidate_card(rect: Rect, kaiju: &Kaiju, assets: &AssetManager) -> bool
         kaiju,
         assets,
     );
-    draw_text(
+    draw_ui_text(
         &ellipsize(&kaiju.name, rect.w - 132.0, FONT_MEDIUM),
         rect.x + 112.0,
         rect.y + 36.0,
         FONT_MEDIUM,
         dark::TEXT_PRIMARY,
     );
-    draw_text(
+    draw_ui_text(
         &format!(
             "GEN {} | rating {} | events {}",
             kaiju.generation,
@@ -425,7 +426,7 @@ fn draw_candidate_card(rect: Rect, kaiju: &Kaiju, assets: &AssetManager) -> bool
 }
 
 fn draw_projection_bar(x: f32, y: f32, w: f32, label: &str, value: i32, max: i32, color: Color) {
-    draw_text(label, x, y, FONT_TINY, dark::TEXT_SECONDARY);
+    draw_ui_text(label, x, y, FONT_TINY, dark::TEXT_SECONDARY);
     draw_progress_bar(
         Rect::new(x + 42.0, y - 8.0, w - 42.0, 7.0),
         value as f32 / max as f32,

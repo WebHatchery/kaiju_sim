@@ -3,6 +3,7 @@
 use crate::ui::colors::{dark, stat_color, StatType};
 use crate::ui::typography::*;
 use macroquad::prelude::*;
+use macroquad_toolkit::ui::draw_ui_text;
 
 /// Stat bar with animation state
 pub struct StatBarState {
@@ -67,7 +68,7 @@ pub fn draw_stat_bar(
     draw_rectangle_lines(x, y, width, height, 1.0, dark::BORDER);
 
     // Label (left)
-    draw_text(
+    draw_ui_text(
         label,
         x + 5.0,
         y + height - 5.0,

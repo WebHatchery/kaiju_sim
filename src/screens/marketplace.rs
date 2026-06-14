@@ -4,6 +4,7 @@ use crate::server_bridge::{self, MarketplaceItem};
 use crate::ui::assets::AssetManager;
 use crate::ui::*;
 use macroquad::prelude::*;
+use macroquad_toolkit::ui::draw_ui_text;
 
 /// State for marketplace screen.
 pub struct MarketplaceState {
@@ -63,14 +64,14 @@ pub fn draw_marketplace(
     );
 
     draw_panel(left, "EXCHANGE STATUS");
-    draw_text(
+    draw_ui_text(
         "NETWORK SEALED",
         left.x + 20.0,
         left.y + 66.0,
         FONT_MEDIUM,
         dark::ACCENT,
     );
-    draw_text(
+    draw_ui_text(
         "External exchange access is locked.",
         left.x + 20.0,
         left.y + 104.0,
@@ -89,14 +90,14 @@ pub fn draw_marketplace(
 
     draw_panel(right, "CATALOG PREVIEW");
     if !state.loaded {
-        draw_text(
+        draw_ui_text(
             "Catalog link dormant.",
             right.x + 20.0,
             right.y + 62.0,
             FONT_SMALL,
             dark::TEXT_SECONDARY,
         );
-        draw_text(
+        draw_ui_text(
             "Use facility roster.",
             right.x + 20.0,
             right.y + 90.0,
@@ -107,7 +108,7 @@ pub fn draw_marketplace(
     }
 
     if let Some(ref err) = state.error {
-        draw_text(
+        draw_ui_text(
             &format!("Connection unavailable: {}", err),
             right.x + 20.0,
             right.y + 62.0,
@@ -142,14 +143,14 @@ fn draw_header(sw: f32, player_gold: i64) {
         Color::new(0.025, 0.035, 0.045, 0.98),
     );
     draw_line(0.0, TOP_BAR_H, sw, TOP_BAR_H, 1.0, dark::BORDER);
-    draw_text(
+    draw_ui_text(
         "KAIJU BREEDING SIMULATOR",
         24.0,
         31.0,
         FONT_MEDIUM,
         dark::TEXT_PRIMARY,
     );
-    draw_text("MARKETPLACE", 24.0, 56.0, FONT_SMALL, dark::ACCENT);
+    draw_ui_text("MARKETPLACE", 24.0, 56.0, FONT_SMALL, dark::ACCENT);
     draw_text_right(
         &format!("Gold: {}", player_gold),
         sw - 32.0,
@@ -205,14 +206,14 @@ fn draw_market_card(
     );
 
     let y = portrait.y + portrait.h + 28.0;
-    draw_text(
+    draw_ui_text(
         &item.name,
         rect.x + 14.0,
         y,
         FONT_MEDIUM,
         dark::TEXT_PRIMARY,
     );
-    draw_text(
+    draw_ui_text(
         &format!("Power {}", item.stats.power_level()),
         rect.x + 14.0,
         y + 24.0,
@@ -220,7 +221,7 @@ fn draw_market_card(
         dark::TEXT_SECONDARY,
     );
     let can_afford = player_gold >= item.price as i64;
-    draw_text(
+    draw_ui_text(
         &format!("{} gold", item.price),
         rect.x + 14.0,
         y + 50.0,

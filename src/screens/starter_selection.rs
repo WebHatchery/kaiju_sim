@@ -4,6 +4,7 @@
 use crate::ui::assets::AssetManager;
 use crate::ui::*;
 use macroquad::prelude::*;
+use macroquad_toolkit::ui::draw_ui_text;
 
 struct StarterOption<'a> {
     name: &'a str,
@@ -22,7 +23,7 @@ pub async fn draw_starter_selection(assets: &AssetManager) -> Option<UiAction> {
 
     let content = Rect::new(48.0, 112.0, sw - 96.0, sh - 176.0);
     draw_panel(content, "STARTER DOSSIERS");
-    draw_text(
+    draw_ui_text(
         "Choose the first kaiju in your documented lineage.",
         content.x + 22.0,
         content.y + 58.0,
@@ -79,14 +80,14 @@ pub async fn draw_starter_selection(assets: &AssetManager) -> Option<UiAction> {
 fn draw_header(sw: f32) {
     draw_rectangle(0.0, 0.0, sw, 78.0, Color::new(0.025, 0.035, 0.045, 0.98));
     draw_line(0.0, 78.0, sw, 78.0, 1.0, dark::BORDER);
-    draw_text(
+    draw_ui_text(
         "KAIJU BREEDING SIMULATOR",
         34.0,
         34.0,
         FONT_MEDIUM,
         dark::TEXT_PRIMARY,
     );
-    draw_text("STARTER SELECTION", 34.0, 60.0, FONT_SMALL, dark::ACCENT);
+    draw_ui_text("STARTER SELECTION", 34.0, 60.0, FONT_SMALL, dark::ACCENT);
 }
 
 fn draw_starter_card(rect: Rect, option: &StarterOption, assets: &AssetManager) -> bool {
@@ -148,21 +149,21 @@ fn draw_starter_card(rect: Rect, option: &StarterOption, assets: &AssetManager) 
     );
 
     let text_y = portrait.y + portrait.h + 36.0;
-    draw_text(
+    draw_ui_text(
         option.name,
         rect.x + 18.0,
         text_y,
         FONT_LARGE,
         dark::TEXT_PRIMARY,
     );
-    draw_text(
+    draw_ui_text(
         option.element,
         rect.x + 18.0,
         text_y + 28.0,
         FONT_MEDIUM,
         option.accent,
     );
-    draw_text(
+    draw_ui_text(
         option.specialty,
         rect.x + 18.0,
         text_y + 56.0,

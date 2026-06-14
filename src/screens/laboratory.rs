@@ -8,6 +8,7 @@ use crate::ui::colors::{dark, trait_color};
 use crate::ui::shell::*;
 use crate::ui::typography::*;
 use macroquad::prelude::*;
+use macroquad_toolkit::ui::draw_ui_text;
 
 pub fn draw_laboratory(state: &GameState, assets: &AssetManager) -> Option<UiAction> {
     let frame = draw_app_shell(state, AppSection::Laboratory);
@@ -63,7 +64,7 @@ fn draw_active_specimen(state: &GameState, assets: &AssetManager, rect: Rect) ->
 
     let info_x = portrait.x + portrait.w + 26.0;
     let info_w = rect.x + rect.w - info_x - 22.0;
-    draw_text(
+    draw_ui_text(
         &ellipsize(&kaiju.name, info_w - 90.0, FONT_LARGE),
         info_x,
         rect.y + 70.0,
@@ -90,7 +91,7 @@ fn draw_active_specimen(state: &GameState, assets: &AssetManager, rect: Rect) ->
         dark::WARNING,
     );
 
-    draw_text(
+    draw_ui_text(
         "KEY READOUTS",
         info_x,
         rect.y + 142.0,
@@ -215,7 +216,7 @@ fn draw_facility_status(state: &GameState, rect: Rect) {
     );
 
     let y = rect.y + 244.0;
-    draw_text(
+    draw_ui_text(
         "CURRENT ACTIVITY",
         rect.x + 16.0,
         y,
@@ -251,14 +252,14 @@ fn draw_facility_status(state: &GameState, rect: Rect) {
 fn draw_bloodline_summary(state: &GameState, rect: Rect) {
     draw_panel_with_accent(rect, "BLOODLINE SNAPSHOT", dark::WARNING);
     let bred = state.player.stats.total_kaiju_bred;
-    draw_text(
+    draw_ui_text(
         &format!("{} hatches recorded", bred),
         rect.x + 16.0,
         rect.y + 58.0,
         FONT_MEDIUM,
         dark::TEXT_PRIMARY,
     );
-    draw_text(
+    draw_ui_text(
         "Activity archived.",
         rect.x + 16.0,
         rect.y + 86.0,
@@ -271,14 +272,14 @@ fn draw_bloodline_summary(state: &GameState, rect: Rect) {
 
     let mut y = rect.y + 140.0;
     for (index, kaiju) in ranked.iter().take(3).enumerate() {
-        draw_text(
+        draw_ui_text(
             &format!("#{}", index + 1),
             rect.x + 16.0,
             y,
             FONT_TINY,
             dark::WARNING,
         );
-        draw_text(
+        draw_ui_text(
             &ellipsize(&kaiju.name, rect.w - 112.0, FONT_SMALL),
             rect.x + 52.0,
             y,
@@ -311,14 +312,14 @@ fn draw_next_directive(state: &GameState, rect: Rect) {
         ("Specialize the bloodline", "Train or fight.")
     };
 
-    draw_text(
+    draw_ui_text(
         directive.0,
         rect.x + 16.0,
         rect.y + 62.0,
         FONT_MEDIUM,
         dark::TEXT_PRIMARY,
     );
-    draw_text(
+    draw_ui_text(
         directive.1,
         rect.x + 16.0,
         rect.y + 96.0,
@@ -335,7 +336,7 @@ fn draw_next_directive(state: &GameState, rect: Rect) {
         0.32
     };
     draw_progress_bar(bar, progress, dark::ACCENT);
-    draw_text(
+    draw_ui_text(
         "LEGACY LOOP",
         rect.x + 16.0,
         rect.y + rect.h - 18.0,
@@ -345,7 +346,7 @@ fn draw_next_directive(state: &GameState, rect: Rect) {
 }
 
 fn draw_activity_row(x: f32, y: f32, w: f32, label: &str, percent: f32, color: Color) {
-    draw_text(label, x, y, FONT_SMALL, dark::TEXT_SECONDARY);
+    draw_ui_text(label, x, y, FONT_SMALL, dark::TEXT_SECONDARY);
     draw_progress_bar(
         Rect::new(x + 126.0, y - 9.0, w - 126.0, 7.0),
         percent,

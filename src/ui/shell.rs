@@ -8,6 +8,7 @@ use crate::ui::actions::UiAction;
 use crate::ui::assets::AssetManager;
 use crate::ui::colors::dark;
 use crate::ui::typography::*;
+use macroquad_toolkit::ui::draw_ui_text;
 
 pub const TOP_BAR_H: f32 = 78.0;
 pub const SIDE_BAR_W: f32 = 176.0;
@@ -131,7 +132,7 @@ pub fn draw_panel_with_accent(rect: Rect, title: &str, accent: Color) {
     draw_corner_brackets(rect, Color::new(accent.r, accent.g, accent.b, 0.34));
 
     if !title.is_empty() {
-        draw_text(
+        draw_ui_text(
             title,
             rect.x + 16.0,
             rect.y + 28.0,
@@ -197,7 +198,7 @@ pub fn draw_button(rect: Rect, label: &str, accent: Color, enabled: bool) -> boo
 }
 
 pub fn draw_stat_meter(x: f32, y: f32, w: f32, label: &str, value: i32, max: i32, color: Color) {
-    draw_text(label, x, y, FONT_TINY, dark::TEXT_SECONDARY);
+    draw_ui_text(label, x, y, FONT_TINY, dark::TEXT_SECONDARY);
     let bar_x = x + 44.0;
     let bar_y = y - 8.0;
     let bar_w = (w - 104.0).max(40.0);
@@ -318,7 +319,7 @@ pub fn draw_notification_rows(state: &GameState, rect: Rect) {
     }
 
     if state.notifications.is_empty() {
-        draw_text(
+        draw_ui_text(
             "No new alerts.",
             rect.x + 18.0,
             rect.y + 58.0,
@@ -338,7 +339,7 @@ pub fn draw_table_header(x: f32, y: f32, w: f32, labels: &[(&str, f32)]) {
         Color::new(dark::ACCENT.r, dark::ACCENT.g, dark::ACCENT.b, 0.35),
     );
     for (label, offset) in labels {
-        draw_text(
+        draw_ui_text(
             label,
             x + *offset,
             y + 20.0,
@@ -388,14 +389,14 @@ pub fn draw_metric_tile(rect: Rect, label: &str, value: &str, accent: Color) {
         rect.h,
         Color::new(accent.r, accent.g, accent.b, 0.75),
     );
-    draw_text(
+    draw_ui_text(
         label,
         rect.x + 12.0,
         rect.y + 22.0,
         FONT_TINY,
         dark::TEXT_MUTED,
     );
-    draw_text(
+    draw_ui_text(
         value,
         rect.x + 12.0,
         rect.y + 50.0,
@@ -421,7 +422,7 @@ pub fn draw_trait_chip(x: f32, y: f32, label: &str, color: Color) -> f32 {
         1.0,
         Color::new(color.r, color.g, color.b, 0.55),
     );
-    draw_text(
+    draw_ui_text(
         &ellipsize(label, width - 14.0, FONT_TINY),
         x + 8.0,
         y + 16.0,
@@ -464,8 +465,8 @@ fn draw_top_bar(state: &GameState, active: AppSection, sw: f32) {
         1.0,
         Color::new(dark::ACCENT.r, dark::ACCENT.g, dark::ACCENT.b, 0.25),
     );
-    draw_text("KAIJU SIM", 20.0, 28.0, FONT_MEDIUM, dark::TEXT_PRIMARY);
-    draw_text(
+    draw_ui_text("KAIJU SIM", 20.0, 28.0, FONT_MEDIUM, dark::TEXT_PRIMARY);
+    draw_ui_text(
         "CLASSIFIED EVOLUTION FACILITY",
         20.0,
         54.0,
@@ -473,14 +474,14 @@ fn draw_top_bar(state: &GameState, active: AppSection, sw: f32) {
         dark::TEXT_SECONDARY,
     );
 
-    draw_text(
+    draw_ui_text(
         section_label(active),
         SIDE_BAR_W + PANEL_GAP,
         34.0,
         FONT_MEDIUM,
         dark::ACCENT,
     );
-    draw_text(
+    draw_ui_text(
         screen_directive(active),
         SIDE_BAR_W + PANEL_GAP,
         58.0,
@@ -490,8 +491,8 @@ fn draw_top_bar(state: &GameState, active: AppSection, sw: f32) {
 
     if let Some(subject) = selected_subject(state) {
         let panel_x = sw - 500.0;
-        draw_text("ACTIVE SUBJECT", panel_x, 27.0, FONT_TINY, dark::TEXT_MUTED);
-        draw_text(
+        draw_ui_text("ACTIVE SUBJECT", panel_x, 27.0, FONT_TINY, dark::TEXT_MUTED);
+        draw_ui_text(
             &ellipsize(&subject.name, 190.0, FONT_SMALL),
             panel_x,
             52.0,
@@ -573,8 +574,8 @@ fn draw_sidebar(active: AppSection, sh: f32) -> Option<UiAction> {
         y += 46.0;
     }
 
-    draw_text("SECURE", 22.0, sh - 58.0, FONT_TINY, dark::TEXT_MUTED);
-    draw_text(
+    draw_ui_text("SECURE", 22.0, sh - 58.0, FONT_TINY, dark::TEXT_MUTED);
+    draw_ui_text(
         "OFFLINE SAVE",
         22.0,
         sh - 34.0,
@@ -611,7 +612,7 @@ fn draw_nav_item(x: f32, y: f32, label: &str, selected: bool) -> bool {
     } else {
         dark::TEXT_SECONDARY
     };
-    draw_text(
+    draw_ui_text(
         nav_icon(label),
         x + 20.0,
         y + 25.0,
@@ -622,7 +623,7 @@ fn draw_nav_item(x: f32, y: f32, label: &str, selected: bool) -> bool {
             dark::TEXT_MUTED
         },
     );
-    draw_text(label, x + 58.0, y + 25.0, FONT_SMALL, color);
+    draw_ui_text(label, x + 58.0, y + 25.0, FONT_SMALL, color);
 
     hovered && is_mouse_button_pressed(MouseButton::Left)
 }
