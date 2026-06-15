@@ -58,3 +58,10 @@ cargo check --target wasm32-unknown-unknown
 - `CODE_STANDARDS.md`
 - `MACROQUAD_TOOLKIT.md`
 - `AGENTS.md`
+# Practical Future Improvements
+
+- Add deterministic tests for training, breeding inheritance, battle multipliers, tournament rewards, and market purchases.
+- Split roster, market, tournament, and laboratory mutation into service-like modules that screens call through explicit commands.
+- Move kaiju species, stat curves, items, and reward tuning into validated data fixtures.
+- Add replay fixtures for battles and tournaments to reproduce balance issues from seed and roster data.
+
