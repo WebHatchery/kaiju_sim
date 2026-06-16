@@ -332,19 +332,10 @@ pub struct ResearchProject {
 }
 
 /// Game time tracking
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, Default)]
 pub struct GameTime {
     pub total_ticks: u64,
     pub paused: bool,
-}
-
-impl Default for GameTime {
-    fn default() -> Self {
-        Self {
-            total_ticks: 0,
-            paused: false,
-        }
-    }
 }
 
 /// UI notification

@@ -41,7 +41,7 @@ pub async fn initialize_session(assets: &mut AssetManager) -> GameState {
                     response.gold,
                     response.roster.len()
                 );
-                state.player.gold = response.gold as i64;
+                state.player.gold = response.gold;
                 state.player.player_id = response.user_id.to_string();
                 state.roster = response.roster;
 
@@ -75,7 +75,7 @@ pub async fn force_resync(state: &mut GameState, assets: &mut AssetManager) {
         match server_bridge::login_to_server(Some(user_id), None) {
             Ok(response) => {
                 println!("[SESSION] Re-sync Successful. Gold: {}", response.gold);
-                state.player.gold = response.gold as i64;
+                state.player.gold = response.gold;
                 state.roster = response.roster;
 
                 // Reload assets

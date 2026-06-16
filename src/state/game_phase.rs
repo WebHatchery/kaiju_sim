@@ -4,9 +4,10 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 /// Game phases - explicit state machine for screens
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Default)]
 pub enum GamePhase {
     /// Initial loading screen
+    #[default]
     Loading,
     /// Main menu
     MainMenu,
@@ -36,12 +37,6 @@ pub enum GamePhase {
     Marketplace,
     /// Local settings and system status
     Settings,
-}
-
-impl Default for GamePhase {
-    fn default() -> Self {
-        Self::Loading
-    }
 }
 
 impl GamePhase {

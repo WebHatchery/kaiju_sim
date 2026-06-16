@@ -8,16 +8,10 @@ use serde::{Deserialize, Serialize};
 use crate::data::genome::Genome;
 
 /// Research facility levels and capabilities
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct ResearchFacility {
     /// Current facility level (0-5)
     pub level: u8,
-}
-
-impl Default for ResearchFacility {
-    fn default() -> Self {
-        Self { level: 0 }
-    }
 }
 
 impl ResearchFacility {

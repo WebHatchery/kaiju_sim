@@ -10,18 +10,10 @@ use crate::ui::typography::*;
 use macroquad::prelude::*;
 use macroquad_toolkit::ui::draw_ui_text;
 
+#[derive(Default)]
 pub struct BreedingState {
     pub parent_a: Option<uuid::Uuid>,
     pub parent_b: Option<uuid::Uuid>,
-}
-
-impl Default for BreedingState {
-    fn default() -> Self {
-        Self {
-            parent_a: None,
-            parent_b: None,
-        }
-    }
 }
 
 pub fn draw_breeding_screen(

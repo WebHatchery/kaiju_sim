@@ -191,9 +191,9 @@ impl GameData {
         balance_json: &str,
         tournaments_json: &str,
     ) -> Result<Self, Box<dyn std::error::Error>> {
-        let traits: TraitDatabase = serde_json::from_str(&traits_json)?;
-        let balance: BalanceConfig = serde_json::from_str(&balance_json)?;
-        let tournaments: TournamentDatabase = serde_json::from_str(&tournaments_json)?;
+        let traits: TraitDatabase = serde_json::from_str(traits_json)?;
+        let balance: BalanceConfig = serde_json::from_str(balance_json)?;
+        let tournaments: TournamentDatabase = serde_json::from_str(tournaments_json)?;
 
         // Validate data
         Self::validate_traits(&traits)?;

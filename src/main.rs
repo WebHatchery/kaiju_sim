@@ -1,4 +1,4 @@
-#![allow(unused)]
+#![allow(unused, clippy::too_many_arguments, clippy::wrong_self_convention)]
 
 use macroquad::prelude::*;
 use macroquad_toolkit::ui::draw_ui_text;

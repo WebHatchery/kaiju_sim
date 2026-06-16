@@ -178,7 +178,7 @@ fn wait_for_image(
 #[cfg(not(target_arch = "wasm32"))]
 fn first_image_output(history: &Value, prompt_id: &str) -> Option<ImageOutput> {
     let outputs = history.get(prompt_id)?.get("outputs")?.as_object()?;
-    for output in outputs.values() {
+    if let Some(output) = outputs.values().next() {
         let image = output.get("images")?.as_array()?.first()?;
         let filename = image.get("filename")?.as_str()?.to_string();
         let subfolder = image

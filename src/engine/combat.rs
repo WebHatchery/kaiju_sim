@@ -408,7 +408,7 @@ mod tests {
         );
 
         // With ±5% variance, should be 33-37
-        assert!(damage >= 33 && damage <= 37, "Damage was {}", damage);
+        assert!((33..=37).contains(&damage), "Damage was {}", damage);
     }
 
     #[test]
@@ -457,7 +457,7 @@ mod tests {
         );
 
         // Expected: (50 - 15 + 8) * 1.0 * ~1.0 = ~43
-        assert!(damage >= 40 && damage <= 46, "Damage was {}", damage);
+        assert!((40..=46).contains(&damage), "Damage was {}", damage);
     }
 
     #[test]
@@ -526,7 +526,7 @@ mod tests {
         }
 
         // All within bounds
-        assert!(results.iter().all(|&v| v >= 0.95 && v <= 1.05));
+        assert!(results.iter().all(|&v| (0.95..=1.05).contains(&v)));
 
         // Mean should be close to 1.0
         let mean: f32 = results.iter().sum::<f32>() / results.len() as f32;

@@ -7,20 +7,11 @@ use macroquad::prelude::*;
 use macroquad_toolkit::ui::draw_ui_text;
 
 /// State for marketplace screen.
+#[derive(Default)]
 pub struct MarketplaceState {
     pub items: Vec<MarketplaceItem>,
     pub loaded: bool,
     pub error: Option<String>,
-}
-
-impl Default for MarketplaceState {
-    fn default() -> Self {
-        Self {
-            items: Vec::new(),
-            loaded: false,
-            error: None,
-        }
-    }
 }
 
 impl MarketplaceState {
@@ -183,7 +174,11 @@ fn draw_market_card(
         portrait.h,
         Color::new(0.02, 0.04, 0.06, 1.0),
     );
-    let filename = item.image_url.split('/').last().unwrap_or("unknown.png");
+    let filename = item
+        .image_url
+        .split('/')
+        .next_back()
+        .unwrap_or("unknown.png");
     if let Some(tex) = assets.get_texture(filename) {
         draw_texture_ex(
             tex,
