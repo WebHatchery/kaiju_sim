@@ -1,6 +1,7 @@
 #![allow(unused, clippy::too_many_arguments, clippy::wrong_self_convention)]
 
 use macroquad::prelude::*;
+use macroquad_toolkit::capture;
 use macroquad_toolkit::ui::draw_ui_text;
 
 mod data;
@@ -24,13 +25,21 @@ use ui::shell::{draw_app_shell, draw_button, draw_panel, AppSection};
 use ui::{FONT_MEDIUM, FONT_SMALL};
 
 fn window_conf() -> Conf {
-    Conf {
-        window_title: "Kaiju Breeding Simulator".to_owned(),
-        window_width: 1280,
-        window_height: 720,
-        window_resizable: true,
-        high_dpi: true,
-        ..Default::default()
+    // Reads KAIJU_SIM_WINDOW_WIDTH/HEIGHT overrides and disables high_dpi
+    // while capturing so screenshots are pixel-aligned with the logical
+    // layout (see docs/screenshot_capture_harness_guide.md).
+    capture::capture_window_conf("KAIJU_SIM", "Kaiju Breeding Simulator", 1280, 720)
+}
+
+/// Seed a specific scene for the screenshot harness. Only covers phases whose
+/// draw call is synchronous inside `main`'s loop; `StarterSelection` awaits
+/// asynchronously every frame and can't run inside the harness's sync frame
+/// closure, so it isn't offered as a capturable scene here.
+fn begin_capture_scene(scene: &str, phase_stack: &mut PhaseStack) {
+    match scene {
+        "laboratory" => phase_stack.apply(PhaseTransition::Reset(GamePhase::Laboratory)),
+        "roster" => phase_stack.apply(PhaseTransition::Reset(GamePhase::Roster)),
+        _ => phase_stack.apply(PhaseTransition::Reset(GamePhase::MainMenu)),
     }
 }
 
@@ -57,6 +66,65 @@ async fn main() {
     let mut phase_stack = PhaseStack::new(GamePhase::MainMenu);
     let mut breeding_state = BreedingState::default();
     let mut auto_save = AutoSaveManager::new();
+
+    // Screenshot harness: when KAIJU_SIM_CAPTURE_PATH is set, seed a scene,
+    // simulate deterministic frames, write a PNG, and exit. UI actions require
+    // async handling (`handle_ui_action` is async) and only fire on real
+    // mouse/keyboard input, which headless capture never produces, so they're
+    // intentionally not dispatched inside the capture frame closure.
+    if let Some(config) = capture::CaptureConfig::from_env("KAIJU_SIM") {
+        begin_capture_scene(&config.scene, &mut phase_stack);
+        capture::run_capture(&config, |_dt| {
+            state.tick();
+            auto_save.update(&state);
+
+            let _action = match phase_stack.current() {
+                GamePhase::Loading => None,
+                GamePhase::MainMenu => draw_main_menu(&assets),
+                GamePhase::Laboratory => draw_laboratory(&state, &assets),
+                GamePhase::Roster => draw_roster_view(&state, &assets),
+                GamePhase::Training => {
+                    draw_training_screen(&state, &assets, game_data.balance.mvp.training.cost)
+                }
+                GamePhase::Breeding => {
+                    let locked_kaiju_ids = std::collections::HashSet::new();
+                    draw_breeding_screen(&state, &mut breeding_state, &locked_kaiju_ids, &assets)
+                }
+                GamePhase::TournamentLobby => {
+                    draw_arena_screen(&state, &assets, game_data.balance.mvp.battle.entry_fee)
+                }
+                GamePhase::Leaderboard => draw_leaderboard(&state, &assets),
+                GamePhase::Settings => draw_settings_screen(&state),
+                GamePhase::Battle | GamePhase::Results => draw_battle_results(&state, &assets),
+                GamePhase::KaijuDetail(id) => {
+                    let action = draw_kaiju_detail(&state, *id, &assets);
+                    if let Some(UiAction::Back) = action {
+                        Some(UiAction::Back)
+                    } else {
+                        action
+                    }
+                }
+                // StarterSelection's draw call awaits every frame; skipped
+                // here since this closure runs synchronously (see comment on
+                // begin_capture_scene above).
+                GamePhase::StarterSelection => None,
+                GamePhase::Marketplace => draw_placeholder(
+                    "Exchange access is locked",
+                    &state,
+                    AppSection::Marketplace,
+                    UiAction::GoToLaboratory,
+                ),
+                _ => draw_placeholder(
+                    &format!("Unknown Phase: {:?}", phase_stack.current()),
+                    &state,
+                    AppSection::Laboratory,
+                    UiAction::Back,
+                ),
+            };
+        })
+        .await;
+        return;
+    }
 
     loop {
         state.tick();
