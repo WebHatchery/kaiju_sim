@@ -19,7 +19,7 @@ pub use battle_animations::{BattleAnimator, DamageNumberManager};
 pub use bracket_generator::{BracketGenerator, SingleEliminationGenerator, SwissGenerator};
 pub use breeding::{breed_kaiju, BreedingConfig, BreedingError, BreedingResult};
 pub use combat::{execute_battle, BattleSimulator, CombatConfig};
-pub use particles::{EmitterConfig, ParticleSystem};
+pub use particles::{BurstConfig, ParticleSystem};
 pub use research::{DecodingLayer, ResearchFacility, TraitKnowledge};
 pub use synergies::{IncompatibilityMatrix, SynergyDatabase, SynergyDefinition};
 pub use tournament_engine::TournamentEngine;

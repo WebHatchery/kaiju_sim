@@ -3,6 +3,7 @@
 use crate::ui::colors::{dark, stat_color, StatType};
 use crate::ui::typography::*;
 use macroquad::prelude::*;
+use macroquad_toolkit::math::lerp;
 use macroquad_toolkit::ui::draw_ui_text;
 
 /// Stat bar with animation state
@@ -39,10 +40,6 @@ impl StatBarState {
     pub fn display_value(&self) -> f32 {
         self.current
     }
-}
-
-fn lerp(a: f32, b: f32, t: f32) -> f32 {
-    a + (b - a) * t
 }
 
 /// Draw a stat bar with label and value

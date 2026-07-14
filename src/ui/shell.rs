@@ -8,6 +8,7 @@ use crate::ui::actions::UiAction;
 use crate::ui::assets::AssetManager;
 use crate::ui::colors::dark;
 use crate::ui::typography::*;
+use macroquad_toolkit::colors::with_alpha;
 use macroquad_toolkit::ui::draw_ui_text;
 
 pub const TOP_BAR_H: f32 = 78.0;
@@ -112,24 +113,18 @@ pub fn draw_panel_with_accent(rect: Rect, title: &str, accent: Color) {
         rect.y,
         rect.w,
         rect.h,
-        Color::new(dark::SURFACE.r, dark::SURFACE.g, dark::SURFACE.b, 0.92),
+        with_alpha(dark::SURFACE, 0.92),
     );
-    draw_rectangle(
-        rect.x,
-        rect.y,
-        rect.w,
-        2.0,
-        Color::new(accent.r, accent.g, accent.b, 0.55),
-    );
+    draw_rectangle(rect.x, rect.y, rect.w, 2.0, with_alpha(accent, 0.55));
     draw_rectangle_lines(
         rect.x,
         rect.y,
         rect.w,
         rect.h,
         1.0,
-        Color::new(dark::BORDER.r, dark::BORDER.g, dark::BORDER.b, 0.45),
+        with_alpha(dark::BORDER, 0.45),
     );
-    draw_corner_brackets(rect, Color::new(accent.r, accent.g, accent.b, 0.34));
+    draw_corner_brackets(rect, with_alpha(accent, 0.34));
 
     if !title.is_empty() {
         draw_ui_text(
@@ -148,7 +143,7 @@ pub fn draw_button(rect: Rect, label: &str, accent: Color, enabled: bool) -> boo
     let bg = if !enabled {
         Color::new(0.05, 0.065, 0.075, 0.68)
     } else if hovered {
-        Color::new(accent.r, accent.g, accent.b, 0.34)
+        with_alpha(accent, 0.34)
     } else {
         Color::new(0.055, 0.090, 0.115, 0.92)
     };
@@ -160,12 +155,7 @@ pub fn draw_button(rect: Rect, label: &str, accent: Color, enabled: bool) -> boo
         rect.w,
         1.0,
         if enabled {
-            Color::new(
-                accent.r,
-                accent.g,
-                accent.b,
-                if hovered { 0.90 } else { 0.40 },
-            )
+            with_alpha(accent, if hovered { 0.90 } else { 0.40 })
         } else {
             dark::BORDER_SOFT
         },
@@ -179,7 +169,7 @@ pub fn draw_button(rect: Rect, label: &str, accent: Color, enabled: bool) -> boo
         if hovered {
             accent
         } else {
-            Color::new(dark::BORDER.r, dark::BORDER.g, dark::BORDER.b, 0.55)
+            with_alpha(dark::BORDER, 0.55)
         },
     );
     draw_text_centered(
@@ -225,14 +215,7 @@ pub fn draw_progress_bar(rect: Rect, percent: f32, color: Color) {
         rect.h,
         color,
     );
-    draw_rectangle_lines(
-        rect.x,
-        rect.y,
-        rect.w,
-        rect.h,
-        1.0,
-        Color::new(color.r, color.g, color.b, 0.24),
-    );
+    draw_rectangle_lines(rect.x, rect.y, rect.w, rect.h, 1.0, with_alpha(color, 0.24));
 }
 
 pub fn draw_portrait(rect: Rect, kaiju: &Kaiju, assets: &AssetManager) {
@@ -283,10 +266,7 @@ pub fn draw_portrait(rect: Rect, kaiju: &Kaiju, assets: &AssetManager) {
         y += 8.0;
     }
     draw_rectangle_lines(rect.x, rect.y, rect.w, rect.h, 1.0, dark::BORDER_SOFT);
-    draw_corner_brackets(
-        rect,
-        Color::new(dark::ACCENT.r, dark::ACCENT.g, dark::ACCENT.b, 0.42),
-    );
+    draw_corner_brackets(rect, with_alpha(dark::ACCENT, 0.42));
 }
 
 pub fn draw_notification_rows(state: &GameState, rect: Rect) {
@@ -298,12 +278,7 @@ pub fn draw_notification_rows(state: &GameState, rect: Rect) {
         }
         let color = notification_color(&notification.notification_type);
         let pulse = ((get_time() as f32 * 2.2 + y * 0.02).sin() + 1.0) * 0.18;
-        draw_circle(
-            rect.x + 18.0,
-            y - 5.0,
-            5.0 + pulse,
-            Color::new(color.r, color.g, color.b, 0.35),
-        );
+        draw_circle(rect.x + 18.0, y - 5.0, 5.0 + pulse, with_alpha(color, 0.35));
         draw_circle(rect.x + 18.0, y - 5.0, 2.5, color);
         draw_text_wrapped(
             &notification.message,
@@ -331,13 +306,7 @@ pub fn draw_notification_rows(state: &GameState, rect: Rect) {
 
 pub fn draw_table_header(x: f32, y: f32, w: f32, labels: &[(&str, f32)]) {
     draw_rectangle(x, y, w, 30.0, Color::new(0.035, 0.075, 0.098, 0.95));
-    draw_rectangle(
-        x,
-        y,
-        w,
-        1.0,
-        Color::new(dark::ACCENT.r, dark::ACCENT.g, dark::ACCENT.b, 0.35),
-    );
+    draw_rectangle(x, y, w, 1.0, with_alpha(dark::ACCENT, 0.35));
     for (label, offset) in labels {
         draw_ui_text(
             label,
@@ -350,21 +319,8 @@ pub fn draw_table_header(x: f32, y: f32, w: f32, labels: &[(&str, f32)]) {
 }
 
 pub fn draw_status_pill(rect: Rect, label: &str, color: Color) {
-    draw_rectangle(
-        rect.x,
-        rect.y,
-        rect.w,
-        rect.h,
-        Color::new(color.r, color.g, color.b, 0.13),
-    );
-    draw_rectangle_lines(
-        rect.x,
-        rect.y,
-        rect.w,
-        rect.h,
-        1.0,
-        Color::new(color.r, color.g, color.b, 0.56),
-    );
+    draw_rectangle(rect.x, rect.y, rect.w, rect.h, with_alpha(color, 0.13));
+    draw_rectangle_lines(rect.x, rect.y, rect.w, rect.h, 1.0, with_alpha(color, 0.56));
     draw_text_centered(
         label,
         rect.x + rect.w / 2.0,
@@ -382,13 +338,7 @@ pub fn draw_metric_tile(rect: Rect, label: &str, value: &str, accent: Color) {
         rect.h,
         Color::new(0.035, 0.065, 0.082, 0.88),
     );
-    draw_rectangle(
-        rect.x,
-        rect.y,
-        2.0,
-        rect.h,
-        Color::new(accent.r, accent.g, accent.b, 0.75),
-    );
+    draw_rectangle(rect.x, rect.y, 2.0, rect.h, with_alpha(accent, 0.75));
     draw_ui_text(
         label,
         rect.x + 12.0,
@@ -407,21 +357,8 @@ pub fn draw_metric_tile(rect: Rect, label: &str, value: &str, accent: Color) {
 
 pub fn draw_trait_chip(x: f32, y: f32, label: &str, color: Color) -> f32 {
     let width = (measure_text_size(label, FONT_TINY).0 + 20.0).clamp(72.0, 170.0);
-    draw_rectangle(
-        x,
-        y,
-        width,
-        24.0,
-        Color::new(color.r, color.g, color.b, 0.12),
-    );
-    draw_rectangle_lines(
-        x,
-        y,
-        width,
-        24.0,
-        1.0,
-        Color::new(color.r, color.g, color.b, 0.55),
-    );
+    draw_rectangle(x, y, width, 24.0, with_alpha(color, 0.12));
+    draw_rectangle_lines(x, y, width, 24.0, 1.0, with_alpha(color, 0.55));
     draw_ui_text(
         &ellipsize(label, width - 14.0, FONT_TINY),
         x + 8.0,
@@ -463,7 +400,7 @@ fn draw_top_bar(state: &GameState, active: AppSection, sw: f32) {
         sw,
         TOP_BAR_H,
         1.0,
-        Color::new(dark::ACCENT.r, dark::ACCENT.g, dark::ACCENT.b, 0.25),
+        with_alpha(dark::ACCENT, 0.25),
     );
     draw_ui_text("KAIJU SIM", 20.0, 28.0, FONT_MEDIUM, dark::TEXT_PRIMARY);
     draw_ui_text(
@@ -544,7 +481,7 @@ fn draw_sidebar(active: AppSection, sh: f32) -> Option<UiAction> {
         SIDE_BAR_W,
         sh,
         1.0,
-        Color::new(dark::ACCENT.r, dark::ACCENT.g, dark::ACCENT.b, 0.20),
+        with_alpha(dark::ACCENT, 0.20),
     );
 
     let nav = [
@@ -599,7 +536,7 @@ fn draw_nav_item(x: f32, y: f32, label: &str, selected: bool) -> bool {
             x + rect.w - 18.0,
             y + rect.h - 1.0,
             1.0,
-            Color::new(dark::ACCENT.r, dark::ACCENT.g, dark::ACCENT.b, 0.28),
+            with_alpha(dark::ACCENT, 0.28),
         );
     } else if hovered {
         draw_rectangle(x, y, rect.w, rect.h, Color::new(0.05, 0.09, 0.12, 0.88));
