@@ -8,6 +8,7 @@ use crate::ui::colors::{dark, trait_color};
 use crate::ui::shell::*;
 use crate::ui::typography::*;
 use macroquad::prelude::*;
+use macroquad_toolkit::colors::with_alpha;
 use macroquad_toolkit::ui::draw_ui_text;
 
 #[derive(Default)]
@@ -106,20 +107,14 @@ fn draw_parent_slot(
         rect.h,
         Color::new(0.030, 0.055, 0.074, 0.94),
     );
-    draw_rectangle(
-        rect.x,
-        rect.y,
-        rect.w,
-        2.0,
-        Color::new(accent.r, accent.g, accent.b, 0.70),
-    );
+    draw_rectangle(rect.x, rect.y, rect.w, 2.0, with_alpha(accent, 0.70));
     draw_rectangle_lines(
         rect.x,
         rect.y,
         rect.w,
         rect.h,
         1.0,
-        Color::new(accent.r, accent.g, accent.b, 0.30),
+        with_alpha(accent, 0.30),
     );
     draw_ui_text(
         label,

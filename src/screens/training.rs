@@ -8,6 +8,7 @@ use crate::ui::colors::dark;
 use crate::ui::shell::*;
 use crate::ui::typography::*;
 use macroquad::prelude::*;
+use macroquad_toolkit::colors::with_alpha;
 use macroquad_toolkit::ui::draw_ui_text;
 
 pub fn draw_training_screen(
@@ -167,21 +168,8 @@ fn draw_program_card(
         rect.h,
         Color::new(0.035, 0.065, 0.082, 0.92),
     );
-    draw_rectangle(
-        rect.x,
-        rect.y,
-        rect.w,
-        2.0,
-        Color::new(color.r, color.g, color.b, 0.62),
-    );
-    draw_rectangle_lines(
-        rect.x,
-        rect.y,
-        rect.w,
-        rect.h,
-        1.0,
-        Color::new(color.r, color.g, color.b, 0.28),
-    );
+    draw_rectangle(rect.x, rect.y, rect.w, 2.0, with_alpha(color, 0.62));
+    draw_rectangle_lines(rect.x, rect.y, rect.w, rect.h, 1.0, with_alpha(color, 0.28));
 
     draw_ui_text(
         focus.label().to_uppercase().as_str(),

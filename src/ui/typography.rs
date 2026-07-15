@@ -3,6 +3,9 @@
 use macroquad::prelude::*;
 use macroquad_toolkit::ui::draw_ui_text;
 
+/// Truncate text with a `...` suffix so it fits within `max_width`.
+pub use macroquad_toolkit::ui::truncate_text_to_width as ellipsize;
+
 /// Font size constants
 pub const FONT_TINY: f32 = 12.0;
 pub const FONT_SMALL: f32 = 14.0;
@@ -70,58 +73,13 @@ pub fn draw_text_wrapped(
     color: Color,
     max_lines: usize,
 ) -> f32 {
-    if max_lines == 0 {
-        return y;
-    }
-
-    let mut line = String::new();
-    let mut lines_drawn = 0;
-
-    for word in text.split_whitespace() {
-        let candidate = if line.is_empty() {
-            word.to_string()
-        } else {
-            format!("{} {}", line, word)
-        };
-
-        if measure_text_size(&candidate, font_size).0 <= max_width {
-            line = candidate;
-            continue;
-        }
-
-        if !line.is_empty() {
-            draw_ui_text(&line, x, y, font_size, color);
-            lines_drawn += 1;
-            y += line_height;
-            if lines_drawn >= max_lines {
-                return y;
-            }
-        }
-
-        line = word.to_string();
-    }
-
-    if !line.is_empty() && lines_drawn < max_lines {
-        draw_ui_text(&line, x, y, font_size, color);
+    for line in macroquad_toolkit::ui::wrap_text(text, max_width, font_size)
+        .iter()
+        .filter(|line| !line.is_empty())
+        .take(max_lines)
+    {
+        draw_ui_text(line, x, y, font_size, color);
         y += line_height;
     }
-
     y
-}
-
-pub fn ellipsize(text: &str, max_width: f32, font_size: f32) -> String {
-    if measure_text_size(text, font_size).0 <= max_width {
-        return text.to_string();
-    }
-
-    let suffix = "...";
-    let mut output = String::new();
-    for ch in text.chars() {
-        let candidate = format!("{}{}{}", output, ch, suffix);
-        if measure_text_size(&candidate, font_size).0 > max_width {
-            break;
-        }
-        output.push(ch);
-    }
-    format!("{}{}", output, suffix)
 }

@@ -5,6 +5,7 @@ use crate::ui::colors::dark;
 use crate::ui::shell::*;
 use crate::ui::typography::*;
 use macroquad::prelude::*;
+use macroquad_toolkit::colors::with_alpha;
 use macroquad_toolkit::ui::draw_ui_text;
 
 pub fn draw_leaderboard(state: &GameState, assets: &AssetManager) -> Option<UiAction> {
@@ -150,13 +151,7 @@ fn draw_record_row(
             Color::new(0.030, 0.055, 0.074, 0.90)
         },
     );
-    draw_rectangle(
-        rect.x,
-        rect.y,
-        2.0,
-        rect.h,
-        Color::new(rank_color.r, rank_color.g, rank_color.b, 0.70),
-    );
+    draw_rectangle(rect.x, rect.y, 2.0, rect.h, with_alpha(rank_color, 0.70));
     draw_ui_text(
         &rank.to_string(),
         rect.x + 18.0,

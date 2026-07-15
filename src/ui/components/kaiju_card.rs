@@ -9,6 +9,7 @@ use crate::ui::shell::{
 use crate::ui::spacing::*;
 use crate::ui::typography::*;
 use macroquad::prelude::*;
+use macroquad_toolkit::colors::with_alpha;
 use macroquad_toolkit::ui::draw_ui_text;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -60,13 +61,7 @@ pub fn draw_kaiju_card(
         CARD_HEIGHT,
         Color::new(0.030, 0.055, 0.074, 0.96),
     );
-    draw_rectangle(
-        x,
-        y,
-        CARD_WIDTH,
-        2.0,
-        Color::new(accent.r, accent.g, accent.b, 0.80),
-    );
+    draw_rectangle(x, y, CARD_WIDTH, 2.0, with_alpha(accent, 0.80));
     draw_rectangle_lines(
         x,
         y,

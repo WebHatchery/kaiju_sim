@@ -8,6 +8,7 @@ use crate::ui::colors::{dark, trait_color};
 use crate::ui::shell::*;
 use crate::ui::typography::*;
 use macroquad::prelude::*;
+use macroquad_toolkit::colors::with_alpha;
 use macroquad_toolkit::ui::draw_ui_text;
 use uuid::Uuid;
 
@@ -314,7 +315,7 @@ fn draw_history(rect: Rect, kaiju: &Kaiju) {
             rect.x + 24.0,
             y + 44.0,
             1.0,
-            Color::new(color.r, color.g, color.b, 0.22),
+            with_alpha(color, 0.22),
         );
         draw_ui_text(event.kind.label(), rect.x + 40.0, y, FONT_TINY, color);
         draw_ui_text(

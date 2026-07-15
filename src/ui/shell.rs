@@ -9,7 +9,9 @@ use crate::ui::assets::AssetManager;
 use crate::ui::colors::dark;
 use crate::ui::typography::*;
 use macroquad_toolkit::colors::with_alpha;
-use macroquad_toolkit::ui::draw_ui_text;
+use macroquad_toolkit::ui::{
+    draw_corner_marks_spec, draw_surface, draw_ui_text, CornerMarkSpec, SurfaceStyle,
+};
 
 pub const TOP_BAR_H: f32 = 78.0;
 pub const SIDE_BAR_W: f32 = 176.0;
@@ -101,29 +103,11 @@ pub fn draw_panel(rect: Rect, title: &str) {
 }
 
 pub fn draw_panel_with_accent(rect: Rect, title: &str, accent: Color) {
-    draw_rectangle(
-        rect.x + 5.0,
-        rect.y + 7.0,
-        rect.w,
-        rect.h,
-        Color::new(0.0, 0.0, 0.0, 0.24),
-    );
-    draw_rectangle(
-        rect.x,
-        rect.y,
-        rect.w,
-        rect.h,
-        with_alpha(dark::SURFACE, 0.92),
-    );
-    draw_rectangle(rect.x, rect.y, rect.w, 2.0, with_alpha(accent, 0.55));
-    draw_rectangle_lines(
-        rect.x,
-        rect.y,
-        rect.w,
-        rect.h,
-        1.0,
-        with_alpha(dark::BORDER, 0.45),
-    );
+    let surface = SurfaceStyle::new(with_alpha(dark::SURFACE, 0.92))
+        .with_shadow(vec2(5.0, 7.0), Color::new(0.0, 0.0, 0.0, 0.24))
+        .with_top_highlight(2.0, with_alpha(accent, 0.55))
+        .with_border(1.0, with_alpha(dark::BORDER, 0.45));
+    draw_surface(rect, &surface);
     draw_corner_brackets(rect, with_alpha(accent, 0.34));
 
     if !title.is_empty() {
@@ -148,30 +132,20 @@ pub fn draw_button(rect: Rect, label: &str, accent: Color, enabled: bool) -> boo
         Color::new(0.055, 0.090, 0.115, 0.92)
     };
 
-    draw_rectangle(rect.x, rect.y, rect.w, rect.h, bg);
-    draw_rectangle(
-        rect.x,
-        rect.y,
-        rect.w,
-        1.0,
-        if enabled {
-            with_alpha(accent, if hovered { 0.90 } else { 0.40 })
-        } else {
-            dark::BORDER_SOFT
-        },
-    );
-    draw_rectangle_lines(
-        rect.x,
-        rect.y,
-        rect.w,
-        rect.h,
-        1.0,
-        if hovered {
-            accent
-        } else {
-            with_alpha(dark::BORDER, 0.55)
-        },
-    );
+    let top_line = if enabled {
+        with_alpha(accent, if hovered { 0.90 } else { 0.40 })
+    } else {
+        dark::BORDER_SOFT
+    };
+    let border = if hovered {
+        accent
+    } else {
+        with_alpha(dark::BORDER, 0.55)
+    };
+    let surface = SurfaceStyle::new(bg)
+        .with_top_highlight(1.0, top_line)
+        .with_border(1.0, border);
+    draw_surface(rect, &surface);
     draw_text_centered(
         label,
         rect.x + rect.w / 2.0,
@@ -319,8 +293,9 @@ pub fn draw_table_header(x: f32, y: f32, w: f32, labels: &[(&str, f32)]) {
 }
 
 pub fn draw_status_pill(rect: Rect, label: &str, color: Color) {
-    draw_rectangle(rect.x, rect.y, rect.w, rect.h, with_alpha(color, 0.13));
-    draw_rectangle_lines(rect.x, rect.y, rect.w, rect.h, 1.0, with_alpha(color, 0.56));
+    let surface =
+        SurfaceStyle::new(with_alpha(color, 0.13)).with_border(1.0, with_alpha(color, 0.56));
+    draw_surface(rect, &surface);
     draw_text_centered(
         label,
         rect.x + rect.w / 2.0,
@@ -331,14 +306,9 @@ pub fn draw_status_pill(rect: Rect, label: &str, color: Color) {
 }
 
 pub fn draw_metric_tile(rect: Rect, label: &str, value: &str, accent: Color) {
-    draw_rectangle(
-        rect.x,
-        rect.y,
-        rect.w,
-        rect.h,
-        Color::new(0.035, 0.065, 0.082, 0.88),
-    );
-    draw_rectangle(rect.x, rect.y, 2.0, rect.h, with_alpha(accent, 0.75));
+    let surface = SurfaceStyle::new(Color::new(0.035, 0.065, 0.082, 0.88))
+        .with_left_accent(2.0, with_alpha(accent, 0.75));
+    draw_surface(rect, &surface);
     draw_ui_text(
         label,
         rect.x + 12.0,
@@ -357,8 +327,9 @@ pub fn draw_metric_tile(rect: Rect, label: &str, value: &str, accent: Color) {
 
 pub fn draw_trait_chip(x: f32, y: f32, label: &str, color: Color) -> f32 {
     let width = (measure_text_size(label, FONT_TINY).0 + 20.0).clamp(72.0, 170.0);
-    draw_rectangle(x, y, width, 24.0, with_alpha(color, 0.12));
-    draw_rectangle_lines(x, y, width, 24.0, 1.0, with_alpha(color, 0.55));
+    let surface =
+        SurfaceStyle::new(with_alpha(color, 0.12)).with_border(1.0, with_alpha(color, 0.55));
+    draw_surface(Rect::new(x, y, width, 24.0), &surface);
     draw_ui_text(
         &ellipsize(label, width - 14.0, FONT_TINY),
         x + 8.0,
@@ -566,56 +537,14 @@ fn draw_nav_item(x: f32, y: f32, label: &str, selected: bool) -> bool {
 }
 
 fn draw_corner_brackets(rect: Rect, color: Color) {
-    let len = 14.0;
-    draw_line(rect.x, rect.y, rect.x + len, rect.y, 1.0, color);
-    draw_line(rect.x, rect.y, rect.x, rect.y + len, 1.0, color);
-    draw_line(
-        rect.x + rect.w,
-        rect.y,
-        rect.x + rect.w - len,
-        rect.y,
-        1.0,
+    draw_corner_marks_spec(
+        rect,
         color,
-    );
-    draw_line(
-        rect.x + rect.w,
-        rect.y,
-        rect.x + rect.w,
-        rect.y + len,
-        1.0,
-        color,
-    );
-    draw_line(
-        rect.x,
-        rect.y + rect.h,
-        rect.x + len,
-        rect.y + rect.h,
-        1.0,
-        color,
-    );
-    draw_line(
-        rect.x,
-        rect.y + rect.h,
-        rect.x,
-        rect.y + rect.h - len,
-        1.0,
-        color,
-    );
-    draw_line(
-        rect.x + rect.w,
-        rect.y + rect.h,
-        rect.x + rect.w - len,
-        rect.y + rect.h,
-        1.0,
-        color,
-    );
-    draw_line(
-        rect.x + rect.w,
-        rect.y + rect.h,
-        rect.x + rect.w,
-        rect.y + rect.h - len,
-        1.0,
-        color,
+        &CornerMarkSpec {
+            len: 14.0,
+            gap: 0.0,
+            thickness: 1.0,
+        },
     );
 }
 
