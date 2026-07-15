@@ -68,6 +68,7 @@ impl ExportService {
     }
 
     /// Create export package for a kaiju
+    #[allow(clippy::too_many_arguments)] // mirrors the many independent kaiju fields needed to build an export package; a param struct would just move the same fields
     pub fn create_export(
         &self,
         kaiju_id: Uuid,

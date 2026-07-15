@@ -51,6 +51,7 @@ pub struct KaijuProperties {
 
 impl NftMetadata {
     /// Create metadata for a kaiju
+    #[allow(clippy::too_many_arguments)] // mirrors the many independent NFT metadata fields; a param struct would just move the same fields
     pub fn new(
         token_id: u64,
         name: String,

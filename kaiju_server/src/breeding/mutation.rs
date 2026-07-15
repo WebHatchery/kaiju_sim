@@ -30,25 +30,13 @@ pub enum MutationKind {
 }
 
 /// Result of a mutation
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct MutationResult {
     pub occurred: bool,
     pub kind: Option<MutationKind>,
     pub affected_target: Option<String>,
     pub effect_value: Option<f32>,
     pub new_trait: Option<TraitDefinition>,
-}
-
-impl Default for MutationResult {
-    fn default() -> Self {
-        Self {
-            occurred: false,
-            kind: None,
-            affected_target: None,
-            effect_value: None,
-            new_trait: None,
-        }
-    }
 }
 
 /// Possible mutation traits that can be generated
@@ -280,6 +268,7 @@ impl MutationProcessor {
     }
 
     /// Process mutation roll
+    #[allow(clippy::too_many_arguments)] // mirrors the independent offspring/trait inputs needed to roll a mutation; a param struct would just move the same fields
     pub fn process_mutation<R: Rng>(
         &self,
         offspring_generation: u32,

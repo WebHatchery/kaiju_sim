@@ -150,7 +150,7 @@ impl ComfyClient {
 
         if let Some(data) = history.get(prompt_id) {
             // Find first image output
-            for (_node_id, output) in &data.outputs {
+            for output in data.outputs.values() {
                 if let Some(img) = output.images.first() {
                     return Ok(Some(img.filename.clone()));
                 }

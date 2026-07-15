@@ -107,6 +107,7 @@ impl TraitInheritanceProcessor {
     }
 
     /// Process trait inheritance for offspring
+    #[allow(clippy::too_many_arguments)] // mirrors the independent per-parent inputs needed to roll inheritance; a param struct would just move the same fields
     pub fn process_inheritance<R: Rng>(
         &self,
         parent_a_traits: &[TraitDefinition],
@@ -201,6 +202,7 @@ impl TraitInheritanceProcessor {
         (visible_traits, hidden_traits, trait_rolls)
     }
 
+    #[allow(clippy::too_many_arguments)] // mirrors the independent per-parent inputs needed to roll inheritance; a param struct would just move the same fields
     fn calculate_inheritance_chance(
         &self,
         inheritance_type: &InheritanceType,
@@ -284,6 +286,7 @@ impl TraitInheritanceProcessor {
         }
     }
 
+    #[allow(clippy::too_many_arguments)] // mirrors the independent per-parent inputs needed to evaluate a condition; a param struct would just move the same fields
     fn evaluate_condition(
         &self,
         condition: &ConditionalRequirement,
@@ -347,7 +350,7 @@ impl TraitInheritanceProcessor {
         }
 
         // Sort by power (keep highest power traits)
-        traits.sort_by(|a, b| b.power.cmp(&a.power));
+        traits.sort_by_key(|t| std::cmp::Reverse(t.power));
         traits.truncate(cap);
         traits
     }

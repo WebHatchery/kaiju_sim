@@ -39,6 +39,12 @@ pub struct BreedingJobManager {
     locked_kaiju: RwLock<HashSet<Uuid>>,
 }
 
+impl Default for BreedingJobManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl BreedingJobManager {
     pub fn new() -> Self {
         Self {

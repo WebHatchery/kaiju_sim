@@ -99,6 +99,12 @@ pub enum BreedingError {
 
 pub struct BreedingService;
 
+impl Default for BreedingService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl BreedingService {
     pub fn new() -> Self {
         Self

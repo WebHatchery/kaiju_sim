@@ -298,7 +298,7 @@ impl AdvancedBreedingService {
 
     fn detect_element(&self, traits: &[Trait]) -> ElementType {
         for t in traits {
-            if let Some(e) = ElementType::from_str(&t.name) {
+            if let Some(e) = ElementType::from_name(&t.name) {
                 if e != ElementType::Neutral {
                     return e;
                 }

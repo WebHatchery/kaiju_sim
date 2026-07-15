@@ -22,8 +22,8 @@ pub fn compute_kaiju_state_hash(
         custody_state,
         alive,
         state_version,
-        stats.to_string(), // Deterministic JSON serialization
-        traits.to_string()
+        stats, // Deterministic JSON serialization
+        traits
     );
 
     let hash = Sha256::digest(state_repr.as_bytes());
@@ -48,6 +48,7 @@ pub fn compute_simple_state_hash(
 }
 
 /// Verify state hash matches expected
+#[allow(clippy::too_many_arguments)] // mirrors the independent kaiju state fields hashed by compute_kaiju_state_hash; a param struct would just move the same fields
 pub fn verify_state_hash(
     kaiju_id: Uuid,
     owner_user_id: Uuid,

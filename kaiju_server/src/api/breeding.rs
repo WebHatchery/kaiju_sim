@@ -38,7 +38,7 @@ impl MaterialRequest {
     fn to_breeding_material(&self) -> BreedingMaterial {
         match self {
             MaterialRequest::ElementalEssence(elem) => {
-                let element = ElementType::from_str(elem).unwrap_or(ElementType::Neutral);
+                let element = ElementType::from_name(elem).unwrap_or(ElementType::Neutral);
                 BreedingMaterial::ElementalEssence(element)
             }
             MaterialRequest::MutationCatalyst => BreedingMaterial::MutationCatalyst,

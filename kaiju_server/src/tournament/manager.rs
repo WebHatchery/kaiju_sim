@@ -188,7 +188,7 @@ impl TournamentManager {
             .bind(&bot_id)
             .bind(&name)
             .bind(bot_user_id)
-            .bind(&vec![0u8]) // genome_data dummy
+            .bind(vec![0u8]) // genome_data dummy
             .bind(stats)
             .bind(stats)
             .execute(&self.pool)

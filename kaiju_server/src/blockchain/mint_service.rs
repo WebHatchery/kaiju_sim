@@ -78,6 +78,7 @@ impl MintService {
     }
 
     /// Process a mint request (full flow)
+    #[allow(clippy::too_many_arguments)] // mirrors the many independent kaiju fields needed to mint; a param struct would just move the same fields
     pub async fn process_mint(
         &mut self,
         request: &mut MintRequest,
@@ -117,7 +118,7 @@ impl MintService {
             .ipfs_client
             .upload_json(&metadata_json)
             .await
-            .map_err(|e| MintError::IpfsError(e))?;
+            .map_err(MintError::IpfsError)?;
 
         request.ipfs_uri = Some(ipfs_response.uri.clone());
 

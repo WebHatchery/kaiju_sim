@@ -107,7 +107,7 @@ async fn handle_login(
             10,
             "Ice",
         ),
-        "Electric" | _ => (
+        _ => (
             "Volt",
             "kaiju_electric_elemental_1768091175509.png",
             103,

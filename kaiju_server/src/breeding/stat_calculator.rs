@@ -148,6 +148,7 @@ impl StatCalculator {
         (stats, rolls)
     }
 
+    #[allow(clippy::too_many_arguments)] // mirrors the independent stat-formula inputs (bounds, caps, rng state); a param struct would just move the same fields
     fn calc_stat<R: Rng>(
         &self,
         name: &str,
