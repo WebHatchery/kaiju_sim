@@ -1,0 +1,26 @@
+{
+  "title": "Kaiju Breeding Simulator",
+  "status": { "text": "Playable", "class": "playable" },
+  "canvas_rendering": "pixelated",
+  "about": [
+    "Collect, breed, train, and enter persistent kaiju into tournaments. Every monster carries a genetic history, battle record, and legacy."
+  ],
+  "controls": [
+    { "key": "Mouse", "desc": "Navigate menus and select kaiju" },
+    { "key": "Esc", "desc": "Return to the previous screen" },
+    { "key": "F5", "desc": "Debug save snapshot" }
+  ],
+  "details": [
+    { "label": "Genre", "value": "Breeding / Auto-Battler" },
+    { "label": "Engine", "value": "Macroquad" },
+    { "label": "Platform", "value": "Browser, Windows" }
+  ],
+  "download": {
+    "href": "kaiju_sim_windows.zip",
+    "label": "Windows Build"
+  },
+  "wasm_cache_bust": "date-now",
+  "asset_cache_bust": "20260526-plugin-clean",
+  "storage_js": "custom",
+  "repository": "https://github.com/Kalaith/kaiju_sim"
+}
