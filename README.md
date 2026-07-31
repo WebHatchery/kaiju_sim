@@ -49,19 +49,29 @@ For web compatibility:
 cargo check --target wasm32-unknown-unknown
 ```
 
+## Architecture
+
+- `src/main.rs` — Macroquad entry point, phase routing, top-level UI action handling
+- `src/data/` — serializable types, static data loaders, environments, traits, kaiju models
+- `src/engine/` — stateless mechanics: combat, breeding, research, tournaments, animations
+- `src/state/` — mutable game state, persistence, player data, phases, battle results
+- `src/ui/` — shared rendering helpers, colors, layout constants, assets, action definitions
+- `src/screens/` — screen-specific rendering
+- `assets/` — balance, trait, and tournament JSON plus sprites
+
+Gameplay tuning belongs in `assets/balance.json`, never as Rust-side magic numbers.
+
+## Art Direction
+
+Dark sci-fi mood, restrained blue/cyan palette, pixel typography, generous spacing
+over hard borders. The player fantasy is running a classified kaiju evolution
+facility, so effects (ambient grid glow, scanlines, status pulses) stay subtle and
+readable rather than neon or free-to-play.
+
 ## Core Docs
 
-- `kaiju_sim.md`
-- `IMPLEMENTATION_GUIDE.md`
-- `GAMEPLAY_WALKTHROUGH.md`
-- `KAIJU_HISTORY_DESIGN.md`
-- `CODE_STANDARDS.md`
-- `MACROQUAD_TOOLKIT.md`
-- `AGENTS.md`
-# Practical Future Improvements
-
-- Add deterministic tests for training, breeding inheritance, battle multipliers, tournament rewards, and market purchases.
-- Split roster, market, tournament, and laboratory mutation into service-like modules that screens call through explicit commands.
-- Move kaiju species, stat curves, items, and reward tuning into validated data fixtures.
-- Add replay fixtures for battles and tournaments to reproduce balance issues from seed and roster data.
+- `kaiju_sim.md` — game design document
+- `KAIJU_HISTORY_DESIGN.md` — kaiju event-history/record design
+- `TODO.md` — open work
+- `CODE_STANDARDS.md`, `MACROQUAD_TOOLKIT.md`, `AGENTS.md` — shared workspace standards
 
