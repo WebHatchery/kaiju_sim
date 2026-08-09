@@ -72,57 +72,64 @@ async fn main() {
     // async handling (`handle_ui_action` is async) and only fire on real
     // mouse/keyboard input, which headless capture never produces, so they're
     // intentionally not dispatched inside the capture frame closure.
-    if let Some(config) = capture::CaptureConfig::from_env("KAIJU_SIM") {
-        begin_capture_scene(&config.scene, &mut phase_stack);
-        capture::run_capture(&config, |_dt| {
-            state.tick();
-            auto_save.update(&state);
+    if let Some(configs) = capture::CaptureConfig::all_from_env("KAIJU_SIM") {
+        for config in configs {
+            begin_capture_scene(&config.scene, &mut phase_stack);
+            capture::run_capture_once(&config, |_dt| {
+                state.tick();
+                auto_save.update(&state);
 
-            let _action = match phase_stack.current() {
-                GamePhase::Loading => None,
-                GamePhase::MainMenu => draw_main_menu(&assets),
-                GamePhase::Laboratory => draw_laboratory(&state, &assets),
-                GamePhase::Roster => draw_roster_view(&state, &assets),
-                GamePhase::Training => {
-                    draw_training_screen(&state, &assets, game_data.balance.mvp.training.cost)
-                }
-                GamePhase::Breeding => {
-                    let locked_kaiju_ids = std::collections::HashSet::new();
-                    draw_breeding_screen(&state, &mut breeding_state, &locked_kaiju_ids, &assets)
-                }
-                GamePhase::TournamentLobby => {
-                    draw_arena_screen(&state, &assets, game_data.balance.mvp.battle.entry_fee)
-                }
-                GamePhase::Leaderboard => draw_leaderboard(&state, &assets),
-                GamePhase::Settings => draw_settings_screen(&state),
-                GamePhase::Battle | GamePhase::Results => draw_battle_results(&state, &assets),
-                GamePhase::KaijuDetail(id) => {
-                    let action = draw_kaiju_detail(&state, *id, &assets);
-                    if let Some(UiAction::Back) = action {
-                        Some(UiAction::Back)
-                    } else {
-                        action
+                let _action = match phase_stack.current() {
+                    GamePhase::Loading => None,
+                    GamePhase::MainMenu => draw_main_menu(&assets),
+                    GamePhase::Laboratory => draw_laboratory(&state, &assets),
+                    GamePhase::Roster => draw_roster_view(&state, &assets),
+                    GamePhase::Training => {
+                        draw_training_screen(&state, &assets, game_data.balance.mvp.training.cost)
                     }
-                }
-                // StarterSelection's draw call awaits every frame; skipped
-                // here since this closure runs synchronously (see comment on
-                // begin_capture_scene above).
-                GamePhase::StarterSelection => None,
-                GamePhase::Marketplace => draw_placeholder(
-                    "Exchange access is locked",
-                    &state,
-                    AppSection::Marketplace,
-                    UiAction::GoToLaboratory,
-                ),
-                _ => draw_placeholder(
-                    &format!("Unknown Phase: {:?}", phase_stack.current()),
-                    &state,
-                    AppSection::Laboratory,
-                    UiAction::Back,
-                ),
-            };
-        })
-        .await;
+                    GamePhase::Breeding => {
+                        let locked_kaiju_ids = std::collections::HashSet::new();
+                        draw_breeding_screen(
+                            &state,
+                            &mut breeding_state,
+                            &locked_kaiju_ids,
+                            &assets,
+                        )
+                    }
+                    GamePhase::TournamentLobby => {
+                        draw_arena_screen(&state, &assets, game_data.balance.mvp.battle.entry_fee)
+                    }
+                    GamePhase::Leaderboard => draw_leaderboard(&state, &assets),
+                    GamePhase::Settings => draw_settings_screen(&state),
+                    GamePhase::Battle | GamePhase::Results => draw_battle_results(&state, &assets),
+                    GamePhase::KaijuDetail(id) => {
+                        let action = draw_kaiju_detail(&state, *id, &assets);
+                        if let Some(UiAction::Back) = action {
+                            Some(UiAction::Back)
+                        } else {
+                            action
+                        }
+                    }
+                    // StarterSelection's draw call awaits every frame; skipped
+                    // here since this closure runs synchronously (see comment on
+                    // begin_capture_scene above).
+                    GamePhase::StarterSelection => None,
+                    GamePhase::Marketplace => draw_placeholder(
+                        "Exchange access is locked",
+                        &state,
+                        AppSection::Marketplace,
+                        UiAction::GoToLaboratory,
+                    ),
+                    _ => draw_placeholder(
+                        &format!("Unknown Phase: {:?}", phase_stack.current()),
+                        &state,
+                        AppSection::Laboratory,
+                        UiAction::Back,
+                    ),
+                };
+            })
+            .await;
+        }
         return;
     }
 
