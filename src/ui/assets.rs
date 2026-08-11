@@ -3,7 +3,8 @@
 use macroquad::prelude::*;
 use macroquad_toolkit::assets::{AssetManager as ToolkitAssetManager, TextureConfig};
 
-const TEXTURE_MANIFEST_JSON: &str = include_str!("../../assets/data/texture_manifest.json");
+const TEXTURE_MANIFEST_JSON: &str =
+    macroquad_toolkit::include_json_str!("../../assets/data/texture_manifest.json");
 const ASSET_PACK_PATH: &str = "assets.zip";
 
 pub struct AssetManager {

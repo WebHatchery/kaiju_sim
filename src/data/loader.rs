@@ -8,9 +8,10 @@ use super::traits::Trait;
 #[cfg(target_arch = "wasm32")]
 use macroquad::prelude::load_string;
 
-const TRAITS_JSON: &str = include_str!("../../assets/traits.json");
-const BALANCE_JSON: &str = include_str!("../../assets/balance.json");
-const TOURNAMENTS_JSON: &str = include_str!("../../assets/tournaments.json");
+const TRAITS_JSON: &str = macroquad_toolkit::include_json_str!("../../assets/traits.json");
+const BALANCE_JSON: &str = macroquad_toolkit::include_json_str!("../../assets/balance.json");
+const TOURNAMENTS_JSON: &str =
+    macroquad_toolkit::include_json_str!("../../assets/tournaments.json");
 
 /// Complete game data loaded from JSON files
 #[derive(Debug, Clone, Serialize, Deserialize)]
