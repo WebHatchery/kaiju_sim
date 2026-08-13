@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "assets": [
+    "assets/title/title_page.png",
+    "assets/sprites/kaiju/kaiju_bipedal_neutral_1768091093175.png",
+    "assets/sprites/kaiju/kaiju_electric_elemental_1768091175509.png",
+    "assets/sprites/kaiju/kaiju_fire_elemental_1768091138860.png",
+    "assets/sprites/kaiju/kaiju_ice_elemental_1768091156648.png",
+    "assets/sprites/kaiju/kaiju_quadruped_neutral_1768091073894.png",
+    "assets/sprites/kaiju/kaiju_serpentine_neutral_1768091108255.png",
+    "assets/cache/1cc214d8-d89d-4771-b201-95e46e8be9f6.png",
+    "assets/cache/642f1b93-e520-4862-ad7e-d36437f10e81.png",
+    "assets/cache/e0bd86e8-6a58-48f6-8fe7-b9d9a039e236.png",
+    "assets/cache/kaiju_bred_3.png"
+  ]
+}
