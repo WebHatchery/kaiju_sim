@@ -43,5 +43,5 @@
   "wasm_cache_bust": "date-now",
   "asset_cache_bust": "20260526-plugin-clean",
   "storage_js": "custom",
-  "repository": "https://github.com/Kalaith/kaiju_sim"
+  "repository": "https://github.com/WebHatchery/kaiju_sim"
 }
