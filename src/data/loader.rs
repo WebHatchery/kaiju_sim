@@ -5,8 +5,7 @@ use std::collections::HashMap;
 
 use super::traits::Trait;
 
-#[cfg(target_arch = "wasm32")]
-use macroquad::prelude::load_string;
+use macroquad_toolkit::data_loader::JsonFallbackPolicy;
 
 const TRAITS_JSON: &str = macroquad_toolkit::include_json_str!("../../assets/traits.json");
 const BALANCE_JSON: &str = macroquad_toolkit::include_json_str!("../../assets/balance.json");
@@ -154,31 +153,51 @@ impl GameData {
     /// Load all game data from assets folder
     #[cfg(not(target_arch = "wasm32"))]
     pub fn load() -> Result<Self, Box<dyn std::error::Error>> {
-        let traits_json = std::fs::read_to_string("assets/traits.json")
-            .unwrap_or_else(|_| TRAITS_JSON.to_string());
-        let balance_json = std::fs::read_to_string("assets/balance.json")
-            .unwrap_or_else(|_| BALANCE_JSON.to_string());
-        let tournaments_json = std::fs::read_to_string("assets/tournaments.json")
-            .unwrap_or_else(|_| TOURNAMENTS_JSON.to_string());
-
-        Self::from_json_strings(&traits_json, &balance_json, &tournaments_json)
+        use macroquad_toolkit::data_loader::load_json_file_with_fallback_sync;
+        Self::from_data(
+            load_json_file_with_fallback_sync(
+                "assets/traits.json",
+                TRAITS_JSON,
+                JsonFallbackPolicy::ReadError,
+            )?,
+            load_json_file_with_fallback_sync(
+                "assets/balance.json",
+                BALANCE_JSON,
+                JsonFallbackPolicy::ReadError,
+            )?,
+            load_json_file_with_fallback_sync(
+                "assets/tournaments.json",
+                TOURNAMENTS_JSON,
+                JsonFallbackPolicy::ReadError,
+            )?,
+        )
     }
 
     /// Load all game data using the runtime loader that is available on each target.
     pub async fn load_async() -> Result<Self, Box<dyn std::error::Error>> {
         #[cfg(target_arch = "wasm32")]
         {
-            let traits_json = load_string("assets/traits.json")
-                .await
-                .unwrap_or_else(|_| TRAITS_JSON.to_string());
-            let balance_json = load_string("assets/balance.json")
-                .await
-                .unwrap_or_else(|_| BALANCE_JSON.to_string());
-            let tournaments_json = load_string("assets/tournaments.json")
-                .await
-                .unwrap_or_else(|_| TOURNAMENTS_JSON.to_string());
-
-            return Self::from_json_strings(&traits_json, &balance_json, &tournaments_json);
+            use macroquad_toolkit::data_loader::load_json_file_with_fallback;
+            Self::from_data(
+                load_json_file_with_fallback(
+                    "assets/traits.json",
+                    TRAITS_JSON,
+                    JsonFallbackPolicy::ReadError,
+                )
+                .await?,
+                load_json_file_with_fallback(
+                    "assets/balance.json",
+                    BALANCE_JSON,
+                    JsonFallbackPolicy::ReadError,
+                )
+                .await?,
+                load_json_file_with_fallback(
+                    "assets/tournaments.json",
+                    TOURNAMENTS_JSON,
+                    JsonFallbackPolicy::ReadError,
+                )
+                .await?,
+            )
         }
 
         #[cfg(not(target_arch = "wasm32"))]
@@ -187,15 +206,11 @@ impl GameData {
         }
     }
 
-    fn from_json_strings(
-        traits_json: &str,
-        balance_json: &str,
-        tournaments_json: &str,
+    fn from_data(
+        traits: TraitDatabase,
+        balance: BalanceConfig,
+        tournaments: TournamentDatabase,
     ) -> Result<Self, Box<dyn std::error::Error>> {
-        let traits: TraitDatabase = serde_json::from_str(traits_json)?;
-        let balance: BalanceConfig = serde_json::from_str(balance_json)?;
-        let tournaments: TournamentDatabase = serde_json::from_str(tournaments_json)?;
-
         // Validate data
         Self::validate_traits(&traits)?;
         Self::validate_balance(&balance)?;
