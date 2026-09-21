@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 # Core engine
-macroquad = "0.4"
+macroquad = "=0.4.16"
 macroquad-toolkit = { path = "../macroquad-toolkit" }
 
 # Data serialization
