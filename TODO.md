@@ -35,4 +35,4 @@
 
 ## Settings and display
 
-- [ ] Add a Fullscreen toggle to Settings and persist/apply the player's display preference.
+- [x] Add a Fullscreen toggle to Settings and persist/apply the player's display preference.

@@ -8,7 +8,7 @@ use crate::ui::typography::*;
 use macroquad::prelude::*;
 use macroquad_toolkit::ui::draw_ui_text;
 
-pub fn draw_settings_screen(state: &GameState) -> Option<UiAction> {
+pub fn draw_settings_screen(state: &GameState, fullscreen: bool) -> Option<UiAction> {
     let frame = draw_app_shell(state, AppSection::Settings);
     if frame.nav_action.is_some() {
         return frame.nav_action;
@@ -19,7 +19,7 @@ pub fn draw_settings_screen(state: &GameState) -> Option<UiAction> {
     let settings = Rect::new(c.x, c.y, left_w, c.h);
     let system = Rect::new(c.x + left_w + PANEL_GAP, c.y, c.w - left_w - PANEL_GAP, c.h);
 
-    if let Some(action) = draw_settings_panel(settings, state) {
+    if let Some(action) = draw_settings_panel(settings, state, fullscreen) {
         return Some(action);
     }
     draw_system_panel(system, state);
@@ -27,7 +27,7 @@ pub fn draw_settings_screen(state: &GameState) -> Option<UiAction> {
     None
 }
 
-fn draw_settings_panel(rect: Rect, state: &GameState) -> Option<UiAction> {
+fn draw_settings_panel(rect: Rect, state: &GameState, fullscreen: bool) -> Option<UiAction> {
     draw_panel_with_accent(rect, "FACILITY SETTINGS", dark::ACCENT);
     draw_ui_text(
         "Facility controls.",
@@ -90,6 +90,33 @@ fn draw_settings_panel(rect: Rect, state: &GameState) -> Option<UiAction> {
         &format!("{:.0}%", state.player.settings.sfx_volume * 100.0),
         dark::TEXT_SECONDARY,
     );
+    y += 58.0;
+    draw_rectangle(
+        rect.x + 18.0,
+        y - 26.0,
+        rect.w - 36.0,
+        44.0,
+        Color::new(0.030, 0.055, 0.074, 0.82),
+    );
+    draw_ui_text(
+        "Fullscreen",
+        rect.x + 30.0,
+        y,
+        FONT_SMALL,
+        dark::TEXT_PRIMARY,
+    );
+    if draw_button(
+        Rect::new(rect.x + rect.w - 140.0, y - 23.0, 104.0, 32.0),
+        if fullscreen { "ON" } else { "OFF" },
+        if fullscreen {
+            dark::POSITIVE
+        } else {
+            dark::TEXT_SECONDARY
+        },
+        true,
+    ) {
+        return Some(UiAction::ToggleFullscreen);
+    }
 
     let button_y = rect.y + rect.h - 62.0;
     if draw_button(
@@ -173,4 +200,54 @@ fn draw_setting_row(x: f32, y: f32, w: f32, label: &str, value: &str, color: Col
         value,
         color,
     );
+}
+
+pub fn draw_display_preview(remaining: f32) -> Option<UiAction> {
+    let sw = screen_width();
+    let sh = screen_height();
+    draw_rectangle(0.0, 0.0, sw, sh, Color::new(0.0, 0.0, 0.0, 0.72));
+
+    let width = sw.clamp(320.0, 520.0);
+    let panel = Rect::new((sw - width) * 0.5, (sh - 224.0) * 0.5, width, 224.0);
+    draw_panel_with_accent(panel, "CONFIRM DISPLAY", dark::WARNING);
+    draw_ui_text(
+        "Keep this fullscreen setting?",
+        panel.x + 24.0,
+        panel.y + 78.0,
+        FONT_SMALL,
+        dark::TEXT_PRIMARY,
+    );
+    draw_ui_text(
+        &format!("Reverting in {:.0} seconds", remaining.ceil()),
+        panel.x + 24.0,
+        panel.y + 110.0,
+        FONT_SMALL,
+        dark::TEXT_SECONDARY,
+    );
+
+    let button_y = panel.y + 150.0;
+    let button_w = ((panel.w - 60.0) * 0.5).min(190.0);
+    if draw_button(
+        Rect::new(panel.x + 20.0, button_y, button_w, 44.0),
+        "KEEP DISPLAY",
+        dark::POSITIVE,
+        true,
+    ) {
+        return Some(UiAction::KeepDisplay);
+    }
+    if draw_button(
+        Rect::new(
+            panel.x + panel.w - button_w - 20.0,
+            button_y,
+            button_w,
+            44.0,
+        ),
+        "REVERT",
+        dark::WARNING,
+        true,
+    ) {
+        return Some(UiAction::RevertDisplay);
+    }
+
+    None
 }

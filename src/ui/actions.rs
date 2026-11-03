@@ -16,6 +16,9 @@ pub enum UiAction {
     GoToTournament,
     GoToLeaderboard,
     GoToSettings,
+    ToggleFullscreen,
+    KeepDisplay,
+    RevertDisplay,
     Back,
 
     // Kaiju Management

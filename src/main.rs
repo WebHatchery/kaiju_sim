@@ -5,6 +5,7 @@ use macroquad_toolkit::capture;
 use macroquad_toolkit::ui::draw_ui_text;
 
 mod data;
+mod display;
 mod engine;
 mod screens;
 mod server_bridge;
@@ -12,6 +13,7 @@ mod state;
 mod ui;
 
 use data::{Environment, GameData, KaijuEvent, KaijuEventKind, TrainingFocus};
+use display::DisplaySettings;
 use engine::mvp;
 use engine::{breed_kaiju, BattleSimulator};
 use screens::*;
@@ -39,6 +41,7 @@ fn begin_capture_scene(scene: &str, phase_stack: &mut PhaseStack) {
     match scene {
         "laboratory" => phase_stack.apply(PhaseTransition::Reset(GamePhase::Laboratory)),
         "roster" => phase_stack.apply(PhaseTransition::Reset(GamePhase::Roster)),
+        "settings" => phase_stack.apply(PhaseTransition::Reset(GamePhase::Settings)),
         _ => phase_stack.apply(PhaseTransition::Reset(GamePhase::MainMenu)),
     }
 }
@@ -66,6 +69,8 @@ async fn main() {
     let mut phase_stack = PhaseStack::new(GamePhase::MainMenu);
     let mut breeding_state = BreedingState::default();
     let mut auto_save = AutoSaveManager::new();
+    let capture_mode = capture::capture_requested("KAIJU_SIM");
+    let mut display_settings = DisplaySettings::load(capture_mode);
 
     // Screenshot harness: when KAIJU_SIM_CAPTURE_PATH is set, seed a scene,
     // simulate deterministic frames, write a PNG, and exit. UI actions require
@@ -100,7 +105,9 @@ async fn main() {
                         draw_arena_screen(&state, &assets, game_data.balance.mvp.battle.entry_fee)
                     }
                     GamePhase::Leaderboard => draw_leaderboard(&state, &assets),
-                    GamePhase::Settings => draw_settings_screen(&state),
+                    GamePhase::Settings => {
+                        draw_settings_screen(&state, display_settings.fullscreen())
+                    }
                     GamePhase::Battle | GamePhase::Results => draw_battle_results(&state, &assets),
                     GamePhase::KaijuDetail(id) => {
                         let action = draw_kaiju_detail(&state, *id, &assets);
@@ -136,8 +143,15 @@ async fn main() {
     loop {
         state.tick();
         auto_save.update(&state);
+        if display_settings.update(get_frame_time()) {
+            state.notify(
+                "Display preview expired. Previous setting restored.".to_string(),
+                NotificationType::Info,
+            );
+        }
 
         if is_key_pressed(KeyCode::F5) {
+            display_settings.revert_preview();
             let _ = persistence::delete_save();
             state = GameState::default();
             phase_stack = PhaseStack::new(GamePhase::MainMenu);
@@ -160,7 +174,7 @@ async fn main() {
                 draw_arena_screen(&state, &assets, game_data.balance.mvp.battle.entry_fee)
             }
             GamePhase::Leaderboard => draw_leaderboard(&state, &assets),
-            GamePhase::Settings => draw_settings_screen(&state),
+            GamePhase::Settings => draw_settings_screen(&state, display_settings.fullscreen()),
             GamePhase::Battle | GamePhase::Results => draw_battle_results(&state, &assets),
             GamePhase::KaijuDetail(id) => {
                 let action = draw_kaiju_detail(&state, *id, &assets);
@@ -185,12 +199,19 @@ async fn main() {
             ),
         };
 
+        let action = if let Some(remaining) = display_settings.preview_remaining() {
+            draw_display_preview(remaining)
+        } else {
+            action
+        };
+
         if let Some(act) = action {
             handle_ui_action(
                 &mut state,
                 &mut phase_stack,
                 &mut breeding_state,
                 &mut auto_save,
+                &mut display_settings,
                 &mut assets,
                 &game_data,
                 act,
@@ -208,10 +229,16 @@ async fn handle_ui_action(
     stack: &mut PhaseStack,
     breeding_state: &mut BreedingState,
     auto_save: &mut AutoSaveManager,
+    display_settings: &mut DisplaySettings,
     assets: &mut AssetManager,
     game_data: &GameData,
     action: UiAction,
 ) {
+    if display_settings.is_previewing()
+        && !matches!(action, UiAction::KeepDisplay | UiAction::RevertDisplay)
+    {
+        return;
+    }
     match action {
         // Navigation
         UiAction::GoToMenu => {
@@ -232,6 +259,24 @@ async fn handle_ui_action(
         }
         UiAction::GoToLeaderboard => stack.apply(PhaseTransition::Replace(GamePhase::Leaderboard)),
         UiAction::GoToSettings => stack.apply(PhaseTransition::Replace(GamePhase::Settings)),
+        UiAction::ToggleFullscreen => display_settings.begin_fullscreen_preview(),
+        UiAction::KeepDisplay => match display_settings.keep_preview() {
+            Ok(()) => state.notify(
+                "Display preference saved.".to_string(),
+                NotificationType::Success,
+            ),
+            Err(error) => state.notify(
+                format!("Could not save display preference: {error}"),
+                NotificationType::Error,
+            ),
+        },
+        UiAction::RevertDisplay => {
+            display_settings.revert_preview();
+            state.notify(
+                "Previous display setting restored.".to_string(),
+                NotificationType::Info,
+            );
+        }
         UiAction::Back => stack.apply(PhaseTransition::Pop),
 
         // System

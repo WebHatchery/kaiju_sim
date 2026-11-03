@@ -23,7 +23,7 @@ pub use leaderboard::draw_leaderboard;
 pub use main_menu::draw_main_menu;
 pub use marketplace::{draw_marketplace, MarketplaceState};
 pub use roster_view::draw_roster_view;
-pub use settings::draw_settings_screen;
+pub use settings::{draw_display_preview, draw_settings_screen};
 pub use starter_selection::draw_starter_selection;
 pub use tournament_lobby::draw_tournament_lobby;
 pub use training::draw_training_screen;
