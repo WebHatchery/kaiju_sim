@@ -32,3 +32,7 @@
 - Update `README.md` validation instructions to require parameterless `.\publish.ps1` after meaningful game changes; consolidate `screenshots/latest/` captures into `docs/verification/`, replace duplicate states, and update image links (§8.3, §12).
 - Investigate the custom storage bridge using `STORAGE_BRIDGE_TODO.md`; verify current WASM loading, save/load, audio, and networking before removing the workaround and adopting the shared bridge.
 - Implement mutation generation in `kaiju_server/src/breeding_service.rs` and persist/retrieve the breeding log event ID currently returned as `None` in `kaiju_server/src/api/breeding.rs`.
+
+## Settings and display
+
+- [ ] Add a Fullscreen toggle to Settings and persist/apply the player's display preference.
